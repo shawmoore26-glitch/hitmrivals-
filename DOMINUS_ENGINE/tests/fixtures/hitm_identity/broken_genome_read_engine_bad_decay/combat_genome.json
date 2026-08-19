@@ -1,0 +1,129 @@
+{
+  "archetype": "psycho_drunken_martial_artist",
+  "philosophy": "Volume beats weight. He wins by never letting your turn begin.",
+  "rhythm_profile": {
+    "categorical": "Metronomic",
+    "beat": "broken",
+    "tempo": "variable",
+    "signature": "decorative off-beat at the END of every move"
+  },
+  "weight_profile": {
+    "categorical": "Light",
+    "inertia": 0.28,
+    "settle": "none"
+  },
+  "risk_profile": {
+    "commitment": "low",
+    "reward": "cumulative",
+    "recovery_exposure": "minimal"
+  },
+  "defense_profile": {
+    "style": "misdirection",
+    "blockPreference": 0.18,
+    "escape": "awkward angle",
+    "from": [
+      "movement",
+      "deception",
+      "awkward angles"
+    ],
+    "not": [
+      "blocking everything"
+    ],
+    "_law": "VOLUME 18: defense comes from movement, deception and awkward angles — NOT blocking. blockPreference capped at 0.25 for this archetype."
+  },
+  "pressure_profile": {
+    "style": "relentless",
+    "turnRetention": "high",
+    "cornerCarry": "high"
+  },
+  "range_profile": {
+    "band": "close",
+    "dominant": 76,
+    "deadzone": "anything past his own arm"
+  },
+  "recovery_profile": {
+    "categorical": "Instant",
+    "settleBeats": 0
+  },
+  "impact_profile": {
+    "hitstop": "light",
+    "cameraShake": "low",
+    "soundIntent": "crack — report before the visual"
+  },
+  "ai_intent": [
+    "pressure",
+    "rush",
+    "corner",
+    "reset",
+    "overwhelm"
+  ],
+  "_note": "AUTHORED SOURCE. Volume 14 Combat Genome. 13 components.",
+  "combat_verbs": [
+    "SNAP",
+    "RUSH",
+    "CRASH",
+    "BREAK",
+    "LAUGH",
+    "OVERWHELM"
+  ],
+  "frame_dna": "derived — see archetype_rules.json genome_response",
+  "identity_statement": "The drunk fighter who is secretly the strongest martial artist in the room.",
+  "weakness": "Chaos creates openings.",
+  "strength": "Chaos hides genius.",
+  "read_engine": {
+    "_note": "AUTHORED SOURCE. Brooklyn's signature system and the reason he is the main character.",
+    "_law": "Base damage may not rise. The read engine multiplies OUTPUT, never the table. At 0 reads Brooklyn is the weakest fighter in HITM. The governor still audits him at 0 — that is his real balance point.",
+    "max_reads": 5,
+    "gain_on": [
+      "counter hit",
+      "whiff punish",
+      "perfect guard",
+      "throw confirm"
+    ],
+    "lose_on": [
+      "being counter hit",
+      "dropping a chain",
+      "whiffing a throw"
+    ],
+    "_lose_law": "Reads are lost, not just gained. He is punished for being read back. This is the only fighter in the cast whose mistakes compound.",
+    "tiers": [
+      {
+        "reads": 0,
+        "name": "This Is Fun",
+        "damage_mult": 1.0,
+        "note": "weakest fighter in the game"
+      },
+      {
+        "reads": 1,
+        "name": "Noticing",
+        "damage_mult": 1.06
+      },
+      {
+        "reads": 2,
+        "name": "You're Predictable",
+        "damage_mult": 1.13
+      },
+      {
+        "reads": 3,
+        "name": "I See Everything",
+        "damage_mult": 1.21,
+        "note": "unlocks PREDATOR"
+      },
+      {
+        "reads": 4,
+        "name": "No Escape",
+        "damage_mult": 1.3
+      },
+      {
+        "reads": 5,
+        "name": "Perfect Hunter",
+        "damage_mult": 1.42,
+        "note": "359 x 1.42 = 510, above Rocket's 432 — but Rocket had that from frame one"
+      }
+    ],
+    "decay": {
+      "amount": 1,
+      "_note": "Reads decay if he stops reading. Stand still and the knowledge goes stale."
+    }
+  }
+}

@@ -5750,13 +5750,74 @@ clean rebuild + rerun, this session).
 
 **Current Track H total: 677/677 tests passing (was 656 before this track).**
 
-### Module 2 — Real genome mapping (planned, not started)
+### Module 2 — Real genome mapping  ← **complete (representation only, not wired to a consumer)**
 
-Extend or replace `CombatIdentity`/`CombatStyleGenome` so a real
-`HitmIdentityRecord` can populate it without loss — most concretely, the
-`read_engine` tier/decay mechanic and `defense_profile.blockPreference`
-cap need real fields and a real consumer (`GenomeDecoder`,
-`ReactionSystem`), not a comment saying they're unread. Gated on Module 1.
+`CHARACTER/HitmBridge/HitmCombatGenome` — a new, explicit, typed
+representation of a real fighter's combat genome, built strictly on top
+of Module 1's already-validated `HitmIdentityRecord` (never reads a file
+directly, so it inherits Module 1's fail-closed file/JSON/required-key/
+directory-id-match guarantees for free). `CombatIdentity` and
+`CombatStyleGenome` are **untouched** — this is deliberately a new,
+parallel type, not a replacement, per the audit's own warning against
+moving the same information loss one layer over.
+
+Typed, explicit fields for all 8 common sub-profiles (`rhythm_profile`,
+`weight_profile`, `risk_profile`, `defense_profile` — including the real
+`blockPreference` cap the audit named — `pressure_profile`,
+`range_profile`, `recovery_profile`, `impact_profile`) and for Brooklyn's
+read-engine mechanic specifically (`max_reads`, `gain_on`/`lose_on`,
+all 6 tiers with `reads`/`name`/`damage_mult`/optional `note`, and
+`decay`). Every field is `std::optional` (or an empty vector) and
+populated **only** from what the real source actually has — confirmed by
+tests that a field genuinely absent for a fighter (Rocket/Static's
+`read_engine`, their `defense_profile`'s missing `_law`/`from`/`not`)
+comes back empty, not a default-filled placeholder.
+
+**Losslessness, proven, not asserted**: the class holds the exact parsed
+`combat_genome.json` tree unmodified (`raw_`); every typed accessor is a
+read-only extractive view over it, never the reverse, so `ToJson()`
+returning that same tree is structurally guaranteed rather than
+reconstructed field-by-field (which is exactly where information could
+leak). Proven two ways: (1) a unit test comparing the source tree's
+canonical `Dump()` against `ToJson().Dump()` for both Brooklyn (has
+`identity_statement`/`strength`/`weakness`, fields no typed accessor
+models) and Rocket (has `archetype_line`/`forbidden`/
+`martial_foundation` instead) — both byte-identical; (2) `dominus-cli
+hitm-combat-genome <dir>` prints the same comparison live, run this
+session against real Brooklyn and Rocket data.
+
+**Validation goes one level deeper than Module 1**: Module 1 only checked
+that required keys were *present*; this validates their *shape* —
+`archetype` must be a string, `ai_intent` must be an array of strings,
+`defense_profile.blockPreference` must be a number if present,
+`read_engine.tiers` must be an array of objects each with a numeric
+`reads`, string `name`, and numeric `damage_mult`, `read_engine.decay`
+must have numeric `frames`/`amount`. Six new deliberate-break fixtures
+(one real Brooklyn genome each, with exactly one structural mutation) —
+wrong-typed `archetype`, `ai_intent` as a string instead of an array,
+wrong-typed `blockPreference`, `read_engine.tiers` removed, a tier
+missing `damage_mult`, `read_engine.decay.frames` removed — all rejected
+with `Result::Fail`, never a thrown exception escaping the call, never a
+silent partial parse.
+
+**14 new tests, 677 → 691, zero regressions** — full clean rebuild
+(`rm -rf build`) and 19 repeat runs across this session, all 691/691, no
+flakes observed in this module's own tests (the one flake noted at the
+end of Module 1 was in pre-existing, untouched Reality/Concurrency tests
+and did not recur in any of this session's reruns).
+
+**Explicitly NOT done by Module 2** — do not read this as more than it
+is: `GenomeDecoder`, `ReactionSystem`, `CombatAI`, and every other
+existing consumer still only know about the old six-field
+`CombatIdentity`. Nothing about combat behavior, AI decisions, or damage
+output changes as a result of this module — `HitmCombatGenome` exists and
+is provably correct, but nothing in the engine reads one yet. That wiring
+is real, separately-gated future work, not attempted here per the
+explicit Module 2 scope (representable + validated, not yet consumed).
+Also not done: `CombatStyleGenome` (a different existing genome type) was
+left untouched, not extended — same reasoning as `CombatIdentity`.
+
+**Current Track H total: 691/691 tests passing (was 656 before this track).**
 
 ### Module 3 — 2D sprite-cutout rig representation (planned, not started)
 

@@ -16,6 +16,7 @@
 #include "ANIMATION/SkeletonSystem/AnimationClipLoader.h"
 #include "ANIMATION/SkeletonSystem/SkeletonLoader.h"
 #include "CHARACTER/Genome/GenomeDecoder.h"
+#include "CHARACTER/HitmBridge/HitmCombatGenome.h"
 #include "CHARACTER/HitmBridge/HitmIdentityImporter.h"
 #include "CHARACTER/Rig/RigBinder.h"
 #include "COMBAT/CombatController.h"
@@ -627,6 +628,53 @@ int ImportHitmIdentityDemo(const std::string& identityDirStr) {
     std::cout << "[import-hitm-identity] signature: " << rec.signature.AsObject().size() << " top-level keys\n";
     std::cout << "[result] real identity data ingested and validated -- NOT compiled, NOT rendered, NOT playable yet\n";
     return 0;
+}
+
+// ROADMAP.md Track H Module 2. Imports a real fighter (via Module 1) and
+// builds the explicit, typed HitmCombatGenome, then proves the
+// import-then-export round trip lost nothing by comparing the exact
+// source tree's canonical dump against ToJson()'s canonical dump live --
+// not just in a unit test.
+int HitmCombatGenomeDemo(const std::string& identityDirStr) {
+    using dominus::character::hitm::HitmCombatGenome;
+    using dominus::character::hitm::HitmIdentityImporter;
+
+    auto importResult = HitmIdentityImporter::Import(identityDirStr);
+    if (!importResult.ok) {
+        std::cerr << "[hitm-combat-genome] import FAILED: " << importResult.error << "\n";
+        return 1;
+    }
+    auto genomeResult = HitmCombatGenome::FromRecord(*importResult.value);
+    if (!genomeResult.ok) {
+        std::cerr << "[hitm-combat-genome] genome mapping FAILED: " << genomeResult.error << "\n";
+        return 1;
+    }
+    auto& g = *genomeResult.value;
+
+    std::cout << "[hitm-combat-genome] fighter_id=" << g.FighterId() << " archetype=" << g.Archetype() << "\n";
+    std::cout << "[hitm-combat-genome] philosophy: " << g.Philosophy() << "\n";
+    std::cout << "[hitm-combat-genome] defense.style=" << g.Defense().style.value_or("(none)")
+               << " defense.blockPreference=" << (g.Defense().block_preference ? std::to_string(*g.Defense().block_preference) : "(none)")
+               << "\n";
+    if (g.HasReadEngine()) {
+        const auto* re = g.GetReadEngine();
+        std::cout << "[hitm-combat-genome] read_engine: max_reads=" << re->max_reads << " tiers=" << re->tiers.size()
+                   << " decay_frames=" << re->decay.frames << "\n";
+        for (const auto& tier : re->tiers) {
+            std::cout << "  reads=" << tier.reads << " name=\"" << tier.name << "\" damage_mult=" << tier.damage_mult
+                       << "\n";
+        }
+    } else {
+        std::cout << "[hitm-combat-genome] read_engine: (none -- " << g.FighterId() << " does not have one, real gap in his design, not an import failure)\n";
+    }
+
+    std::string sourceDump = importResult.value->combat_genome.Dump();
+    std::string exportedDump = g.ToJson().Dump();
+    bool lossless = (sourceDump == exportedDump);
+    std::cout << "[hitm-combat-genome] round-trip lossless (source dump == exported dump): " << (lossless ? "true" : "false")
+               << "\n";
+    std::cout << "[result] genome mapped and validated -- NOT wired to any consumer, NOT gameplay-affecting yet\n";
+    return lossless ? 0 : 1;
 }
 
 int GenomeCompileDemo(const std::string& baseDirStr) {
@@ -2202,7 +2250,8 @@ int main(int argc, char** argv) {
                    << "  dominus-cli change-events   <fixtures_dir> <registry_path> <raw_path> [more paths...]\n"
                    << "  dominus-cli reality-watch   <fixtures_dir> <registry_path>\n"
                    << "  dominus-cli reality-reconcile <fixtures_dir> <registry_path>\n"
-                   << "  dominus-cli import-hitm-identity <identity_dir>\n";
+                   << "  dominus-cli import-hitm-identity <identity_dir>\n"
+                   << "  dominus-cli hitm-combat-genome <identity_dir>\n";
         return 2;
     }
     std::string command = argv[1];
@@ -2384,6 +2433,9 @@ int main(int argc, char** argv) {
     }
     if (command == "import-hitm-identity") {
         return ImportHitmIdentityDemo(path);
+    }
+    if (command == "hitm-combat-genome") {
+        return HitmCombatGenomeDemo(path);
     }
 
     std::cerr << "unknown command: " << command << "\n";

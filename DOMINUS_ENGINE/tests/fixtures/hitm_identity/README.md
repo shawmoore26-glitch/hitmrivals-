@@ -23,3 +23,18 @@ taking a real fighter's files and damaging exactly one thing each, for
   substituted, so `id: "rocket"` sits in a directory the importer will see
   as `broken_id_mismatch` — cross-check must reject this, not import Rocket
   under the wrong fighter id.
+
+## Module 2 (`HitmCombatGenome`) deliberate-break fixtures
+
+`broken_genome_*/` are all Brooklyn's real files (`identity.json`'s `id`
+field retargeted to match each directory's own name, so Module 1's import
+succeeds and the malformed shape below it is what `HitmCombatGenome::
+FromRecord` must actually catch) with exactly one structural mutation each
+in `combat_genome.json`:
+
+- `broken_genome_archetype_wrong_type/` — `"archetype"` is a number, not a string.
+- `broken_genome_ai_intent_not_array/` — `"ai_intent"` is a string, not an array.
+- `broken_genome_block_preference_wrong_type/` — `defense_profile.blockPreference` is a string, not a number.
+- `broken_genome_read_engine_missing_tiers/` — `read_engine.tiers` removed entirely.
+- `broken_genome_read_engine_tier_missing_field/` — one `read_engine.tiers[]` entry is missing `damage_mult`.
+- `broken_genome_read_engine_bad_decay/` — `read_engine.decay.frames` removed.

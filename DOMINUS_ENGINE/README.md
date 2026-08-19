@@ -1181,7 +1181,7 @@ Thirteen real candidates, in rough priority order:
 
 ---
 
-**TRACK H / HITM RIVALS INTEGRATION — Modules 0–1 complete:**
+**TRACK H / HITM RIVALS INTEGRATION — Modules 0–2 complete:**
 Opened by a full audit of DOMINUS against the real, existing HITM Rivals
 codebase and its real authored fighter data — full findings in
 `HITM_INTEGRATION_AUDIT.md`, full sequenced plan in `ROADMAP.md`'s
@@ -1189,11 +1189,19 @@ codebase and its real authored fighter data — full findings in
 has ever tested against is a strawman — real name, invented data. Module 0
 fixed a real, previously-invisible bug in the shared JSON parser
 (`\uXXXX` escapes were silently mis-decoded) that would have corrupted
-real HITM text on ingest. Module 1 (`CHARACTER/HitmBridge/`) is a real,
-tested path that reads the actual `hitm-engine/data/identity/<fighter>/`
-files for all three real fighters (Brooklyn, Rocket, Static) and
-losslessly validates them — live-run via `dominus-cli
-import-hitm-identity <dir>`, not just unit-tested. It does not compile,
-render, or make anything playable yet — see the module's own "explicitly
-not done" note in `ROADMAP.md` for the honest boundary.
-**677/677 tests passing (was 656 before this track).**
+real HITM text on ingest. Module 1 (`CHARACTER/HitmBridge/
+HitmIdentityImporter`) is a real, tested path that reads the actual
+`hitm-engine/data/identity/<fighter>/` files for all three real fighters
+(Brooklyn, Rocket, Static) and losslessly validates them — live-run via
+`dominus-cli import-hitm-identity <dir>`, not just unit-tested. Module 2
+(`CHARACTER/HitmBridge/HitmCombatGenome`) is a new, explicit, typed
+representation of a real fighter's full combat genome — every one of
+Brooklyn's 13 authored components including his five-tier read-engine
+mechanic, built on top of Module 1's output, provably lossless
+(`ToJson()` returns the exact source tree; `dominus-cli
+hitm-combat-genome <dir>` proves it live). `CombatIdentity` — the
+original six-field strawman — is deliberately untouched, not replaced;
+nothing in the engine reads `HitmCombatGenome` yet, so no gameplay
+behavior has changed. See each module's own "explicitly not done" note
+in `ROADMAP.md` for the honest boundary.
+**691/691 tests passing (was 656 before this track).**

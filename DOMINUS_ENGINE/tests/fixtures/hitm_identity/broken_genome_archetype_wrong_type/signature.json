@@ -1,0 +1,503 @@
+{
+  "_note": "HAND-AUTHORED signature content promoted to source layer. Not compiler output.",
+  "chains": {
+    "light": [
+      "light1",
+      "light2",
+      "light3"
+    ]
+  },
+  "projectiles": {
+    "card": {
+      "sprite": "vector:card",
+      "w": 14,
+      "h": 20,
+      "spin": 0.4,
+      "trailColor": "#8ee041",
+      "hitstun": 16,
+      "pushback": 4
+    }
+  },
+  "moves": {
+    "special": {
+      "name": "DRUNKEN LAUNCHER KICK",
+      "subtitle": "he falls on purpose",
+      "input": "S",
+      "type": "special",
+      "context": "ground",
+      "purpose": "air combo starter",
+      "identity": "The mistake that wasn't a mistake.",
+      "expresses": "chaos",
+      "required_traits": [
+        "deceptive startup",
+        "unusual angle",
+        "body rotation",
+        "high momentum"
+      ],
+      "startup": 14,
+      "active": 4,
+      "recovery": 18,
+      "damage": 62,
+      "hitstun": 34,
+      "blockstun": 13,
+      "pushback": 3.5,
+      "range": 88,
+      "height": 132,
+      "meterGain": 14,
+      "launcher": true,
+      "hitstop": "heavy",
+      "cooldown": 70,
+      "vfx": "spin_dust",
+      "cancels": {
+        "into": [
+          "blockbuster"
+        ],
+        "window": [
+          14,
+          30
+        ]
+      },
+      "animationIntent": "STUMBLE — he appears to fall forward and the opponent reads a whiff. At the last frame the hips rotate and the kick launches. GOVERNOR RULE: if this reads as clean or professional, it has FAILED. It must look wrong before it looks like genius.",
+      "sound": "scuffed heel, then whip",
+      "vfx_intent": "low dust ring, no flash — the launch should surprise",
+      "startupVariance": 4,
+      "_variance_law": "VOLUME 18: 'Startup: variable. Cannot always repeat the same timing.' The engine rolls startup in [startup-variance, startup+variance] from the seeded match RNG. Deterministic per match (replay-safe), unrepeatable within one.",
+      "wallBounce": true,
+      "_governor_rule": "If the kick looks clean and professional: FAIL."
+    },
+    "specialF": {
+      "name": "CHAKRA RUSH",
+      "subtitle": "the body makes it",
+      "input": "F+S",
+      "type": "special",
+      "context": "ground",
+      "purpose": "pressure approach tool",
+      "identity": "The body moves before thought.",
+      "expresses": "chaos",
+      "required_traits": [
+        "forward commitment",
+        "aura generation",
+        "momentum conversion"
+      ],
+      "startup": 11,
+      "active": 6,
+      "recovery": 21,
+      "damage": 54,
+      "hitstun": 30,
+      "blockstun": 14,
+      "pushback": 2.2,
+      "range": 150,
+      "height": 118,
+      "meterGain": 16,
+      "hitstop": "heavy",
+      "cooldown": 85,
+      "rush": {
+        "velocityX": 13.5,
+        "friction": 0.9,
+        "hitRangeX": 96,
+        "hitRangeY": 112,
+        "leaveGhost": true
+      },
+      "vfx": "chakra_trail",
+      "cancels": {
+        "into": [
+          "blockbuster"
+        ],
+        "window": [
+          11,
+          32
+        ]
+      },
+      "animationIntent": "RUSH — aura compresses feet -> legs -> torso -> fists, then the body goes. Afterimages and ghost impacts trail him. Energy never leaves the body.",
+      "sound": "rising hum under footfalls",
+      "vfx_intent": "trail generated at the body, not thrown from the hand",
+      "auraBuild": [
+        "feet",
+        "legs",
+        "torso",
+        "fists"
+      ],
+      "_law": "VOLUME 18: cannot become projectile zoning. This move spawns NO projectile and has no independent hitbox — all damage is carried by the body during the rush. Elastic aggression, aura pressure. If it ever gains a projectile it stops being Chakra Rush.",
+      "projectile": null
+    },
+    "blockbuster": {
+      "name": "FULL DECK",
+      "subtitle": "fifty-two ways to lose",
+      "input": "BB",
+      "type": "blockbuster",
+      "context": "ground",
+      "meterCost": 100,
+      "startup": 20,
+      "active": 36,
+      "recovery": 20,
+      "camera": "cinematic",
+      "cameraFrames": 44,
+      "flash": 8,
+      "slowmo": 28,
+      "script": [
+        {
+          "at": 20,
+          "repeat": 12,
+          "every": 3,
+          "action": "spawnProjectile",
+          "projectile": "card",
+          "damage": 20,
+          "speedMin": 9,
+          "speedMax": 14.5,
+          "spreadY": 70,
+          "life": 70,
+          "anchor": "hand"
+        }
+      ],
+      "expresses": "chaos",
+      "identity": "Fifty-two cards leave his hand at speeds and angles he never sets. The spread is genuinely wide — this move does not aim. It floods. The opponent is not beaten by a read; they are beaten by there being nowhere left to stand.",
+      "required_traits": [
+        "random spread",
+        "volume over precision",
+        "no aiming",
+        "overwhelming density"
+      ],
+      "_rule_answer": "Question 1 — does this move express chaos? YES. It is the only move in his kit with randomised velocity and spread. It is the chaos state's thesis as a super: he wins without ever deciding where to hit.",
+      "animationIntent": "LAUGH — the throw is loose, the wrist never locks. He is not watching where they go.",
+      "sound": "fifty-two impacts, none of them rhythmic"
+    },
+    "maniac": {
+      "name": "35 ARM RUSH",
+      "subtitle": "you were being studied",
+      "input": "BB (alt)",
+      "type": "blockbuster",
+      "context": "ground",
+      "purpose": "signature overwhelming attack + state transformation",
+      "identity": "Brooklyn attacks so unpredictably the opponent cannot visually process the sequence. When it ends, the chaos is gone.",
+      "expresses": "mastery",
+      "required_traits": [
+        "afterimage illusion",
+        "extreme hand speed",
+        "layered impacts",
+        "continuous forward pressure"
+      ],
+      "meterCost": 100,
+      "startup": 18,
+      "active": 40,
+      "recovery": 22,
+      "damage": 0,
+      "hitstun": 20,
+      "blockstun": 14,
+      "pushback": 1.5,
+      "range": 96,
+      "height": 120,
+      "meterGain": 0,
+      "camera": "cinematic",
+      "cameraFrames": 50,
+      "flash": 6,
+      "slowmo": 20,
+      "hitstop": "heavy",
+      "script": [
+        {
+          "at": 18,
+          "repeat": 18,
+          "every": 2,
+          "action": "zoneBurst",
+          "vfx": "afterimage_arm",
+          "offsets": [
+            0,
+            26,
+            -18,
+            44
+          ],
+          "shake": 2,
+          "aberration": 3,
+          "damage": 11,
+          "hitstun": 14,
+          "pushback": 0.4
+        },
+        {
+          "at": 56,
+          "action": "setState",
+          "state": "maniac",
+          "duration": 600
+        }
+      ],
+      "animationIntent": "The arms outrun the eye — layered afterimages, continuous forward pressure. On the final frame the body STOPS being loose. The stance settles into Predator Flow and does not move again.",
+      "sound": "18 impacts inside 36 frames, then silence",
+      "vfx_intent": "afterimage stack; the silence after is the point"
+    },
+    "throw": {
+      "name": "DECK_SMASH",
+      "subtitle": "fifty-two pickup",
+      "input": "L+H",
+      "type": "throw",
+      "context": "ground",
+      "purpose": "confirmed damage, hard knockdown, corner carry",
+      "expresses": "chaos",
+      "identity": "He does not set up the throw. He takes your collar mid-conversation, shows you a banana you did not agree to, and puts you through the floor.",
+      "startup": 6,
+      "active": 3,
+      "recovery": 26,
+      "damage": 0,
+      "hitstun": 0,
+      "blockstun": 0,
+      "pushback": 0,
+      "range": 74,
+      "height": 118,
+      "meterGain": 0,
+      "throwDuration": 58,
+      "throwKnockdown": 52,
+      "throwPlace": 54,
+      "throwPhases": [
+        {
+          "at": 2,
+          "phase": "contact",
+          "vfx": "grab_spark",
+          "shake": 1
+        },
+        {
+          "at": 8,
+          "phase": "capture",
+          "camera": "cinematic",
+          "cameraFrames": 46,
+          "shake": 2
+        },
+        {
+          "at": 16,
+          "phase": "banana_reveal",
+          "vfx": "banana_flash",
+          "shake": 1
+        },
+        {
+          "at": 26,
+          "phase": "rotation",
+          "vfx": "spin_dust",
+          "shake": 3
+        },
+        {
+          "at": 40,
+          "phase": "slam",
+          "damage": 118,
+          "meterGain": 26,
+          "hitstop": "heavy",
+          "vfx": "ground_crack",
+          "shake": 8,
+          "camera": "ko",
+          "cameraFrames": 18
+        },
+        {
+          "at": 50,
+          "phase": "aftermath",
+          "vfx": "dust_ring",
+          "shake": 2
+        }
+      ],
+      "cancels": {
+        "into": [],
+        "window": [
+          0,
+          0
+        ]
+      },
+      "animationIntent": "CRASH — contact is casual, the slam is not. He never stops smiling.",
+      "sound": "collar grab, a beat of nothing, then the floor",
+      "vfx_intent": "dust ring, cards scatter"
+    },
+    "throwF": {
+      "name": "UPPERCARD",
+      "subtitle": "the house always wins",
+      "input": "F+L+H",
+      "type": "throw",
+      "context": "ground",
+      "purpose": "launcher throw, converts to air pressure",
+      "expresses": "chaos",
+      "identity": "He lifts you by the jaw on the back of one hand, like dealing a card off the bottom.",
+      "startup": 7,
+      "active": 3,
+      "recovery": 24,
+      "damage": 0,
+      "hitstun": 0,
+      "blockstun": 0,
+      "pushback": 0,
+      "range": 70,
+      "height": 120,
+      "meterGain": 0,
+      "throwDuration": 46,
+      "throwKnockdown": 34,
+      "throwPlace": 38,
+      "throwPhases": [
+        {
+          "at": 2,
+          "phase": "contact",
+          "vfx": "grab_spark",
+          "shake": 1
+        },
+        {
+          "at": 9,
+          "phase": "capture",
+          "camera": "cinematic",
+          "cameraFrames": 34,
+          "shake": 2
+        },
+        {
+          "at": 20,
+          "phase": "lift",
+          "vfx": "card_flourish",
+          "shake": 2
+        },
+        {
+          "at": 30,
+          "phase": "launch",
+          "damage": 86,
+          "meterGain": 22,
+          "hitstop": "heavy",
+          "vfx": "upper_burst",
+          "shake": 6
+        },
+        {
+          "at": 40,
+          "phase": "aftermath",
+          "vfx": "card_scatter",
+          "shake": 1
+        }
+      ],
+      "cancels": {
+        "into": [],
+        "window": [
+          0,
+          0
+        ]
+      },
+      "animationIntent": "FLOURISH — the lift is a card trick. Wrist does the work.",
+      "sound": "one card snap, then air",
+      "vfx_intent": "cards fan upward"
+    }
+  },
+  "state_moves": {
+    "maniac": {
+      "special": {
+        "name": "FLOW PUNCH",
+        "subtitle": "the intercept",
+        "input": "S",
+        "type": "special",
+        "context": "ground",
+        "purpose": "counter hit specialist",
+        "expresses": "mastery",
+        "identity": "Former wild punch. Now a perfect intercept — Jeet Kune Do, the stop-hit.",
+        "startup": 9,
+        "active": 3,
+        "recovery": 16,
+        "damage": 58,
+        "hitstun": 32,
+        "blockstun": 13,
+        "pushback": 2.4,
+        "range": 94,
+        "height": 118,
+        "meterGain": 14,
+        "hitstop": "heavy",
+        "cooldown": 60,
+        "counterBonus": 1.6,
+        "counterState": true,
+        "cancels": {
+          "into": [
+            "blockbuster"
+          ],
+          "window": [
+            9,
+            22
+          ]
+        },
+        "animationIntent": "READ — he does not swing at where they are. He arrives where they will be. Perfect posture, no wind-up.",
+        "sound": "one impact, early",
+        "vfx_intent": "no flourish — a single clean line"
+      },
+      "specialF": {
+        "name": "HUNTER STEP",
+        "subtitle": "footwork, not teleportation",
+        "input": "F+S",
+        "type": "special",
+        "context": "ground",
+        "purpose": "movement / rhythm break",
+        "expresses": "mastery",
+        "identity": "Brooklyn disappears from normal rhythm. Not teleportation — footwork mastery.",
+        "_law": "VOLUME 18: must read as martial footwork, never as a teleport. No flash, no vanish, no particle burst at origin. Ground contact must remain visible throughout.",
+        "startup": 6,
+        "active": 2,
+        "recovery": 12,
+        "damage": 34,
+        "hitstun": 24,
+        "blockstun": 11,
+        "pushback": 1.2,
+        "range": 86,
+        "height": 112,
+        "meterGain": 10,
+        "hitstop": "light",
+        "cooldown": 48,
+        "rush": {
+          "velocityX": 16.0,
+          "friction": 0.86,
+          "hitRangeX": 78,
+          "hitRangeY": 104,
+          "leaveGhost": true
+        },
+        "cancels": {
+          "into": [
+            "special",
+            "blockbuster"
+          ],
+          "window": [
+            6,
+            16
+          ]
+        },
+        "animationIntent": "REDIRECT — Capoeira angle into the blind side. Feet never leave the floor for long. He is simply not where the beat expected.",
+        "sound": "two footfalls where there should be four",
+        "vfx_intent": "low ghost trail, zero flash"
+      },
+      "blockbuster": {
+        "name": "DRAGON CHAKRA BARRAGE",
+        "subtitle": "every strike is a wave",
+        "input": "BB",
+        "type": "blockbuster",
+        "context": "ground",
+        "purpose": "pressure conversion",
+        "expresses": "mastery",
+        "meterCost": 100,
+        "identity": "Former 35 ARM RUSH. Now every strike creates a controlled energy wave. Same arms, same count — but nothing is wasted and nothing is random.",
+        "startup": 16,
+        "active": 38,
+        "recovery": 22,
+        "damage": 0,
+        "hitstun": 22,
+        "blockstun": 14,
+        "pushback": 2.0,
+        "range": 100,
+        "height": 122,
+        "meterGain": 0,
+        "camera": "cinematic",
+        "cameraFrames": 48,
+        "flash": 5,
+        "slowmo": 24,
+        "hitstop": "heavy",
+        "script": [
+          {
+            "at": 16,
+            "repeat": 14,
+            "every": 3,
+            "action": "zoneBurst",
+            "vfx": "chakra_wave",
+            "offsets": [
+              0,
+              34,
+              -26
+            ],
+            "shake": 3,
+            "aberration": 2,
+            "damage": 15,
+            "hitstun": 16,
+            "pushback": 0.6
+          }
+        ],
+        "animationIntent": "CHAIN — controlled aura waves on every strike. Structured, repeating, inevitable. The opposite of FULL DECK in every way except the arm count.",
+        "sound": "fourteen waves, evenly spaced",
+        "vfx_intent": "aura expansion, no scatter"
+      }
+    }
+  }
+}

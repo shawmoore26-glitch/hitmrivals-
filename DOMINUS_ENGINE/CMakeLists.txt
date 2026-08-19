@@ -56,6 +56,7 @@ add_library(dominus_character STATIC
   CHARACTER/Genome/MaterialGenomeLoader.cpp
   CHARACTER/Genome/VisualStyleGenomeLoader.cpp
   CHARACTER/HitmBridge/HitmIdentityImporter.cpp
+  CHARACTER/HitmBridge/HitmCombatGenome.cpp
 )
 target_link_libraries(dominus_character PUBLIC dominus_animation)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
