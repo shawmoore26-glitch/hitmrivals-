@@ -7,6 +7,7 @@
 // before spectacle -- v0.1 just needs correctness and a clean seam).
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -196,22 +197,93 @@ private:
         return Value(arr);
     }
 
+    // Appends the UTF-8 encoding of a Unicode code point to `out`. Code
+    // points are produced only by ParseUnicodeEscape below, which already
+    // validates the range (<= 0x10FFFF via surrogate-pair arithmetic), so
+    // this never needs to reject a value itself.
+    static void AppendUtf8(std::string& out, uint32_t cp) {
+        if (cp <= 0x7F) {
+            out += static_cast<char>(cp);
+        } else if (cp <= 0x7FF) {
+            out += static_cast<char>(0xC0 | (cp >> 6));
+            out += static_cast<char>(0x80 | (cp & 0x3F));
+        } else if (cp <= 0xFFFF) {
+            out += static_cast<char>(0xE0 | (cp >> 12));
+            out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+            out += static_cast<char>(0x80 | (cp & 0x3F));
+        } else {
+            out += static_cast<char>(0xF0 | (cp >> 18));
+            out += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+            out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+            out += static_cast<char>(0x80 | (cp & 0x3F));
+        }
+    }
+
+    // Parses exactly 4 hex digits starting at text[pos]. Throws rather than
+    // silently accepting a short/non-hex sequence -- a malformed \u escape
+    // is corrupt data, not a best-effort guess.
+    static unsigned ParseHex4(const std::string& text, size_t& pos) {
+        if (pos + 4 > text.size()) throw std::runtime_error("Truncated \\u escape at offset " + std::to_string(pos));
+        unsigned value = 0;
+        for (int i = 0; i < 4; ++i) {
+            char c = text[pos + static_cast<size_t>(i)];
+            value <<= 4;
+            if (c >= '0' && c <= '9') value |= static_cast<unsigned>(c - '0');
+            else if (c >= 'a' && c <= 'f') value |= static_cast<unsigned>(c - 'a' + 10);
+            else if (c >= 'A' && c <= 'F') value |= static_cast<unsigned>(c - 'A' + 10);
+            else throw std::runtime_error("Invalid hex digit in \\u escape at offset " + std::to_string(pos));
+        }
+        pos += 4;
+        return value;
+    }
+
+    // pos is positioned just after the 'u' of \u. Handles surrogate pairs
+    // (\uD800-\uDBFF followed by \uDC00-\uDFFF) per the JSON/UTF-16 spec;
+    // a lone/dangling surrogate is rejected rather than silently encoded
+    // as an invalid code point.
+    static void ParseUnicodeEscape(const std::string& text, size_t& pos, std::string& out) {
+        unsigned first = ParseHex4(text, pos);
+        if (first >= 0xD800 && first <= 0xDBFF) {
+            if (pos + 1 >= text.size() || text[pos] != '\\' || text[pos + 1] != 'u') {
+                throw std::runtime_error("Dangling high surrogate in \\u escape at offset " + std::to_string(pos));
+            }
+            pos += 2;  // consume the \u of the low surrogate
+            unsigned second = ParseHex4(text, pos);
+            if (second < 0xDC00 || second > 0xDFFF) {
+                throw std::runtime_error("High surrogate not followed by a low surrogate at offset " + std::to_string(pos));
+            }
+            uint32_t cp = 0x10000u + ((first - 0xD800u) << 10) + (second - 0xDC00u);
+            AppendUtf8(out, cp);
+        } else if (first >= 0xDC00 && first <= 0xDFFF) {
+            throw std::runtime_error("Lone low surrogate in \\u escape at offset " + std::to_string(pos));
+        } else {
+            AppendUtf8(out, first);
+        }
+    }
+
     static std::string ParseString(const std::string& text, size_t& pos) {
         if (text[pos] != '"') throw std::runtime_error("Expected string at offset " + std::to_string(pos));
         ++pos;
         std::string out;
         while (pos < text.size() && text[pos] != '"') {
             char c = text[pos];
-            if (c == '\\' && pos + 1 < text.size()) {
+            if (c == '\\') {
+                if (pos + 1 >= text.size()) throw std::runtime_error("Unterminated escape at offset " + std::to_string(pos));
                 char next = text[pos + 1];
+                pos += 2;
                 switch (next) {
                     case 'n': out += '\n'; break;
                     case 't': out += '\t'; break;
+                    case 'r': out += '\r'; break;
+                    case 'b': out += '\b'; break;
+                    case 'f': out += '\f'; break;
                     case '"': out += '"'; break;
                     case '\\': out += '\\'; break;
-                    default: out += next;
+                    case '/': out += '/'; break;
+                    case 'u': ParseUnicodeEscape(text, pos, out); break;
+                    default:
+                        throw std::runtime_error("Unknown escape '\\" + std::string(1, next) + "' at offset " + std::to_string(pos - 2));
                 }
-                pos += 2;
             } else {
                 out += c;
                 ++pos;

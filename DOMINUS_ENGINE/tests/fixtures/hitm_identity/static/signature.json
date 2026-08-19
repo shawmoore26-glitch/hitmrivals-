@@ -1,0 +1,106 @@
+{
+  "_note": "HAND-AUTHORED signature content promoted to source layer. Not compiler output.",
+  "chains": {
+    "light": [
+      "light1",
+      "light2",
+      "light3"
+    ]
+  },
+  "projectiles": {},
+  "moves": {
+    "special": {
+      "name": "Live Wire",
+      "input": "S",
+      "type": "special",
+      "context": "ground",
+      "startup": 12,
+      "active": 4,
+      "recovery": 20,
+      "cooldown": 95,
+      "damage": 52,
+      "hitstun": 34,
+      "stunBonus": 10,
+      "pushback": 2,
+      "range": 140,
+      "height": 120,
+      "meterGain": 8,
+      "vfx": "wireZap",
+      "sfx": "zap",
+      "cancels": {
+        "into": [
+          "blockbuster"
+        ],
+        "window": [
+          12,
+          36
+        ]
+      }
+    },
+    "specialF": {
+      "name": "Broadcast",
+      "input": "F+S",
+      "type": "special",
+      "context": "ground",
+      "startup": 6,
+      "active": 1,
+      "recovery": 29,
+      "cooldown": 95,
+      "meterGain": 4,
+      "teleport": {
+        "distance": 150,
+        "leaveGhost": true
+      },
+      "vfx": "glitch",
+      "glitchFrames": 12,
+      "flash": 3,
+      "cancels": {
+        "into": [
+          "light1",
+          "heavy",
+          "smash",
+          "blockbuster"
+        ],
+        "window": [
+          6,
+          36
+        ]
+      }
+    },
+    "blockbuster": {
+      "name": "DEAD CHANNEL",
+      "subtitle": "static burst both sides",
+      "input": "BB",
+      "type": "blockbuster",
+      "context": "ground",
+      "meterCost": 100,
+      "startup": 22,
+      "active": 30,
+      "recovery": 24,
+      "camera": "cinematic",
+      "cameraFrames": 44,
+      "flash": 8,
+      "slowmo": 28,
+      "script": [
+        {
+          "at": 22,
+          "repeat": 2,
+          "every": 12,
+          "action": "zoneBurst",
+          "damage": 70,
+          "halfWidth": 230,
+          "offsets": [
+            230,
+            -230
+          ],
+          "pushback": 8,
+          "hitstun": 32,
+          "stunBonus": 8,
+          "vfx": "glitch",
+          "shake": 12,
+          "aberration": 10
+        }
+      ]
+    }
+  }
+}

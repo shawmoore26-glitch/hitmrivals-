@@ -1,0 +1,150 @@
+{
+ "character": "Rocket",
+ "dna": {
+  "confidence": 74,
+  "swagger": 48,
+  "precision": 52,
+  "violence": 93,
+  "grace": 37,
+  "chaos": 71,
+  "weight": 78,
+  "elasticity": 44,
+  "speed": 68,
+  "patience": 83,
+  "rhythm": 41,
+  "comedy": 36,
+  "aggression": 88,
+  "discipline": 56,
+  "creativity": 47,
+  "risk": 74,
+  "showmanship": 33
+ },
+ "categorical": {
+  "rhythm": "Syncopated",
+  "weight": "Heavy",
+  "style": "Brutal",
+  "momentum": "Forward",
+  "recovery": "Laboured",
+  "stance": "Square",
+  "temperament": "Patient"
+ },
+ "verbs": {
+  "primary": [
+   "Drive",
+   "Crush",
+   "Rip",
+   "Pounce",
+   "Maul",
+   "Stomp",
+   "Stalk"
+  ],
+  "definitions": {
+   "Drive": "Forward momentum through the target, not to it. He does not stop on contact.",
+   "Crush": "Force applied downward and inward. Things get smaller under him.",
+   "Rip": "Lateral tearing motion, usually with the muzzle or claws. Follow-through is violent.",
+   "Pounce": "All four limbs leave the ground together. Committed, unrecoverable.",
+   "Maul": "Repeated close-range violence with no spacing consideration.",
+   "Stomp": "Full body weight into a single planted foot. The stage should feel it.",
+   "Stalk": "Slow, low, patient approach. The stillness that makes the burst land."
+  },
+  "forbidden": [
+   "Flourish",
+   "Taunt-mid-move",
+   "Dance"
+  ],
+  "note": "Rocket never decorates. Every motion is functional violence or patient waiting."
+ },
+ "emotionalIntent": "Held desperation released as fury. He has been waiting a very long time.",
+ "ai": {
+  "personality": "grappler",
+  "aggression": 0.824,
+  "zoning": 0.622,
+  "dashLove": 0.592,
+  "whiffPunish": 0.63,
+  "guardBreakRead": 0.562,
+  "greed": 0.68,
+  "showmanship": 0.366,
+  "mercy": 0.218,
+  "adaptation": 0.578,
+  "spacing": 0.652,
+  "reactionFrames": 10,
+  "_derivedFrom": "Character DNA \u2014 do not hand-edit. Edit DNA and re-derive."
+ },
+ "motion": {
+  "squashStretch": 0.11,
+  "overshootDeg": 14.3,
+  "settleFrames": 14,
+  "clothLagKeys": 2.05,
+  "antTelegraphMult": 1.35,
+  "contactHoldMult": 1.95,
+  "counterRotDeg": 43,
+  "lineOfActionCurve": 0.46,
+  "flourishFrames": 1,
+  "idleAmplitude": 1.24,
+  "easing": "smooth"
+ },
+ "frames": {
+  "lightStartupTarget": 5,
+  "heavyStartupTarget": 16,
+  "recoveryTendency": "long",
+  "walkSpeedMult": 1.09,
+  "healthMult": 1.09,
+  "damageMult": 1.19,
+  "meterGainMult": 1.16
+ },
+ "audio": {
+  "impactCore": "sub-bass detonation",
+  "impactEdge": "wet tear",
+  "texture": "leather",
+  "electric": 0.71,
+  "metal": 0.68,
+  "width": "narrow",
+  "tail": "long reverb bloom",
+  "voiceDensity": 0.34,
+  "descriptors": [
+   "balanced",
+   "brutal",
+   "chaotic",
+   "heavy"
+  ]
+ },
+ "camera": {
+  "cinematicBias": 0.433,
+  "punchImpulse": 0.156,
+  "koZoom": 1.29,
+  "lensAtContact": "18mm",
+  "shakeMult": 1.32
+ },
+ "vfx": {
+  "particleBudget": 276,
+  "trailDensity": 0.61,
+  "comicFrequency": 0.35,
+  "signature": "ink splatter"
+ },
+ "behaviour": {
+  "idle": {
+   "style": "almost still, breathing only",
+   "cycleFrames": 73,
+   "amplitude": 1.24
+  },
+  "walk": {
+   "style": "ponderous,every step lands",
+   "cycleFrames": 31,
+   "bob": 0.03
+  },
+  "comboRhythm": {
+   "signature": "Syncopated",
+   "gapFrames": 4,
+   "note": "links syncopate"
+  },
+  "victory": {
+   "style": "composed, turns away",
+   "holdFrames": 80
+  },
+  "ui": {
+   "personality": "Brutal",
+   "transition": "hard slides",
+   "accentDensity": 0.48
+  }
+ }
+}

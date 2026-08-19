@@ -1,0 +1,151 @@
+{
+ "character": "Brooklyn",
+ "dna": {
+  "confidence": 92,
+  "swagger": 97,
+  "precision": 58,
+  "violence": 54,
+  "grace": 66,
+  "chaos": 88,
+  "weight": 28,
+  "elasticity": 94,
+  "speed": 90,
+  "patience": 22,
+  "rhythm": 86,
+  "comedy": 95,
+  "aggression": 78,
+  "discipline": 24,
+  "creativity": 91,
+  "risk": 85,
+  "showmanship": 96
+ },
+ "categorical": {
+  "rhythm": "Metronomic",
+  "weight": "Light",
+  "style": "Comic",
+  "momentum": "Forward",
+  "recovery": "Instant",
+  "stance": "Open",
+  "temperament": "Volatile"
+ },
+ "verbs": {
+  "primary": [
+   "Snap",
+   "Whip",
+   "Shuffle",
+   "Fake",
+   "Flow",
+   "Flourish",
+   "Slide"
+  ],
+  "definitions": {
+   "Snap": "Instant arrival with no visible travel. The limb is here, then there. Used on every light.",
+   "Whip": "The tip travels last and fastest \u2014 cards, coat, dreads. The body is the handle.",
+   "Shuffle": "Feet moving more than the situation requires. Rhythm for its own sake.",
+   "Fake": "A committed motion that stops and becomes another. Every heavy should threaten to be a fake.",
+   "Flow": "One motion melts into the next without a settle. He never stops between actions.",
+   "Flourish": "An unnecessary decorative beat added at the END of a move. This is his signature.",
+   "Slide": "Low, frictionless travel. Weight barely on the floor."
+  },
+  "forbidden": [
+   "Plant",
+   "Brace",
+   "Grind",
+   "Endure"
+  ],
+  "note": "Brooklyn never braces. If a pose requires him to hold ground, he is off-model."
+ },
+ "emotionalIntent": "Amusement escalating to delight. He is enjoying this more than you are.",
+ "ai": {
+  "personality": "rushdown",
+  "aggression": 0.822,
+  "zoning": 0.227,
+  "dashLove": 0.922,
+  "whiffPunish": 0.403,
+  "guardBreakRead": 0.64,
+  "greed": 0.846,
+  "showmanship": 0.96,
+  "mercy": 0.633,
+  "adaptation": 0.504,
+  "spacing": 0.368,
+  "reactionFrames": 9,
+  "_derivedFrom": "Character DNA \u2014 do not hand-edit. Edit DNA and re-derive."
+ },
+ "motion": {
+  "squashStretch": 0.19,
+  "overshootDeg": 25.4,
+  "settleFrames": 7,
+  "clothLagKeys": 1.25,
+  "antTelegraphMult": 1.18,
+  "contactHoldMult": 1.4,
+  "counterRotDeg": 56,
+  "lineOfActionCurve": 0.66,
+  "flourishFrames": 9,
+  "idleAmplitude": 2.05,
+  "easing": "snap"
+ },
+ "frames": {
+  "lightStartupTarget": 4,
+  "heavyStartupTarget": 10,
+  "recoveryTendency": "short",
+  "walkSpeedMult": 1.22,
+  "healthMult": 0.94,
+  "damageMult": 1.03,
+  "meterGainMult": 1.12
+ },
+ "audio": {
+  "impactCore": "snap",
+  "impactEdge": "sharp crack",
+  "texture": "leather",
+  "electric": 0.88,
+  "metal": 0.56,
+  "width": "cinematic wide",
+  "tail": "dry",
+  "voiceDensity": 0.96,
+  "descriptors": [
+   "balanced",
+   "chaotic",
+   "light",
+   "sharp"
+  ]
+ },
+ "camera": {
+  "cinematicBias": 0.95,
+  "punchImpulse": 0.082,
+  "koZoom": 1.41,
+  "lensAtContact": "35mm",
+  "shakeMult": 0.92
+ },
+ "vfx": {
+  "particleBudget": 314,
+  "trailDensity": 0.91,
+  "comicFrequency": 0.95,
+  "signature": "electric arcs"
+ },
+ "behaviour": {
+  "idle": {
+   "style": "weight rolling hip to hip, showy",
+   "cycleFrames": 61,
+   "amplitude": 2.05
+  },
+  "walk": {
+   "style": "strut",
+   "cycleFrames": 25,
+   "bob": 0.01
+  },
+  "comboRhythm": {
+   "signature": "Metronomic",
+   "gapFrames": 3,
+   "note": "links land exactly on the beat"
+  },
+  "victory": {
+   "style": "plays to the crowd, held hero pose",
+   "holdFrames": 118
+  },
+  "ui": {
+   "personality": "Comic",
+   "transition": "snap cuts",
+   "accentDensity": 0.93
+  }
+ }
+}

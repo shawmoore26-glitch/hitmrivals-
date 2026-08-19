@@ -1,0 +1,71 @@
+{
+  "archetype": "heavy_bruiser",
+  "philosophy": "Precision delivers the sentence. The beast delivers the punishment.",
+  "rhythm_profile": {
+    "categorical": "Syncopated",
+    "beat": "delayed",
+    "tempo": "slow-then-burst",
+    "signature": "stillness is 70% of screen time"
+  },
+  "weight_profile": {
+    "categorical": "Heavy",
+    "inertia": 0.78,
+    "settle": "laboured"
+  },
+  "risk_profile": {
+    "commitment": "total",
+    "reward": "explosive",
+    "recovery_exposure": "severe"
+  },
+  "defense_profile": {
+    "style": "absorb",
+    "blockPreference": 0.4,
+    "escape": "none"
+  },
+  "pressure_profile": {
+    "style": "burst",
+    "turnRetention": "low",
+    "cornerCarry": "very high"
+  },
+  "range_profile": {
+    "band": "mid",
+    "dominant": 91,
+    "deadzone": "outside muzzle reach"
+  },
+  "recovery_profile": {
+    "categorical": "Laboured",
+    "settleBeats": 2
+  },
+  "impact_profile": {
+    "hitstop": "heavy",
+    "cameraShake": "high",
+    "soundIntent": "collision \u2014 the stage should feel it"
+  },
+  "ai_intent": [
+    "wait",
+    "commit",
+    "explode",
+    "cash out"
+  ],
+  "_note": "AUTHORED SOURCE. Volume 14 Combat Genome. 13 components.",
+  "combat_verbs": [
+    "DRIVE",
+    "CRUSH",
+    "MAUL",
+    "BURST",
+    "COLLIDE"
+  ],
+  "frame_dna": "derived \u2014 see archetype_rules.json genome_response",
+  "archetype_line": "HEAVY BRUISER -> PRIMAL ENFORCER",
+  "martial_foundation": [
+    "Boxing",
+    "Taekwondo"
+  ],
+  "forbidden": [
+    "flail randomly",
+    "attack without purpose",
+    "move like a berserker",
+    "become faster than Brooklyn",
+    "become a zoner"
+  ]
+}

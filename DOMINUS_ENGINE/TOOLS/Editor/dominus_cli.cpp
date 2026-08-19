@@ -16,6 +16,7 @@
 #include "ANIMATION/SkeletonSystem/AnimationClipLoader.h"
 #include "ANIMATION/SkeletonSystem/SkeletonLoader.h"
 #include "CHARACTER/Genome/GenomeDecoder.h"
+#include "CHARACTER/HitmBridge/HitmIdentityImporter.h"
 #include "CHARACTER/Rig/RigBinder.h"
 #include "COMBAT/CombatController.h"
 #include "COMBAT/HitSystem/AssetValidation.h"
@@ -600,6 +601,32 @@ int ValidatePackage(const std::string& dominusPath) {
     }
     std::cout << "[result] package FAILED validation\n";
     return 1;
+}
+
+// ROADMAP.md Track H Module 1. Imports a real hitm-engine fighter identity
+// directory and prints what actually landed -- field counts and top-level
+// keys, not a claim that this is a compiled character. See
+// CHARACTER/HitmBridge/HitmIdentityImporter.h for exactly what is and
+// isn't read.
+int ImportHitmIdentityDemo(const std::string& identityDirStr) {
+    using dominus::character::hitm::HitmIdentityImporter;
+
+    auto result = HitmIdentityImporter::Import(identityDirStr);
+    if (!result.ok) {
+        std::cerr << "[import-hitm-identity] FAILED: " << result.error << "\n";
+        return 1;
+    }
+    auto& rec = *result.value;
+    std::cout << "[import-hitm-identity] fighter_id=" << rec.fighter_id << "\n";
+    std::cout << "[import-hitm-identity] identity.name=" << rec.identity.Get("name")->AsString()
+               << " faction=" << rec.identity.Get("faction")->AsString() << "\n";
+    std::cout << "[import-hitm-identity] combat_genome.archetype=" << rec.combat_genome.Get("archetype")->AsString()
+               << " (" << rec.combat_genome.AsObject().size() << " top-level keys)\n";
+    std::cout << "[import-hitm-identity] character_dna: " << rec.character_dna.AsObject().size() << " top-level keys\n";
+    std::cout << "[import-hitm-identity] design: " << rec.design.AsObject().size() << " top-level keys\n";
+    std::cout << "[import-hitm-identity] signature: " << rec.signature.AsObject().size() << " top-level keys\n";
+    std::cout << "[result] real identity data ingested and validated -- NOT compiled, NOT rendered, NOT playable yet\n";
+    return 0;
 }
 
 int GenomeCompileDemo(const std::string& baseDirStr) {
@@ -2174,7 +2201,8 @@ int main(int argc, char** argv) {
                    << "  dominus-cli evidence-graph  <fixtures_dir>\n"
                    << "  dominus-cli change-events   <fixtures_dir> <registry_path> <raw_path> [more paths...]\n"
                    << "  dominus-cli reality-watch   <fixtures_dir> <registry_path>\n"
-                   << "  dominus-cli reality-reconcile <fixtures_dir> <registry_path>\n";
+                   << "  dominus-cli reality-reconcile <fixtures_dir> <registry_path>\n"
+                   << "  dominus-cli import-hitm-identity <identity_dir>\n";
         return 2;
     }
     std::string command = argv[1];
@@ -2353,6 +2381,9 @@ int main(int argc, char** argv) {
     }
     if (command == "visual-acceptance") {
         return VisualAcceptanceDemo(path);
+    }
+    if (command == "import-hitm-identity") {
+        return ImportHitmIdentityDemo(path);
     }
 
     std::cerr << "unknown command: " << command << "\n";

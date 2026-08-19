@@ -1,0 +1,151 @@
+{
+ "character": "Static",
+ "dna": {
+  "confidence": 61,
+  "swagger": 44,
+  "precision": 73,
+  "violence": 66,
+  "grace": 31,
+  "chaos": 97,
+  "weight": 34,
+  "elasticity": 72,
+  "speed": 81,
+  "patience": 69,
+  "rhythm": 18,
+  "comedy": 74,
+  "aggression": 45,
+  "discipline": 38,
+  "creativity": 88,
+  "risk": 62,
+  "showmanship": 57
+ },
+ "categorical": {
+  "rhythm": "Glitched",
+  "weight": "Medium",
+  "style": "Comic",
+  "momentum": "Neutral",
+  "recovery": "Instant",
+  "stance": "Bladed",
+  "temperament": "Volatile"
+ },
+ "verbs": {
+  "primary": [
+   "Skip",
+   "Jitter",
+   "Arc",
+   "Broadcast",
+   "Snap",
+   "Tear",
+   "Loop"
+  ],
+  "definitions": {
+   "Skip": "Frames are missing. He is at A, then C, and B never happened.",
+   "Jitter": "Sub-frame vibration on a held pose. He is never truly still, but never smooth either.",
+   "Arc": "Electricity finds its own path \u2014 jagged, branching, never a clean curve.",
+   "Broadcast": "Motion that emanates outward from the screen rather than from the body.",
+   "Snap": "Hard stop with zero settle. He arrives and locks.",
+   "Tear": "The silhouette splits horizontally for a frame, like a rolling picture.",
+   "Loop": "A motion repeats one extra time before resolving. Glitch, not rhythm."
+  },
+  "forbidden": [
+   "Ease",
+   "Glide",
+   "Settle",
+   "Flow"
+  ],
+  "note": "Static has NO easing. Every transition is a cut. Smooth interpolation is off-model."
+ },
+ "emotionalIntent": "Delighted malfunction. He does not know what he will do next either.",
+ "ai": {
+  "personality": "zoner",
+  "aggression": 0.516,
+  "zoning": 0.563,
+  "dashLove": 0.718,
+  "whiffPunish": 0.658,
+  "guardBreakRead": 0.782,
+  "greed": 0.618,
+  "showmanship": 0.578,
+  "mercy": 0.433,
+  "adaptation": 0.642,
+  "spacing": 0.644,
+  "reactionFrames": 8,
+  "_derivedFrom": "Character DNA \u2014 do not hand-edit. Edit DNA and re-derive."
+ },
+ "motion": {
+  "squashStretch": 0.155,
+  "overshootDeg": 21.6,
+  "settleFrames": 8,
+  "clothLagKeys": 1.34,
+  "antTelegraphMult": 1.11,
+  "contactHoldMult": 1.53,
+  "counterRotDeg": 45,
+  "lineOfActionCurve": 0.42,
+  "flourishFrames": 4,
+  "idleAmplitude": 0.82,
+  "easing": "none \u2014 hard cuts"
+ },
+ "frames": {
+  "lightStartupTarget": 5,
+  "heavyStartupTarget": 11,
+  "recoveryTendency": "medium",
+  "walkSpeedMult": 1.17,
+  "healthMult": 0.96,
+  "damageMult": 1.08,
+  "meterGainMult": 1.01
+ },
+ "audio": {
+  "impactCore": "crunch",
+  "impactEdge": "sharp crack",
+  "texture": "grit",
+  "electric": 0.97,
+  "metal": 0.7,
+  "width": "wide",
+  "tail": "medium",
+  "voiceDensity": 0.62,
+  "descriptors": [
+   "blunt",
+   "chaotic",
+   "sharp",
+   "solid"
+  ]
+ },
+ "camera": {
+  "cinematicBias": 0.58,
+  "punchImpulse": 0.091,
+  "koZoom": 1.33,
+  "lensAtContact": "24mm",
+  "shakeMult": 0.97
+ },
+ "vfx": {
+  "particleBudget": 333,
+  "trailDensity": 0.78,
+  "comicFrequency": 0.67,
+  "signature": "electric arcs"
+ },
+ "behaviour": {
+  "idle": {
+   "style": "stuttering, arrhythmic",
+   "cycleFrames": 66,
+   "amplitude": 0.82
+  },
+  "walk": {
+   "style": "purposeful",
+   "cycleFrames": 26,
+   "bob": 0.02
+  },
+  "comboRhythm": {
+   "signature": "Glitched",
+   "gapFrames": 3,
+   "note": "links land off-beat by design"
+  },
+  "victory": {
+   "style": "composed, turns away",
+   "holdFrames": 94
+  },
+  "ui": {
+   "personality": "Comic",
+   "transition": "snap cuts",
+   "accentDensity": 0.73
+  }
+ }
+}

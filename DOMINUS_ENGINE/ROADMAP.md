@@ -5669,3 +5669,122 @@ Engine (Phase 5) before Phase 4's World Engine exists as something to
 generate into. This ordering is non-negotiable per the Constitution's
 Laws — it exists specifically to stop world/spectacle work from starting
 before the substrate underneath it is real.
+
+---
+
+## TRACK H — HITM RIVALS INTEGRATION
+
+Opened after a full audit (`HITM_INTEGRATION_AUDIT.md`) of DOMINUS against
+the real, existing HITM Rivals codebase (`hitm-engine/` — a working JS/Python
+pipeline with three real fighters, sprite atlases, and a playable browser
+build) and its real authored data (`data/identity/<fighter>/*.json`). The
+audit's central finding: every "Brooklyn" fixture in `tests/fixtures/` is a
+strawman that reuses his name and archetype string but drops the real
+authored design (13-component combat genome, five-tier read-engine mechanic,
+29-bone sprite-cutout rig). DOMINUS's 656/656 (now growing — see below) has
+never proven anything against real HITM content, because until Track H there
+was no path for real HITM content to enter the engine at all.
+
+Track H runs orthogonal to Track (Phase 4.2+ World / Phase 5 Creation Engine)
+— it does not touch WORLD or attempt open-world content, so it does not
+violate the Sequencing Rule above. It is gated by Law 6 internally: no
+module here starts before the previous one is proven.
+
+**Guardrails specific to this track** (in addition to the Constitution):
+- Every module ships with real tests plus at least one deliberate-break test,
+  same as every prior phase.
+- Fixtures introduced from the real `hitm-engine` archive are copied
+  verbatim (byte-identical to the authored source) and labeled with their
+  provenance in a comment — never paraphrased or "cleaned up."
+- No number, threshold, or default is invented to make a gap look smaller.
+  A field DOMINUS cannot yet represent is reported missing, not dropped
+  silently.
+- The 656 baseline (and every count after it) is reverified by a full clean
+  rebuild + test run before and after each module — a regression anywhere
+  blocks the module, it is not deferred.
+
+### Module 0 — Shared JSON parser correctness  ← **complete**
+
+`CORE/Serialization/MiniJson.h::ParseString` silently mis-decoded `\uXXXX`
+escapes (dropped the backslash, kept the literal `uXXXX` text) and
+mishandled `\b`/`\f`/`\r`/`\/`. Real HITM identity text uses `—`
+(em-dash) throughout. Fixed to decode all six standard single-character
+escapes plus `\uXXXX` (including UTF-16 surrogate pairs → UTF-8), and to
+throw — not silently pass through — on a malformed or incomplete escape.
+This is infrastructure every one of the engine's 17+ `.dominus` loaders
+already depends on; fixing it here means every module built after it
+inherits the fix for free. New direct unit tests for `MiniJson` itself
+(`tests/core/test_minijson.cpp`) — the parser had none before, only
+indirect coverage through loaders using escape-free fixtures. **13 new
+tests, 656 → 669, zero regressions** (full clean rebuild + rerun, this
+session).
+
+### Module 1 — HITM Identity Import  ← **complete**
+
+A real ingestion path, `CHARACTER/HitmBridge/`, that reads the actual
+`hitm-engine/data/identity/<fighter>/{character_dna,combat_genome,design,
+identity,signature}.json` files — copied verbatim into
+`tests/fixtures/hitm_identity/<fighter>/` with their real content, not
+invented — and produces a validated, lossless `HitmIdentityRecord` (every
+authored field preserved as real `dominus::core::json::Value` subtrees,
+not flattened into `CombatIdentity`'s six enums). Required top-level keys
+per file are enforced; a missing file, a missing required key, or
+malformed JSON is a real, reported failure — never a partial silent parse.
+Proven against all three real fighters (Brooklyn, Rocket, and Static), not
+just Brooklyn, so the path is demonstrably general rather than
+one-character-special-cased. `dominus-cli import-hitm-identity <fighter>` —
+new command, live-run this session against real Brooklyn and Rocket data
+and a deliberately broken fixture (confirmed correct output and a clean
+non-zero exit on the failure case, not just unit-test coverage).
+
+**Explicitly NOT done by Module 1** (do not read this as more than it is):
+this does not replace or feed `CombatIdentity`/`CombatStyleGenome` — those
+still describe the strawman. It does not compile a rig, does not touch
+sprite/atlas art, does not resolve `motion_bible.json` or
+`hit_feel_profile.json` (present in the real fixtures, deliberately unread
+by Module 1 — reading a field without a real consumer for it would be the
+same "loaded but inert" pattern the audit flagged against `COMBAT/Profiles.h`
+audio/visual/camera). It proves real HITM text enters DOMINUS intact and
+validated; nothing more. **8 new tests, 669 → 677, zero regressions** (full
+clean rebuild + rerun, this session).
+
+**Current Track H total: 677/677 tests passing (was 656 before this track).**
+
+### Module 2 — Real genome mapping (planned, not started)
+
+Extend or replace `CombatIdentity`/`CombatStyleGenome` so a real
+`HitmIdentityRecord` can populate it without loss — most concretely, the
+`read_engine` tier/decay mechanic and `defense_profile.blockPreference`
+cap need real fields and a real consumer (`GenomeDecoder`,
+`ReactionSystem`), not a comment saying they're unread. Gated on Module 1.
+
+### Module 3 — 2D sprite-cutout rig representation (planned, not started)
+
+`ANIMATION/SkeletonSystem/Skeleton.h` has no part/pivot/atlas-frame concept
+at all. HITM's real `parts.json` (atlas name, source size, per-part pivot +
+normalized size + pixel frame rect) needs a home before any real Brooklyn
+art can bind to a DOMINUS skeleton. Gated on Module 1 (needs `design.json`'s
+granted-parts list, which drives HITM's own `rig_compiler.py`).
+
+### Module 4 — Global game-rules table (planned, not started)
+
+HITM's `data/system/game.json` (gravity, walk/dash speed, meter economy,
+hitstop frames, round rules) has no DOMINUS equivalent — `GameDesignGenome`
+is a meta-design descriptor (arcade vs. soulslike), not a physics/meter
+constants table. `PHYSICS/PhysicsSystem` is generic rigid-body, untuned to
+fighting-game feel. Gated on nothing above; can start once Module 1's import
+pattern (real-file, validated, no invention) is established, since this is
+the same shape of problem on different data.
+
+### Module 5+ — texture/sprite rendering, audio, input, stage (planned)
+
+Real order depends on what Module 3 reveals. Texture/sprite GPU rendering
+specifically **cannot be honestly marked PROVEN from a sandboxed session
+without a real GPU device** — this project's own methodology requires
+real-device Vulkan verification (validation-layer VUIDs, actual segfault
+reproduction on deliberate breaks) for any GPU claim, and no Vulkan
+loader/ICD exists in the environment this track was opened from. Any GPU
+work started here will be built and unit-tested at the CPU-observable
+boundary (command generation, resource contracts) exactly like
+`GRAPHICS/Raster/RasterDevice.h` already does, and explicitly flagged
+NOT device-verified until run somewhere with a real GPU.

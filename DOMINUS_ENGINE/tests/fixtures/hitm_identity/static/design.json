@@ -1,0 +1,303 @@
+{
+  "_note": "AUTHORED SOURCE. Static \u2014 broadcast ghost. Volume 5 sentence law: 'wires and coat strips whip two beats behind'.",
+  "character": "static",
+  "core_parts": {
+    "head": {
+      "rect": [
+        0.26,
+        0.0,
+        0.72,
+        0.43
+      ],
+      "pivot": [
+        0.5,
+        0.95
+      ]
+    },
+    "torso": {
+      "rect": [
+        0.3,
+        0.39,
+        0.72,
+        0.76
+      ],
+      "pivot": [
+        0.5,
+        0.08
+      ]
+    },
+    "armFarU": {
+      "rect": [
+        0.12,
+        0.4,
+        0.36,
+        0.56
+      ],
+      "pivot": [
+        0.78,
+        0.2
+      ]
+    },
+    "armFarL": {
+      "rect": [
+        0.0,
+        0.30000000000000004,
+        0.3,
+        0.61
+      ],
+      "pivot": [
+        0.82,
+        0.72
+      ]
+    },
+    "armNearU": {
+      "rect": [
+        0.66,
+        0.43,
+        0.88,
+        0.62
+      ],
+      "pivot": [
+        0.22,
+        0.14
+      ]
+    },
+    "armNearL": {
+      "rect": [
+        0.72,
+        0.53,
+        1.0,
+        0.8400000000000001
+      ],
+      "pivot": [
+        0.2,
+        0.1
+      ]
+    },
+    "legFarU": {
+      "rect": [
+        0.3,
+        0.6649999999999999,
+        0.52,
+        0.9
+      ],
+      "pivot": [
+        0.5,
+        0.08
+      ]
+    },
+    "legFarL": {
+      "rect": [
+        0.26,
+        0.815,
+        0.52,
+        1
+      ],
+      "pivot": [
+        0.5,
+        0.06
+      ]
+    },
+    "footFar": {
+      "rect": [
+        0.22,
+        0.9099999999999999,
+        0.52,
+        1
+      ],
+      "pivot": [
+        0.414,
+        0.114
+      ],
+      "_pivot_measured": "rig_validate.py: authored pivot [0.45, 0.3] landed on transparent pixels; snapped to nearest opaque [0.414, 0.114]. Measured, not estimated."
+    },
+    "legNearU": {
+      "rect": [
+        0.5,
+        0.6649999999999999,
+        0.72,
+        0.9
+      ],
+      "pivot": [
+        0.5,
+        0.08
+      ]
+    },
+    "legNearL": {
+      "rect": [
+        0.5,
+        0.815,
+        0.76,
+        1
+      ],
+      "pivot": [
+        0.5,
+        0.06
+      ]
+    },
+    "footNear": {
+      "rect": [
+        0.5,
+        0.9099999999999999,
+        0.8,
+        1
+      ],
+      "pivot": [
+        0.55,
+        0.3
+      ]
+    }
+  },
+  "features": {
+    "antenna": {
+      "parent": "head",
+      "rect": [
+        0.34,
+        0.0,
+        0.64,
+        0.12
+      ],
+      "pivot": [
+        0.67,
+        0.737
+      ],
+      "why": "antenna whip \u2014 the first thing to move and the last to stop",
+      "lagBeats": 1.8,
+      "maxAngle": 40,
+      "dnaThreshold": 40,
+      "_pivot_measured": "rig_validate.py: authored pivot [0.5, 0.94] landed on transparent pixels; snapped to nearest opaque [0.67, 0.737]. Measured, not estimated."
+    },
+    "wireFar": {
+      "parent": "torso",
+      "rect": [
+        0.16,
+        0.4,
+        0.34,
+        0.74
+      ],
+      "pivot": [
+        0.62,
+        0.06
+      ],
+      "why": "Volume 5: wires whip two beats behind",
+      "lagBeats": 2.0,
+      "maxAngle": 52,
+      "gravity": 0.4,
+      "dnaThreshold": 60
+    },
+    "wireNear": {
+      "parent": "torso",
+      "rect": [
+        0.68,
+        0.4,
+        0.86,
+        0.74
+      ],
+      "pivot": [
+        0.38,
+        0.06
+      ],
+      "why": "Volume 5: wires whip two beats behind",
+      "lagBeats": 1.9,
+      "maxAngle": 52,
+      "gravity": 0.4,
+      "dnaThreshold": 60
+    },
+    "coatStripFar": {
+      "parent": "hip",
+      "rect": [
+        0.2,
+        0.6,
+        0.4,
+        0.92
+      ],
+      "pivot": [
+        0.62,
+        0.04
+      ],
+      "why": "coat strips \u2014 cut, never flowing (forbidden verbs: Ease/Glide/Flow)",
+      "lagBeats": 1.4,
+      "maxAngle": 38,
+      "gravity": 0.55,
+      "dnaThreshold": 60
+    },
+    "coatStripNear": {
+      "parent": "hip",
+      "rect": [
+        0.62,
+        0.6,
+        0.82,
+        0.92
+      ],
+      "pivot": [
+        0.38,
+        0.04
+      ],
+      "why": "coat strips",
+      "lagBeats": 1.4,
+      "maxAngle": 38,
+      "gravity": 0.55,
+      "dnaThreshold": 60
+    },
+    "handFar": {
+      "parent": "armFarL",
+      "rect": [
+        0.0,
+        0.52,
+        0.18,
+        0.66
+      ],
+      "pivot": [
+        0.7,
+        0.14
+      ],
+      "why": "glove",
+      "lagBeats": 0.5,
+      "maxAngle": 24,
+      "dnaThreshold": 35
+    },
+    "handNear": {
+      "parent": "armNearL",
+      "rect": [
+        0.82,
+        0.74,
+        1.0,
+        0.88
+      ],
+      "pivot": [
+        0.3,
+        0.14
+      ],
+      "why": "glove",
+      "lagBeats": 0.5,
+      "maxAngle": 24,
+      "dnaThreshold": 35
+    }
+  },
+  "drawOrder": [
+    "coatStripFar",
+    "wireFar",
+    "armFarU",
+    "armFarL",
+    "handFar",
+    "legFarU",
+    "legFarL",
+    "footFar",
+    "torso",
+    "head",
+    "antenna",
+    "legNearU",
+    "legNearL",
+    "footNear",
+    "armNearU",
+    "armNearL",
+    "handNear",
+    "wireNear",
+    "coatStripNear"
+  ],
+  "handBone": "handNear",
+  "handPoint": [
+    0.5,
+    0.55
+  ]
+}

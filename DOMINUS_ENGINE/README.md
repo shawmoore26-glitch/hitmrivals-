@@ -1178,3 +1178,22 @@ Thirteen real candidates, in rough priority order:
     it. Both currently load standalone via their own JSON file, same
     state `CombatStyleGenome`/`CombatPhysicsGenome`/`GameDesignGenome`
     are still in.
+
+---
+
+**TRACK H / HITM RIVALS INTEGRATION — Modules 0–1 complete:**
+Opened by a full audit of DOMINUS against the real, existing HITM Rivals
+codebase and its real authored fighter data — full findings in
+`HITM_INTEGRATION_AUDIT.md`, full sequenced plan in `ROADMAP.md`'s
+"TRACK H" section. Headline finding: every "Brooklyn" fixture this engine
+has ever tested against is a strawman — real name, invented data. Module 0
+fixed a real, previously-invisible bug in the shared JSON parser
+(`\uXXXX` escapes were silently mis-decoded) that would have corrupted
+real HITM text on ingest. Module 1 (`CHARACTER/HitmBridge/`) is a real,
+tested path that reads the actual `hitm-engine/data/identity/<fighter>/`
+files for all three real fighters (Brooklyn, Rocket, Static) and
+losslessly validates them — live-run via `dominus-cli
+import-hitm-identity <dir>`, not just unit-tested. It does not compile,
+render, or make anything playable yet — see the module's own "explicitly
+not done" note in `ROADMAP.md` for the honest boundary.
+**677/677 tests passing (was 656 before this track).**

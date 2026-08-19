@@ -9,10 +9,12 @@ add_executable(dominus_core_tests
   core/test_metabin_object.cpp
   core/test_serializer.cpp
   core/test_application.cpp
+  core/test_minijson.cpp
   animation/test_skeleton.cpp
   animation/test_animation_clip.cpp
   character/test_rig_and_playback.cpp
   character/test_motion_intelligence_integration.cpp
+  character/test_hitm_identity_importer.cpp
   motion/test_motion_graph.cpp
   motion/test_animation_layers.cpp
   motion/test_ik.cpp

@@ -1,0 +1,32 @@
+{
+  "_note": "HAND-AUTHORED identity promoted to source layer.",
+  "id": "brooklyn",
+  "name": "Brooklyn",
+  "faction": "RENEGADES",
+  "accent": "#8ee041",
+  "sprite": {
+    "key": "brooklyn",
+    "anchors": {
+      "hand": [
+        0.8,
+        0.43
+      ],
+      "alt": [
+        0.24,
+        0.47
+      ]
+    },
+    "rig": "data/characters/brooklyn/parts.json",
+    "anim": "data/characters/brooklyn/anim.json",
+    "atlas": "brooklyn_atlas"
+  },
+  "palettes": [
+    {
+      "id": "default",
+      "name": "From Brooklyn"
+    }
+  ],
+  "vfx": {
+    "idleTrail": null
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "archetype": "zoner_controller",
+  "philosophy": "Deny the beat. If you cannot time him, you cannot approach him.",
+  "rhythm_profile": {
+    "categorical": "Glitched",
+    "beat": "absent",
+    "tempo": "irregular",
+    "signature": "missing frames \u2014 startups must not form a smooth curve"
+  },
+  "weight_profile": {
+    "categorical": "Medium",
+    "inertia": 0.34,
+    "settle": "cut"
+  },
+  "risk_profile": {
+    "commitment": "medium",
+    "reward": "positional",
+    "recovery_exposure": "high up close"
+  },
+  "defense_profile": {
+    "style": "space",
+    "blockPreference": 0.55,
+    "escape": "teleport"
+  },
+  "pressure_profile": {
+    "style": "denial",
+    "turnRetention": "medium",
+    "cornerCarry": "low"
+  },
+  "range_profile": {
+    "band": "long",
+    "dominant": 105,
+    "deadzone": "inside his own elbow"
+  },
+  "recovery_profile": {
+    "categorical": "Instant",
+    "settleBeats": 0
+  },
+  "impact_profile": {
+    "hitstop": "light",
+    "cameraShake": "medium",
+    "soundIntent": "signal tear \u2014 corrupted, not percussive"
+  },
+  "ai_intent": [
+    "zone",
+    "bait",
+    "punish",
+    "retreat",
+    "control"
+  ],
+  "_note": "AUTHORED SOURCE. Volume 14 Combat Genome. 13 components.",
+  "combat_verbs": [
+    "CONTROL",
+    "TRAP",
+    "DISRUPT",
+    "PUNISH",
+    "SPACE"
+  ],
+  "frame_dna": "derived \u2014 see archetype_rules.json genome_response"
+}

@@ -1,0 +1,115 @@
+{
+  "_note": "HAND-AUTHORED signature content promoted to source layer. Not compiler output.",
+  "chains": {
+    "light": [
+      "light1",
+      "light2",
+      "light3"
+    ]
+  },
+  "projectiles": {},
+  "moves": {
+    "special": {
+      "name": "Ghost Dash",
+      "input": "S",
+      "type": "special",
+      "context": "ground",
+      "startup": 5,
+      "active": 18,
+      "recovery": 13,
+      "cooldown": 95,
+      "damage": 96,
+      "hitstun": 26,
+      "knockdown": true,
+      "pushback": 10,
+      "meterGain": 10,
+      "hitstop": "heavy",
+      "rush": {
+        "velocityX": 16,
+        "friction": 0.93,
+        "hitRangeX": 80,
+        "hitRangeY": 110,
+        "leaveGhost": true
+      },
+      "vfx": "greenTrail",
+      "cancels": {
+        "into": [
+          "blockbuster"
+        ],
+        "window": [
+          5,
+          34
+        ]
+      },
+      "expresses": "control",
+      "_rule_answer": "Ghost Dash is measured distance-closing \u2014 the professional choosing his moment."
+    },
+    "specialF": {
+      "name": "Pounce",
+      "input": "F+S",
+      "type": "special",
+      "context": "ground",
+      "startup": 8,
+      "active": 14,
+      "recovery": 14,
+      "cooldown": 95,
+      "damage": 84,
+      "hitstun": 24,
+      "knockdown": true,
+      "pushback": 7,
+      "meterGain": 9,
+      "rush": {
+        "velocityX": 8,
+        "velocityY": -8,
+        "friction": 0.97,
+        "hitRangeX": 86,
+        "hitRangeY": 115
+      },
+      "cancels": {
+        "into": [
+          "blockbuster"
+        ],
+        "window": [
+          8,
+          36
+        ]
+      },
+      "expresses": "control",
+      "_rule_answer": "Pounce is Taekwondo commitment, not a lunge of instinct."
+    },
+    "blockbuster": {
+      "name": "ORBIT OR BUST",
+      "subtitle": "three passes, no survivors",
+      "input": "BB",
+      "type": "blockbuster",
+      "context": "ground",
+      "meterCost": 100,
+      "startup": 18,
+      "active": 38,
+      "recovery": 20,
+      "camera": "cinematic",
+      "cameraFrames": 44,
+      "flash": 8,
+      "slowmo": 28,
+      "script": [
+        {
+          "at": 18,
+          "repeat": 3,
+          "every": 16,
+          "action": "blitzPass",
+          "damage": 86,
+          "halfWidth": 130,
+          "gap": 140,
+          "travel": 240,
+          "pushback": 6,
+          "finalPushback": 13,
+          "hitstun": 26,
+          "finalKnockdown": true,
+          "vfx": "greenTrail"
+        }
+      ],
+      "expresses": "control",
+      "_rule_answer": "ORBIT OR BUST is three planned passes. Nothing about it is improvised."
+    }
+  }
+}

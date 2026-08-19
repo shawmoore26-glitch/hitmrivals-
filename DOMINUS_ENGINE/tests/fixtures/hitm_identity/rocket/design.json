@@ -1,0 +1,345 @@
+{
+  "_note": "AUTHORED SOURCE. Rocket \u2014 Doberman ghost. PHASE 7 RECONSTRUCTION: rig.json shipped 6 parts while parts.json and the atlas carried 12. All six leg/foot entries restored from existing assets. No new art, no placeholder data.",
+  "character": "rocket",
+  "_phase7_recovered": [
+    "footFar",
+    "footNear",
+    "legFarL",
+    "legFarU",
+    "legNearL",
+    "legNearU"
+  ],
+  "core_parts": {
+    "head": {
+      "rect": [
+        0.3,
+        0.0,
+        0.8,
+        0.36
+      ],
+      "pivot": [
+        0.46,
+        0.94
+      ]
+    },
+    "torso": {
+      "rect": [
+        0.24,
+        0.33,
+        0.8,
+        0.815
+      ],
+      "pivot": [
+        0.5,
+        0.085
+      ]
+    },
+    "armFarU": {
+      "rect": [
+        0.06,
+        0.42,
+        0.34,
+        0.61
+      ],
+      "pivot": [
+        0.868,
+        0.077
+      ],
+      "_pivot_measured": "rig_validate.py: authored pivot [0.72, 0.12] landed on transparent pixels; snapped to nearest opaque [0.868, 0.077]. Measured, not estimated."
+    },
+    "armFarL": {
+      "rect": [
+        0.02,
+        0.56,
+        0.32,
+        0.9
+      ],
+      "pivot": [
+        0.62,
+        0.08
+      ]
+    },
+    "armNearU": {
+      "rect": [
+        0.66,
+        0.43,
+        0.92,
+        0.62
+      ],
+      "pivot": [
+        0.34,
+        0.12
+      ]
+    },
+    "armNearL": {
+      "rect": [
+        0.44,
+        0.59,
+        0.86,
+        0.82
+      ],
+      "pivot": [
+        0.78,
+        0.16
+      ]
+    },
+    "legFarU": {
+      "rect": [
+        0.3,
+        0.66,
+        0.52,
+        0.9
+      ],
+      "pivot": [
+        0.5,
+        0.08
+      ]
+    },
+    "legFarL": {
+      "rect": [
+        0.26,
+        0.82,
+        0.52,
+        1.0
+      ],
+      "pivot": [
+        0.5,
+        0.06
+      ]
+    },
+    "footFar": {
+      "rect": [
+        0.2,
+        0.9,
+        0.54,
+        1.0
+      ],
+      "pivot": [
+        0.45,
+        0.3
+      ]
+    },
+    "legNearU": {
+      "rect": [
+        0.52,
+        0.66,
+        0.74,
+        0.9
+      ],
+      "pivot": [
+        0.5,
+        0.08
+      ]
+    },
+    "legNearL": {
+      "rect": [
+        0.52,
+        0.82,
+        0.78,
+        1.0
+      ],
+      "pivot": [
+        0.5,
+        0.06
+      ]
+    },
+    "footNear": {
+      "rect": [
+        0.5,
+        0.9,
+        0.84,
+        1.0
+      ],
+      "pivot": [
+        0.55,
+        0.3
+      ]
+    }
+  },
+  "features": {
+    "earFar": {
+      "parent": "head",
+      "rect": [
+        0.3,
+        0.0,
+        0.46,
+        0.14
+      ],
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "why": "ear flick \u2014 the only part of him that reacts before he decides",
+      "lagBeats": 0.8,
+      "maxAngle": 28,
+      "dnaThreshold": 25
+    },
+    "earNear": {
+      "parent": "head",
+      "rect": [
+        0.56,
+        0.0,
+        0.72,
+        0.14
+      ],
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "why": "ear flick",
+      "lagBeats": 0.7,
+      "maxAngle": 28,
+      "dnaThreshold": 25
+    },
+    "tail": {
+      "parent": "hip",
+      "rect": [
+        0.72,
+        0.52,
+        0.94,
+        0.76
+      ],
+      "pivot": [
+        0.18,
+        0.16
+      ],
+      "why": "tail counterweight \u2014 reads the hip counter-rotation",
+      "lagBeats": 1.5,
+      "maxAngle": 50,
+      "gravity": 0.3,
+      "dnaThreshold": 30
+    },
+    "bandana": {
+      "parent": "head",
+      "rect": [
+        0.36,
+        0.28,
+        0.66,
+        0.44
+      ],
+      "pivot": [
+        0.5,
+        0.1
+      ],
+      "why": "the one soft thing on a heavy body",
+      "lagBeats": 1.2,
+      "maxAngle": 34,
+      "gravity": 0.6,
+      "dnaThreshold": 45
+    },
+    "collarChain": {
+      "parent": "torso",
+      "rect": [
+        0.4,
+        0.34,
+        0.66,
+        0.5
+      ],
+      "pivot": [
+        0.5,
+        0.06
+      ],
+      "why": "rusted chain, drags two beats late",
+      "lagBeats": 2.0,
+      "maxAngle": 22,
+      "gravity": 0.95,
+      "dnaThreshold": 50
+    },
+    "coatFar": {
+      "parent": "hip",
+      "rect": [
+        0.04,
+        0.46,
+        0.28,
+        0.78
+      ],
+      "pivot": [
+        0.68,
+        0.04
+      ],
+      "why": "coat lag",
+      "lagBeats": 1.4,
+      "maxAngle": 40,
+      "gravity": 0.6,
+      "dnaThreshold": 75
+    },
+    "coatNear": {
+      "parent": "hip",
+      "rect": [
+        0.72,
+        0.46,
+        0.96,
+        0.78
+      ],
+      "pivot": [
+        0.32,
+        0.04
+      ],
+      "why": "coat lag",
+      "lagBeats": 1.4,
+      "maxAngle": 40,
+      "gravity": 0.6,
+      "dnaThreshold": 75
+    },
+    "handFar": {
+      "parent": "armFarL",
+      "rect": [
+        0.02,
+        0.78,
+        0.24,
+        0.92
+      ],
+      "pivot": [
+        0.6,
+        0.14
+      ],
+      "why": "glove; a punch finishes here",
+      "lagBeats": 0.4,
+      "maxAngle": 18,
+      "dnaThreshold": 35
+    },
+    "handNear": {
+      "parent": "armNearL",
+      "rect": [
+        0.62,
+        0.7,
+        0.86,
+        0.84
+      ],
+      "pivot": [
+        0.4,
+        0.14
+      ],
+      "why": "glove",
+      "lagBeats": 0.4,
+      "maxAngle": 18,
+      "dnaThreshold": 35
+    }
+  },
+  "drawOrder": [
+    "tail",
+    "earFar",
+    "armFarU",
+    "armFarL",
+    "handFar",
+    "legFarU",
+    "legFarL",
+    "footFar",
+    "torso",
+    "collarChain",
+    "bandana",
+    "head",
+    "earNear",
+    "legNearU",
+    "legNearL",
+    "footNear",
+    "armNearU",
+    "armNearL",
+    "handNear"
+  ],
+  "handBone": "handNear",
+  "handPoint": [
+    0.5,
+    0.55
+  ]
+}

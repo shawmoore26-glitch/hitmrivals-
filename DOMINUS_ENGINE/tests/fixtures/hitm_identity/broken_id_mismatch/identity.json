@@ -1,0 +1,36 @@
+{
+  "_note": "HAND-AUTHORED identity promoted to source layer.",
+  "id": "rocket",
+  "name": "Rocket",
+  "faction": "RENEGADES",
+  "accent": "#3ecf6e",
+  "sprite": {
+    "key": "rocket",
+    "anchors": {
+      "hand": [
+        0.33,
+        0.62
+      ],
+      "alt": [
+        0.72,
+        0.5
+      ]
+    },
+    "rig": "data/characters/rocket/parts.json",
+    "anim": "data/characters/rocket/anim.json",
+    "atlas": "rocket_atlas"
+  },
+  "palettes": [
+    {
+      "id": "default",
+      "name": "In The Suit"
+    }
+  ],
+  "vfx": {
+    "idleTrail": {
+      "anchor": "hand",
+      "chance": 0.5,
+      "effect": "greenTrail"
+    }
+  }
+}

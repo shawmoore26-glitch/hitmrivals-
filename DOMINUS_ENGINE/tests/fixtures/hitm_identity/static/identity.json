@@ -1,0 +1,40 @@
+{
+  "_note": "HAND-AUTHORED identity promoted to source layer.",
+  "id": "static",
+  "name": "Static",
+  "faction": "RENEGADES",
+  "accent": "#57c8ff",
+  "sprite": {
+    "key": "static",
+    "anchors": {
+      "hand": [
+        0.18,
+        0.3
+      ],
+      "alt": [
+        0.82,
+        0.62
+      ]
+    },
+    "rig": "data/characters/static/parts.json",
+    "anim": "data/characters/static/anim.json",
+    "atlas": "static_atlas"
+  },
+  "palettes": [
+    {
+      "id": "default",
+      "name": "Dead Channel"
+    }
+  ],
+  "vfx": {
+    "idleSpark": {
+      "anchor": "hand",
+      "chance": 0.2,
+      "color": "#57c8ff"
+    },
+    "idleGlitch": {
+      "chance": 0.008,
+      "frames": 4
+    }
+  }
+}

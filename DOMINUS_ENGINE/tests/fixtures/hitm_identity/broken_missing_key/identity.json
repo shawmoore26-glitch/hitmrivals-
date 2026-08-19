@@ -1,0 +1,16 @@
+{
+  "_note": "HAND-AUTHORED identity promoted to source layer.",
+  "id": "brooklyn",
+  "name": "Brooklyn",
+  "faction": "RENEGADES",
+  "accent": "#8ee041",
+  "palettes": [
+    {
+      "id": "default",
+      "name": "From Brooklyn"
+    }
+  ],
+  "vfx": {
+    "idleTrail": null
+  }
+}
