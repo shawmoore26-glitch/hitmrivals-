@@ -1241,7 +1241,14 @@ genuine `WorldTick` integration rather than avoiding it, verified safe
 under construction/move/destruction and clean across a full-suite run
 under AddressSanitizer + UndefinedBehaviorSanitizer. The same audit found
 the identical `this`-capturing pattern dormant (unexploited, not yet
-fixed) in `PHYSICS::PhysicsSystem::AsWorldSystem()`. Nothing is rendered,
+fixed) in `PHYSICS::PhysicsSystem::AsWorldSystem()`. A third continuation
+added 5 more tests targeting the exact construct→move→move-again→
+execute→destroy sequence and sibling-runtime survival across a
+neighbor's destruction, then re-verified the full suite under two
+independent clean rebuilds — a normal Release build and a separate
+AddressSanitizer+UndefinedBehaviorSanitizer build — both green, zero
+sanitizer findings across 4 ASan runs, and the live CLI demo's output
+byte-for-byte identical between builds. Nothing is rendered,
 no sound plays, and no second real player exists yet. See each module's
 own "explicitly not done" note in `ROADMAP.md` for the honest boundary.
-**757/757 tests passing (was 656 before this track).**
+**762/762 tests passing (was 656 before this track).**

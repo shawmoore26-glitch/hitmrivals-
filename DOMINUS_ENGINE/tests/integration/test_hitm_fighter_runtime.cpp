@@ -544,3 +544,122 @@ DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_ManyMovesThenManyFrames) {
     DOMINUS_EXPECT(runtime.Snapshot().frame > 40);
     DOMINUS_EXPECT(runtime.FighterId() == "brooklyn");
 }
+
+// --- The explicit critical-sequence tests, named to match exactly what
+// was asked for: construct -> register WorldTick callback -> move runtime
+// -> execute frame -> destroy runtime -> no callback into a dead object.
+// Run under both a normal build and an ASan+UBSan build (see
+// HITM_FIGHTER_RUNTIME_REPORT.md for both sets of results) -- these tests
+// don't change between builds, the sanitizer instrumentation is what
+// makes a dead-object access unmissable rather than "didn't crash today."
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_ConstructionActuallyRegistersAWorldTickSystem) {
+    // Not "AdvanceFrame doesn't crash" -- specifically that the
+    // registered WorldTick system genuinely runs and mutates real state,
+    // proving Create() really did register something rather than
+    // AdvanceFrame silently being a no-op. frame_ only increments inside
+    // RunOneFrame, which only ever runs via the registered closure.
+    auto runtime = MakeBrooklynRuntime();
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 0);
+    runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 1);
+    runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 2);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_ConstructMoveExecuteDestroy) {
+    // The literal minimal critical sequence: construct -> move -> execute
+    // a frame -> destroy (falls out of scope at the end of this test).
+    // Real Brooklyn walkSpeed must still drive the post-move instance.
+    auto rules = RealRules();
+    HitmFighterRuntime original = MakeBrooklynRuntime();
+    float startX = original.Snapshot().x;
+
+    HitmFighterRuntime moved(std::move(original));  // construct -> move
+    moved.AdvanceFrame(HitmInputCommand::kRight);   // execute a frame after the move
+
+    DOMINUS_EXPECT(moved.Snapshot().frame == 1);
+    DOMINUS_EXPECT(moved.Snapshot().x == startX + static_cast<float>(rules.Physics().walk_speed));
+    // `moved` is destroyed at end of scope -- its FrameState (and the
+    // WorldTick closure inside its own World) are destroyed together,
+    // atomically, with nothing else able to reference either afterward.
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_ConstructMoveMoveAgainExecuteDestroy) {
+    // The "ideally also" sequence: construct -> move -> move again ->
+    // execute -> destroy.
+    auto rules = RealRules();
+    HitmFighterRuntime original = MakeBrooklynRuntime();
+    float startX = original.Snapshot().x;
+
+    HitmFighterRuntime moved1(std::move(original));
+    HitmFighterRuntime moved2(std::move(moved1));
+    moved2.AdvanceFrame(HitmInputCommand::kRight);
+    moved2.AdvanceFrame(HitmInputCommand::kRight);
+
+    DOMINUS_EXPECT(moved2.Snapshot().frame == 2);
+    float expectedX = startX;
+    expectedX += static_cast<float>(rules.Physics().walk_speed);
+    expectedX += static_cast<float>(rules.Physics().walk_speed);
+    DOMINUS_EXPECT(moved2.Snapshot().x == expectedX);
+    // moved2 destroyed at end of scope; moved1/original are already
+    // moved-from (null unique_ptr, safe no-op destructors).
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_DestructionDoesNotAffectSiblingRuntimeOrItsWorld) {
+    // Two independent runtimes -- each owns its own World/WorldTick
+    // registration entirely privately (per-FrameState, not shared).
+    // Destroying one must have zero effect on the other: no shared
+    // registry, no shared registered-system list, nothing the survivor's
+    // ticks could dangle into. "Destruction while the world/tick system
+    // remains alive" + "subsequent world ticks after runtime destruction"
+    // are both this test, from the survivor's point of view.
+    auto rules = RealRules();
+    auto survivor = MakeBrooklynRuntime();
+    float survivorStartX = survivor.Snapshot().x;
+
+    {
+        auto doomed = MakeBrooklynRuntime();
+        doomed.AdvanceFrame(HitmInputCommand::kRight);
+        doomed.AdvanceFrame(HitmInputCommand::kJump);
+        DOMINUS_EXPECT(doomed.Snapshot().state == HitmFighterState::kJumping);
+        // `doomed`'s FrameState -- its World, its registered WorldTick
+        // system, its RigidBody/SpatialComponent -- is fully destroyed
+        // here, at the closing brace, while `survivor`'s own World is
+        // still very much alive and about to keep ticking.
+    }
+
+    // The survivor keeps ticking correctly, with real HITM data, entirely
+    // unaffected by the sibling's destruction -- proves no cross-talk
+    // and that a subsequent world.Tick() call (survivor's own, real,
+    // still-live World) is unaffected by an unrelated runtime's teardown.
+    for (int i = 0; i < 5; ++i) survivor.AdvanceFrame(HitmInputCommand::kRight);
+    float expectedX = survivorStartX;
+    for (int i = 0; i < 5; ++i) expectedX += static_cast<float>(rules.Physics().walk_speed);
+    DOMINUS_EXPECT(survivor.Snapshot().x == expectedX);
+    DOMINUS_EXPECT(survivor.Snapshot().frame == 5);
+    DOMINUS_EXPECT(survivor.FighterId() == "brooklyn");
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_RepeatedConstructDestroyCyclesStressAllocatorReuse) {
+    // The strongest bait for a stale-pointer bug under a normal
+    // allocator: repeatedly destroy a FrameState and immediately
+    // allocate a new one, which frequently reuses the same freed
+    // address. A dangling WorldTick closure from a prior cycle touching
+    // that address would corrupt (or, under ASan, immediately flag) the
+    // NEW cycle's live FrameState. Every cycle's real Brooklyn data must
+    // come back correct, not just "no crash."
+    auto rules = RealRules();
+    for (int cycle = 0; cycle < 25; ++cycle) {
+        auto runtime = MakeBrooklynRuntime();
+        float startX = runtime.Snapshot().x;
+        runtime.AdvanceFrame(HitmInputCommand::kRight);
+        runtime.AdvanceFrame(HitmInputCommand::kRight);
+        DOMINUS_EXPECT(runtime.Snapshot().frame == 2);
+        DOMINUS_EXPECT(runtime.Snapshot().x ==
+                        startX + static_cast<float>(rules.Physics().walk_speed) + static_cast<float>(rules.Physics().walk_speed));
+        DOMINUS_EXPECT(runtime.FighterId() == "brooklyn");
+        // `runtime` destroyed here, every iteration, immediately before
+        // the next cycle allocates a fresh one.
+    }
+}

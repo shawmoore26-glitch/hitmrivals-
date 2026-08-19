@@ -20,15 +20,16 @@ walks, jumps under real gravity, executes his real "special" move
 through real startup/active/recovery frame counts, takes a hit with real
 damage/hitstun/meter/hitstop numbers, and transitions his real five-tier
 read-engine mechanic — all deterministically, all CPU-only, all verified
-by 35 new tests (757/757 total) and a live `dominus-cli
+by 40 new tests (762/762 total) and a live `dominus-cli
 hitm-fighter-runtime` run reproduced below. The `WorldTick`-registration
 lifetime bug the first pass introduced has been fixed properly (stable
 heap-allocated state, genuine `WorldTick` integration restored, not
 routed around) and specifically verified safe under construction, every
-kind of move/relocation, and destruction — including a clean run under
-AddressSanitizer + UndefinedBehaviorSanitizer, not just repeated runs
-that happened not to crash. See "A real bug this module found, then
-fixed PROPERLY" below.
+kind of move/relocation, and destruction — including 4 clean runs under
+AddressSanitizer + UndefinedBehaviorSanitizer with leak and stack-use-
+after-return detection enabled, not just repeated runs that happened not
+to crash. See "Exhaustive lifetime-safety verification" below for the
+full, separately-reported results.
 
 **He cannot be seen, heard, or actually fought against another player.**
 No pixel has been drawn, no sound has played, no second fighter's
@@ -106,11 +107,40 @@ a design intention.
   genuinely missing (hit_advantage/block_advantage, move `speed`,
   bone-relative hitboxes), the field was left unpopulated and documented
   — never guessed to fill a struct.
-- **The full existing test suite remains green**: 656 → 751 across this
-  entire Track H session, zero regressions, confirmed via a full clean
-  rebuild (`rm -rf build`) and 10 repeat runs this module, plus (per
-  Module 3's and Module 4's established discipline) a from-scratch `git
-  clone` build+test cycle before pushing.
+- **The full existing test suite remains green**: 656 → 762 across this
+  entire Track H session, zero regressions, confirmed via full clean
+  rebuilds (`rm -rf build`) and repeat runs across every continuation,
+  plus (per Module 3's and Module 4's established discipline) a
+  from-scratch `git clone` build+test cycle before pushing.
+
+## PROVEN WITH ASAN (lifetime/memory safety, verified in this environment)
+
+Distinguished from the CPU-behavior claims above because they are a
+different kind of claim: not "does the simulation compute the right
+number" but "does this object survive being moved, stored, and destroyed
+without touching freed or relocated memory." Full detail, the exact
+sequences tested, and the exact commands run in "Exhaustive
+lifetime-safety verification" below — summarized here:
+
+- 11 `HitmFighterRuntime_LifetimeSafety_*` tests cover: construction
+  actually registering a live `WorldTick` system (not a no-op);
+  move-construct, move-assign, a 4-hop move chain, and the exact
+  construct→move→execute→destroy and construct→move→move-again→execute→
+  destroy sequences requested; return-from-a-function with the original
+  wrapper destroyed; storage in a reallocating `std::vector`; a second
+  runtime destroyed mid-scope while a sibling's `World`/`WorldTick`
+  remains alive and keeps ticking correctly afterward; and 25
+  repeated construct→advance→destroy cycles stressing allocator address
+  reuse (the actual mechanism by which a stale pointer corrupts
+  unrelated future data).
+- All 11 pass in a normal build **and** in a from-scratch AddressSanitizer
+  + UndefinedBehaviorSanitizer build, 4 separate ASan runs, with leak
+  detection and stack-use-after-return detection both enabled — zero
+  findings.
+- The live CLI demo's real output is **byte-for-byte identical** whether
+  run from the normal build or the ASan-instrumented one — the fix
+  changed how safely the object survives relocation, not what real HITM
+  data drives.
 
 ### A real bug this module found, then fixed PROPERLY (not routed around)
 
@@ -219,6 +249,64 @@ relocates that `PhysicsSystem` (returns it by value, stores it in a
 `this` bug this module already found and fixed once. The same stable
 pImpl-block fix would apply if/when a real caller needs it.
 
+## Exhaustive lifetime-safety verification (second continuation)
+
+Requested explicitly: prove the exact critical sequence — construct →
+register `WorldTick` callback → move → execute a frame → destroy → no
+callback into a dead object — and the extended sequence (construct →
+move → move again → execute → destroy), under ASan specifically, since
+the original defect was precisely a would-be use-after-move. Five new
+tests were added on top of the six from the first lifetime continuation,
+for **11 total** `HitmFighterRuntime_LifetimeSafety_*` tests:
+
+| Test | What it proves |
+|---|---|
+| `ConstructionActuallyRegistersAWorldTickSystem` | The registered closure genuinely runs (frame counter only advances inside it) — not just that `AdvanceFrame` doesn't crash. |
+| `ConstructMoveExecuteDestroy` | The literal minimal critical sequence, real `walkSpeed` still applies post-move. |
+| `ConstructMoveMoveAgainExecuteDestroy` | The extended sequence — two real moves before any execution. |
+| `DestructionDoesNotAffectSiblingRuntimeOrItsWorld` | A second, independent runtime destroyed mid-scope has zero effect on a survivor's real behavior — "destruction while the world/tick system remains alive" and "subsequent world ticks after runtime destruction," both from the survivor's side. |
+| `RepeatedConstructDestroyCyclesStressAllocatorReuse` | 25 create→advance→destroy cycles — the actual mechanism by which a stale-pointer bug corrupts *unrelated* future data (freed memory getting reused), not merely "doesn't crash once." |
+
+(Plus the six from the first continuation: `MoveConstructThenAdvanceFrame`,
+`MoveAssignThenAdvanceFrame`, `MultipleSequentialMoves`,
+`OriginalWrapperDestroyedAfterMove`, `StoredInVectorAndReallocated`,
+`ManyMovesThenManyFrames`.)
+
+**Results, exactly as requested, reported separately:**
+
+1. **Clean normal build** (`rm -rf build`, Release): zero errors, zero
+   warnings.
+2. **Full normal test suite**: **762/762 passed**, exit code 0. All 11
+   lifetime tests listed above pass. 4 repeat runs, all clean.
+3. **Clean ASan build** (separate `build-asan/` directory, Debug,
+   `-fsanitize=address,undefined -fno-omit-frame-pointer -g`): zero
+   errors, zero warnings.
+4. **Lifetime/integration tests under ASan**: all 11
+   `HitmFighterRuntime_LifetimeSafety_*` tests pass; grepped directly out
+   of the sanitizer-instrumented binary's output, not inferred.
+5. **Full ASan test suite** (the test framework runs all registered
+   tests with no name-filtering flag, so "full" and "the lifetime tests"
+   are the same binary run): **762/762 passed**, exit code 0, with
+   `ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1` —
+   the stronger-than-default leak and stack-use-after-return checks
+   specifically relevant to a `unique_ptr`-owned heap block. Grepped for
+   `ERROR: AddressSanitizer`, `ERROR: UndefinedBehaviorSanitizer`,
+   `runtime error:`, `SUMMARY:`, `heap-buffer`, `use-after`, `leak` —
+   **zero matches** across 4 separate runs.
+
+**Gameplay behavior explicitly re-verified unchanged**: the live
+`dominus-cli hitm-fighter-runtime` demo's output was captured before this
+continuation's changes and again from the ASan-instrumented binary after
+— `diff` reports the two **byte-for-byte identical** (same frame numbers,
+same real `walkSpeed`/`jumpVel`/`gravity`/damage/meter/hitstop/reaction
+values throughout the full 84-frame run). The lifetime-safety work added
+tests and verification; it did not touch, and did not change, what real
+HITM data drives.
+
+No test was weakened, no move constructor/assignment was disabled or
+deleted, and no ASan finding was suppressed to reach this result — there
+were none to suppress.
+
 ### A real, evidenced move-schema finding
 
 Building `HitmMoveInstance::Extract` against all three real fighters'
@@ -301,16 +389,49 @@ module was scoped against:
 
 ## Test count
 
-757/757 (was 722 before this module). 35 new tests: 5 in
-`test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`, 23
-in `test_hitm_fighter_runtime.cpp` (17 covering the vertical slice's
-gameplay behavior, 6 added in the lifetime-safety continuation covering
-move-construct, move-assign, a 4-hop move chain, move-out-of-a-function-
-with-the-original-destroyed, `std::vector` reallocation, and a long real
-run after heavy relocation). Full clean rebuild + 15 repeat runs across
-both continuations, all green; a further 4 runs clean under
-AddressSanitizer + UndefinedBehaviorSanitizer specifically for the
-lifetime fix (see above) — no flakes observed anywhere. (The one segfault
-encountered in the first continuation was deterministic — it reproduced
-on every run before the fix, and has not recurred once since — so it is
-reported above as a found-and-fixed bug, not logged as flakiness.)
+762/762 (was 722 before this module, 656 before Track H). 40 new tests:
+5 in `test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`,
+28 in `test_hitm_fighter_runtime.cpp` (17 covering the vertical slice's
+gameplay behavior, 11 `LifetimeSafety_*` tests added across two
+continuations covering every relocation path requested). Full clean
+rebuilds + repeat runs across all three continuations (Release: 15+
+repeats; ASan+UBSan: 4 repeats of the full suite plus the live CLI demo),
+all green — no flakes observed anywhere. (The one segfault encountered in
+the first lifetime continuation was deterministic — it reproduced on
+every run before the fix, and has not recurred once, under any build
+configuration, since — so it is reported as a found-and-fixed bug, not
+logged as flakiness.)
+
+## Final Module 5A status
+
+- **PROVEN** (CPU runtime behavior): fighter init, movement, jump/gravity,
+  attack state transitions, hit/damage resolution, meter, hitstop,
+  five-tier read-engine transitions, deterministic frame advancement,
+  deterministic failure on invalid input/data — all from real Brooklyn
+  data, all backed by a passing test or a live CLI run. See "PROVEN"
+  above.
+- **PROVEN WITH ASAN** (lifetime/memory safety): construction, `WorldTick`
+  registration, move-construct, move-assign, multi-hop moves, the exact
+  construct→move→execute→destroy and construct→move→move-again→execute→
+  destroy sequences, container storage/reallocation, and destruction
+  alongside a still-live sibling `World` — 11 tests, clean in both a
+  normal build and 4 separate AddressSanitizer+UndefinedBehaviorSanitizer
+  runs with leak and stack-use-after-return detection enabled. Zero
+  findings, zero suppressions, no test weakened, move not disabled. See
+  "PROVEN WITH ASAN" and "Exhaustive lifetime-safety verification" above.
+- **IMPLEMENTED BUT UNVERIFIABLE** (GPU/audio/device behavior): nothing —
+  deliberately. This module wrote zero rendering/audio/device code, so
+  there is nothing in this category to report other than its continued
+  absence.
+- **NOT IMPLEMENTED** (remaining HITM systems): a second fighter/opponent
+  and the read-engine's automatic gain/lose trigger detection; sprite/
+  texture rendering; audio; real input-device polling; combo damage
+  scaling; basic normals (not authored in real HITM data);
+  `CombatController`/`MotionGraphEvaluator` integration; and — reported,
+  not fixed — the dormant identical lifetime hazard in
+  `PHYSICS::PhysicsSystem::AsWorldSystem()`. See "NOT IMPLEMENTED" above
+  for the full list.
+
+Module 5A is complete on its own terms: real HITM data drives real,
+deterministic DOMINUS simulation, and the mechanism that makes it move-
+and container-safe is now verified, not assumed.

@@ -5993,9 +5993,20 @@ is a rush-type move with no `blockstun`/`range`/`height`; Static's has
 refuses both rather than silently defaulting, live-confirmed via
 `dominus-cli hitm-fighter-runtime`.
 
-**35 new tests, 722 → 757, zero regressions** — full clean rebuild, 15
-repeat runs across both continuations, a from-scratch `git clone`
-build+test cycle, and 4 more clean runs under ASan+UBSan, all green.
+**40 new tests, 722 → 762, zero regressions** — full clean rebuild, 15
+repeat runs across the first continuation, a from-scratch `git clone`
+build+test cycle, and a third continuation's exhaustive lifetime-safety
+pass (5 more tests targeting the exact construct→move→move-again→
+execute→destroy and sibling-runtime-survives-destruction sequences the
+architecture must support) verified under two independent clean rebuilds
+— a normal Release build and a separate AddressSanitizer+
+UndefinedBehaviorSanitizer build — with the full 762-test suite green on
+both, all 11 lifetime tests individually confirmed passing under ASan,
+zero sanitizer findings (no leaks, no use-after-free, no use-after-move,
+no stack-use-after-return) across 4 total ASan runs, and the live
+`dominus-cli hitm-fighter-runtime` demo's output byte-for-byte identical
+between the normal and ASan builds — proving the lifetime fix changed
+nothing about real Brooklyn gameplay behavior.
 
 **Explicitly NOT done, per this module's own scope**: no second
 fighter/opponent (the read-engine's real gain/lose trigger CONDITIONS —
@@ -6010,7 +6021,7 @@ inventing keyframe pose data no real HITM source has — see
 dormant `PhysicsSystem::AsWorldSystem()` lifetime hazard noted above is
 reported, not fixed.
 
-**Current Track H total: 757/757 tests passing (was 656 before this track).**
+**Current Track H total: 762/762 tests passing (was 656 before this track).**
 
 ### Module 5B+ — sprite/texture assets, GPU rendering, audio, input, stage (planned)
 
