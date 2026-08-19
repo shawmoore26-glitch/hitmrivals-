@@ -1181,7 +1181,7 @@ Thirteen real candidates, in rough priority order:
 
 ---
 
-**TRACK H / HITM RIVALS INTEGRATION — Modules 0–4 complete:**
+**TRACK H / HITM RIVALS INTEGRATION — Modules 0–4 + 5A complete:**
 Opened by a full audit of DOMINUS against the real, existing HITM Rivals
 codebase and its real authored fighter data — full findings in
 `HITM_INTEGRATION_AUDIT.md`, full sequenced plan in `ROADMAP.md`'s
@@ -1217,8 +1217,23 @@ gives HITM's real, global `data/system/game.json` (gravity, walk/dash
 speed, meter economy, damage scaling, hitstop frames, round rules, the
 authoritative fighter roster) a typed home — nothing in `PHYSICS` or
 `COMBAT` had fighting-game-specific constants anywhere; `GameDesignGenome`
-is a meta-design descriptor, not this. Nothing reads `HitmGameRules` yet,
-so gravity/meter/hitstop have zero effect on any simulation. See each
-module's own "explicitly not done" note in `ROADMAP.md` for the honest
-boundary.
-**722/722 tests passing (was 656 before this track).**
+is a meta-design descriptor, not this. Module 5A
+(`CHARACTER/HitmBridge/HitmFighterRuntime`) is the pivot from "DOMINUS
+can read HITM data" to "DOMINUS can simulate HITM gameplay": a real
+Brooklyn, built entirely from Modules 1/2/4's real data, actually walks
+(real `walkSpeed`), jumps (real `jumpVel`/`gravity`, integrated by the
+real, unmodified `PHYSICS::PhysicsSystem`), executes his real "special"
+move through its real startup/active/recovery frame counts, takes a hit
+with real damage/hitstun/meter/hitstop numbers and a real reaction
+decided by `COMBAT::ReactionSystem::Determine` from his real
+`defense_profile.blockPreference`, and transitions his real five-tier
+read-engine mechanic — deterministically, proven by two independent
+runtimes producing byte-identical state from an identical input script.
+Full accounting in `HITM_FIGHTER_RUNTIME_REPORT.md`, including a real
+dangling-pointer bug this module found in itself (a `this`-captured
+closure that went stale on move) and a real finding that HITM's move
+schemas vary by fighter/move-type (Rocket's and Static's real specials
+are missing fields Brooklyn's has). Nothing is rendered, no sound plays,
+and no second real player exists yet. See each module's own "explicitly
+not done" note in `ROADMAP.md` for the honest boundary.
+**751/751 tests passing (was 656 before this track).**

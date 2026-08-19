@@ -18,7 +18,9 @@
 #include "CHARACTER/Genome/GenomeDecoder.h"
 #include "CHARACTER/HitmBridge/HitmCombatGenome.h"
 #include "CHARACTER/HitmBridge/HitmIdentityImporter.h"
+#include "CHARACTER/HitmBridge/HitmFighterRuntime.h"
 #include "CHARACTER/HitmBridge/HitmGameRules.h"
+#include "CHARACTER/HitmBridge/HitmMoveInstance.h"
 #include "CHARACTER/HitmBridge/HitmPartsRig.h"
 #include "CHARACTER/Rig/RigBinder.h"
 #include "COMBAT/CombatController.h"
@@ -757,6 +759,113 @@ int HitmGameRulesDemo(const std::string& gameJsonPathStr) {
                << "\n";
     std::cout << "[result] global game-rules table parsed and validated -- NOT wired into PHYSICS or COMBAT yet\n";
     return lossless ? 0 : 1;
+}
+
+// ROADMAP.md Track H Module 5A. Builds a real Brooklyn fighter from real
+// imported data (Modules 1/2/4) and drives him through a scripted
+// sequence, printing real state every frame -- the live, human-readable
+// proof that real HITM data actually simulates, not just validates.
+int HitmFighterRuntimeDemo(const std::string& identityDirStr, const std::string& gameJsonPathStr) {
+    using dominus::character::hitm::HitmCombatGenome;
+    using dominus::character::hitm::HitmFighterRuntime;
+    using dominus::character::hitm::HitmFighterState;
+    using dominus::character::hitm::HitmGameRules;
+    using dominus::character::hitm::HitmIdentityImporter;
+    using dominus::character::hitm::HitmInputCommand;
+    using dominus::character::hitm::HitmMoveInstance;
+
+    auto identityResult = HitmIdentityImporter::Import(identityDirStr);
+    if (!identityResult.ok) {
+        std::cerr << "[hitm-fighter-runtime] identity import FAILED: " << identityResult.error << "\n";
+        return 1;
+    }
+    auto genomeResult = HitmCombatGenome::FromRecord(*identityResult.value);
+    if (!genomeResult.ok) {
+        std::cerr << "[hitm-fighter-runtime] genome mapping FAILED: " << genomeResult.error << "\n";
+        return 1;
+    }
+    auto rulesResult = HitmGameRules::Import(gameJsonPathStr);
+    if (!rulesResult.ok) {
+        std::cerr << "[hitm-fighter-runtime] game rules import FAILED: " << rulesResult.error << "\n";
+        return 1;
+    }
+    auto moveResult = HitmMoveInstance::Extract(*identityResult.value, "special");
+    if (!moveResult.ok) {
+        std::cerr << "[hitm-fighter-runtime] move extraction FAILED: " << moveResult.error << "\n";
+        return 1;
+    }
+    auto runtimeResult = HitmFighterRuntime::Create(*identityResult.value, *genomeResult.value, *rulesResult.value);
+    if (!runtimeResult.ok) {
+        std::cerr << "[hitm-fighter-runtime] runtime creation FAILED: " << runtimeResult.error << "\n";
+        return 1;
+    }
+    auto& fighter = *runtimeResult.value;
+    auto& move = *moveResult.value;
+
+    auto stateName = [](HitmFighterState s) {
+        switch (s) {
+            case HitmFighterState::kIdle: return "idle";
+            case HitmFighterState::kWalking: return "walking";
+            case HitmFighterState::kJumping: return "jumping";
+            case HitmFighterState::kBlockingStance: return "blocking_stance";
+            case HitmFighterState::kAttackStartup: return "attack_startup";
+            case HitmFighterState::kAttackActive: return "attack_active";
+            case HitmFighterState::kAttackRecovery: return "attack_recovery";
+            case HitmFighterState::kHitstun: return "hitstun";
+            case HitmFighterState::kBlockstun: return "blockstun";
+        }
+        return "?";
+    };
+    auto printFrame = [&](const char* label) {
+        auto s = fighter.Snapshot();
+        std::cout << "[hitm-fighter-runtime] frame=" << s.frame << " (" << label << ") state=" << stateName(s.state)
+                   << " x=" << s.x << " y=" << s.y << " vx=" << s.velocity_x << " vy=" << s.velocity_y
+                   << " grounded=" << (s.grounded ? "true" : "false") << " meter=" << s.meter
+                   << " reads=" << s.read_engine_reads << " hitstop=" << s.hitstop_frames_remaining << "\n";
+    };
+
+    std::cout << "[hitm-fighter-runtime] fighter_id=" << fighter.FighterId() << " special_move=\"" << move.move_def.name
+               << "\" (startup=" << move.move_def.frames.startup << " active=" << move.move_def.frames.active
+               << " recovery=" << move.move_def.frames.recovery << " damage=" << move.move_def.power << ")\n";
+    printFrame("init");
+
+    for (int i = 0; i < 3; ++i) fighter.AdvanceFrame(HitmInputCommand::kRight);
+    printFrame("after 3x real walkSpeed steps");
+
+    fighter.AdvanceFrame(HitmInputCommand::kJump);
+    printFrame("jump (real jumpVel)");
+    while (!fighter.Snapshot().grounded) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
+    printFrame("landed (real gravity integration)");
+
+    fighter.AdvanceFrame(HitmInputCommand::kSpecial);
+    printFrame("special triggered (real startup begins)");
+    while (fighter.State() == HitmFighterState::kAttackStartup) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
+    printFrame("-> attack_active (real startup frames elapsed)");
+    while (fighter.State() == HitmFighterState::kAttackActive) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
+    printFrame("-> attack_recovery (real active frames elapsed)");
+    while (fighter.State() == HitmFighterState::kAttackRecovery) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
+    printFrame("-> idle (real recovery frames elapsed)");
+
+    std::cout << "[hitm-fighter-runtime] read_engine tier 0 outgoing damage (real " << move.move_def.power
+               << " x real mult 1.0): " << fighter.ResolveOutgoingDamage(move) << "\n";
+    fighter.GainRead();
+    fighter.GainRead();
+    fighter.GainRead();
+    std::cout << "[hitm-fighter-runtime] after 3 real GainRead() calls: reads=" << fighter.Snapshot().read_engine_reads
+               << " tier=\"" << fighter.ReadEngineState().CurrentTierName()
+               << "\" outgoing damage (real mult " << fighter.ReadEngineState().CurrentDamageMultiplier()
+               << "): " << fighter.ResolveOutgoingDamage(move) << "\n";
+
+    fighter.TakeHit(move, /*blocking=*/false);
+    printFrame("took a hit as defender (real damage/hitstun/meter/hitstop, real defense_bias-driven reaction)");
+    const char* reactionNames[] = {"none", "stagger", "knockback", "launch", "wall_impact", "ground_impact", "knockdown"};
+    std::cout << "[hitm-fighter-runtime] COMBAT::ReactionSystem reaction: "
+               << reactionNames[static_cast<int>(fighter.LastReaction().type)] << " motion_trigger=\""
+               << fighter.LastReaction().motion_trigger << "\"\n";
+
+    std::cout << "[result] real HITM data drove a live DOMINUS simulation for " << fighter.Snapshot().frame
+               << " frames -- NOT rendered, NOT audible, NOT a claim this is playable yet\n";
+    return 0;
 }
 
 int GenomeCompileDemo(const std::string& baseDirStr) {
@@ -2335,7 +2444,8 @@ int main(int argc, char** argv) {
                    << "  dominus-cli import-hitm-identity <identity_dir>\n"
                    << "  dominus-cli hitm-combat-genome <identity_dir>\n"
                    << "  dominus-cli hitm-parts-rig <character_dir>\n"
-                   << "  dominus-cli hitm-game-rules <game.json>\n";
+                   << "  dominus-cli hitm-game-rules <game.json>\n"
+                   << "  dominus-cli hitm-fighter-runtime <identity_dir> <game.json>\n";
         return 2;
     }
     std::string command = argv[1];
@@ -2526,6 +2636,13 @@ int main(int argc, char** argv) {
     }
     if (command == "hitm-game-rules") {
         return HitmGameRulesDemo(path);
+    }
+    if (command == "hitm-fighter-runtime") {
+        if (argc < 4) {
+            std::cerr << "usage: dominus-cli hitm-fighter-runtime <identity_dir> <game.json>\n";
+            return 2;
+        }
+        return HitmFighterRuntimeDemo(path, argv[3]);
     }
 
     std::cerr << "unknown command: " << command << "\n";

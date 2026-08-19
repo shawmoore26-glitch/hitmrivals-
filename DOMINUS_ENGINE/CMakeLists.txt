@@ -99,6 +99,26 @@ endif()
 add_library(dominus_physics INTERFACE)
 target_link_libraries(dominus_physics INTERFACE dominus_world)
 
+# --- HITM RUNTIME (Track H Module 5A) ---------------------------------------
+# CHARACTER/HitmBridge/HitmMoveInstance.cpp and HitmFighterRuntime.cpp live
+# under CHARACTER/HitmBridge/ alongside the other Track H bridge modules,
+# but cannot be built into dominus_character itself: they depend on
+# COMBAT::MoveDef/ReactionSystem and WORLD/PHYSICS, and dominus_combat
+# already depends on dominus_character -- putting them in dominus_character
+# would create a cycle (combat -> character -> combat). A new, small,
+# separate library the same way dominus_rig/dominus_reality are their own
+# libraries, exactly mirroring the "extension outside the core modules'
+# mutual boundaries" pattern tests/world/test_hitm_rivals_as_world_entity.cpp
+# already established.
+add_library(dominus_hitm_runtime STATIC
+  CHARACTER/HitmBridge/HitmMoveInstance.cpp
+  CHARACTER/HitmBridge/HitmFighterRuntime.cpp
+)
+target_link_libraries(dominus_hitm_runtime PUBLIC dominus_combat dominus_world dominus_physics)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(dominus_hitm_runtime PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 # --- REGISTRY (Phase 1 prototype: hash + immutable artifacts) --------------
 # Scoped to CombatGenome only, per the prototype directive. Depends on
 # CHARACTER/Genome only -- never COMBAT/ANIMATION/WORLD/PHYSICS, verified
@@ -253,7 +273,7 @@ endif()
 
 # --- Tools -----------------------------------------------------------------
 add_executable(dominus-cli TOOLS/Editor/dominus_cli.cpp)
-target_link_libraries(dominus-cli PRIVATE dominus_combat dominus_world dominus_physics dominus_registry dominus_visualforge dominus_rig dominus_validation dominus_reality)
+target_link_libraries(dominus-cli PRIVATE dominus_combat dominus_world dominus_physics dominus_hitm_runtime dominus_registry dominus_visualforge dominus_rig dominus_validation dominus_reality)
 
 if(DOMINUS_ENABLE_VULKAN)
   add_executable(dominus-gpu-demo TOOLS/Editor/dominus_gpu_demo.cpp)

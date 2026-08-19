@@ -18,6 +18,9 @@ add_executable(dominus_core_tests
   character/test_hitm_combat_genome.cpp
   character/test_hitm_parts_rig.cpp
   character/test_hitm_game_rules.cpp
+  character/test_hitm_move_instance.cpp
+  character/test_hitm_read_engine_state.cpp
+  integration/test_hitm_fighter_runtime.cpp
   motion/test_motion_graph.cpp
   motion/test_animation_layers.cpp
   motion/test_ik.cpp
@@ -88,7 +91,7 @@ add_executable(dominus_core_tests
   reality/test_reality_watcher.cpp
   reality/test_reconciler.cpp
 )
-target_link_libraries(dominus_core_tests PRIVATE dominus_combat dominus_world dominus_physics dominus_registry dominus_visualforge dominus_rig dominus_graphics dominus_validation dominus_reality)
+target_link_libraries(dominus_core_tests PRIVATE dominus_combat dominus_world dominus_physics dominus_hitm_runtime dominus_registry dominus_visualforge dominus_rig dominus_graphics dominus_validation dominus_reality)
 target_include_directories(dominus_core_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_test(NAME dominus_core_tests COMMAND dominus_core_tests)

@@ -5934,15 +5934,94 @@ the same way in this environment).
 
 **Current Track H total: 722/722 tests passing (was 656 before this track).**
 
-### Module 5+ — texture/sprite rendering, audio, input, stage (planned)
+### Module 5A — CPU-observable HITM runtime vertical slice  ← **complete**
 
-Real order depends on what Module 3 reveals. Texture/sprite GPU rendering
-specifically **cannot be honestly marked PROVEN from a sandboxed session
-without a real GPU device** — this project's own methodology requires
-real-device Vulkan verification (validation-layer VUIDs, actual segfault
-reproduction on deliberate breaks) for any GPU claim, and no Vulkan
-loader/ICD exists in the environment this track was opened from. Any GPU
-work started here will be built and unit-tested at the CPU-observable
-boundary (command generation, resource contracts) exactly like
-`GRAPHICS/Raster/RasterDevice.h` already does, and explicitly flagged
-NOT device-verified until run somewhere with a real GPU.
+Full report: `HITM_FIGHTER_RUNTIME_REPORT.md`. The point of departure
+from Modules 1–4: this module does not import another HITM file — it
+makes real, already-imported HITM data (Modules 1/2/4) actually DRIVE
+simulation behavior. `CHARACTER/HitmBridge/HitmFighterRuntime` (plus
+`HitmMoveInstance` and `HitmReadEngineState`) builds a real Brooklyn from
+his real identity/genome/game-rules data and steps him frame-by-frame
+through real `WORLD::SpatialComponent`/`PHYSICS::RigidBody`/
+`PhysicsSystem` integration, a real gameplay state machine driven by his
+real move's authored frame counts, and real `COMBAT::ReactionSystem`
+reaction determination from his real `defense_profile.blockPreference`.
+
+**Proven, not asserted** (each backed by a passing test or a live CLI
+run, see the report for exact numbers): fighter initialization; idle;
+movement at the real `walkSpeed`; jump/gravity at the real `jumpVel`/
+`gravity`; input command ingestion; attack/state transition through the
+real special move's `startup`/`active`/`recovery`; hit/damage resolution
+using real `damage`/`hitstun`/`blockstun`/`meterGain` plus real,
+unmodified `COMBAT::ReactionSystem::Determine`; meter changes at the
+real `game.json` deltas, clamped at the real max; hitstop as a genuine
+freeze (everything else provably does not advance while it's active);
+the five-tier read-engine transitioning through its real tiers and
+literally implementing "the read engine multiplies OUTPUT, never the
+table"; deterministic frame advancement (two independent runtimes, one
+script, byte-identical snapshots every frame, with a negative control
+proving the check isn't vacuous); and invalid inputs/data failing
+loud and deterministically in every case tested.
+
+**A real bug found and fixed in this module, not hidden**: the first
+implementation registered fighter-frame logic as a `this`-capturing
+`WorldSystemFn` on `world_.Systems()` — Phase 4.0's own established
+plugin pattern — which produced a dangling-pointer segfault the moment
+the object was moved (every `Result<T>`-returning factory moves it).
+Caught by running the suite, fixed by calling the frame logic directly
+instead of through a registered closure — the real integration
+(`World`/`SpatialComponent`/`PhysicsSystem`/`RigidBody`) is unchanged,
+only the unsafe closure-registration layer was removed.
+
+**A real, evidenced move-schema finding**: building `HitmMoveInstance`
+against all three real fighters (not just Brooklyn) found that real
+`signature.json` move schemas are not uniform — Rocket's real "special"
+is a rush-type move with no `blockstun`/`range`/`height`; Static's has
+`range`/`height` but no `blockstun`/`hitstop`. The extractor correctly
+refuses both rather than silently defaulting, live-confirmed via
+`dominus-cli hitm-fighter-runtime`.
+
+**29 new tests, 722 → 751, zero regressions** — full clean rebuild, 10
+repeat runs, and a from-scratch `git clone` build+test cycle this
+session, all green.
+
+**Explicitly NOT done, per this module's own scope**: no second
+fighter/opponent (the read-engine's real gain/lose trigger CONDITIONS —
+counter hit, whiff punish, etc. — need one to detect automatically;
+`GainRead`/`LoseRead` are a real, explicit, public seam instead of a
+guess); no rendering, audio, or real input-device polling; no combo
+damage scaling (`scaleMin`/`scaleStep`, imported but unapplied); no
+basic normals (not authored anywhere in real HITM data); no
+`CombatController`/`MotionGraphEvaluator` integration (would require
+inventing keyframe pose data no real HITM source has — see
+`HitmFighterRuntime.h`'s top comment for the full reasoning).
+
+**Current Track H total: 751/751 tests passing (was 656 before this track).**
+
+### Module 5B+ — sprite/texture assets, GPU rendering, audio, input, stage (planned)
+
+Classified by what this sandbox can actually verify — the real reason
+this track splits here rather than continuing as one undifferentiated
+"Module 5":
+
+| Track | What it proves | Sandbox verification |
+|---|---|---|
+| 5A | CPU game simulation | **Fully provable — done, above** |
+| 5B | Sprite/texture asset ingestion (beyond Module 3's atlas-space data) | Mostly provable |
+| 5C | GPU renderer integration | Code-level only — no real GPU device in this environment |
+| 5D | Audio pipeline | Code-level only — no real audio device in this environment |
+| 5E | Input/device integration | Boundary only |
+| 6 | Actual playable HITM vertical slice | Requires a real runtime/device outside this sandbox |
+
+Texture/sprite GPU rendering specifically **cannot be honestly marked
+PROVEN from a sandboxed session without a real GPU device** — this
+project's own methodology requires real-device Vulkan verification
+(validation-layer VUIDs, actual segfault reproduction on deliberate
+breaks) for any GPU claim, and no Vulkan loader/ICD exists in the
+environment this track was opened from. Any GPU work started here will
+be built and unit-tested at the CPU-observable boundary (command
+generation, resource contracts) exactly like `GRAPHICS/Raster/
+RasterDevice.h` already does, and explicitly flagged NOT
+device-verified until run somewhere with a real GPU. The same honesty
+boundary applies to 5D (no audio device) and, for anything beyond
+programmatic input injection, 5E.
