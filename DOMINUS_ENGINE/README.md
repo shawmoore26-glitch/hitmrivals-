@@ -1181,7 +1181,7 @@ Thirteen real candidates, in rough priority order:
 
 ---
 
-**TRACK H / HITM RIVALS INTEGRATION — Modules 0–3 complete:**
+**TRACK H / HITM RIVALS INTEGRATION — Modules 0–4 complete:**
 Opened by a full audit of DOMINUS against the real, existing HITM Rivals
 codebase and its real authored fighter data — full findings in
 `HITM_INTEGRATION_AUDIT.md`, full sequenced plan in `ROADMAP.md`'s
@@ -1212,6 +1212,13 @@ fighter's bone list, once rigid and once as a secondary-motion glove-bounce
 overlay — a naive name-keyed map (the pattern `Skeleton::AddBone` itself
 uses) would have silently discarded one. Deliberately does not bind into
 a `Skeleton` (would require inventing bind-pose data the source doesn't
-have) or touch rendering. See each module's own "explicitly not done"
-note in `ROADMAP.md` for the honest boundary.
-**708/708 tests passing (was 656 before this track).**
+have) or touch rendering. Module 4 (`CHARACTER/HitmBridge/HitmGameRules`)
+gives HITM's real, global `data/system/game.json` (gravity, walk/dash
+speed, meter economy, damage scaling, hitstop frames, round rules, the
+authoritative fighter roster) a typed home — nothing in `PHYSICS` or
+`COMBAT` had fighting-game-specific constants anywhere; `GameDesignGenome`
+is a meta-design descriptor, not this. Nothing reads `HitmGameRules` yet,
+so gravity/meter/hitstop have zero effect on any simulation. See each
+module's own "explicitly not done" note in `ROADMAP.md` for the honest
+boundary.
+**722/722 tests passing (was 656 before this track).**

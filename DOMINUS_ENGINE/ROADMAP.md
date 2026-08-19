@@ -5889,15 +5889,50 @@ attempt to prove they agree). `GRAPHICS` is untouched.
 
 **Current Track H total: 708/708 tests passing (was 656 before this track).**
 
-### Module 4 — Global game-rules table (planned, not started)
+### Module 4 — Global game-rules table  ← **complete (representation only, not wired into PHYSICS/COMBAT)**
 
-HITM's `data/system/game.json` (gravity, walk/dash speed, meter economy,
-hitstop frames, round rules) has no DOMINUS equivalent — `GameDesignGenome`
-is a meta-design descriptor (arcade vs. soulslike), not a physics/meter
-constants table. `PHYSICS/PhysicsSystem` is generic rigid-body, untuned to
-fighting-game feel. Gated on nothing above; can start once Module 1's import
-pattern (real-file, validated, no invention) is established, since this is
-the same shape of problem on different data.
+`CHARACTER/HitmBridge/HitmGameRules` — a typed home for HITM's real,
+authored `data/system/game.json`: the authoritative fighter roster,
+`view`, `physics` (gravity, walk/dash speed, jump velocity, stage
+bounds), `meter` (resource economy), `combat` (damage scaling, chip,
+counter multipliers, hitstop frames, input buffer), `rounds`, and
+`sprite`. `GameDesignGenome` remains what it was — a meta-design
+descriptor (arcade vs. soulslike) — not this; `PHYSICS/PhysicsSystem`
+remains generic rigid-body, untuned to fighting-game feel; neither is
+touched. `data/system/cameras.json`/`vfx.json` are real, separate gaps,
+deliberately out of scope here — named explicitly in the module's own
+header so "game rules" doesn't quietly expand to "system config."
+
+Unlike Modules 1–3 (per-fighter data, genuinely variable shape), this is
+one canonical global file with a fully-specified real schema — every
+field modeled is required, not optional, since nothing here legitimately
+varies. Same architecture as the prior three modules regardless: `raw_`
+holds the exact parsed tree, `ToJson()` returns it verbatim, every typed
+accessor is a read-only extractive view.
+
+**14 new tests, first run clean (no test-authoring bugs this time,
+unlike Module 3)**: real-data assertions across all 7 sections
+(roster/view/physics/meter/combat/rounds/sprite), a losslessness
+round-trip test (same Dump-compare method as Modules 2–3), and 8
+deliberate-break fixtures — missing file, malformed JSON, a missing
+required section, `roster` wrong-typed / empty / containing a non-string
+element, a missing nested numeric field (`physics.gravity`), and a
+wrong-typed nested field (`meter.max`). `dominus-cli hitm-game-rules
+<game.json>` proves the same losslessness live, run this session.
+
+**708 → 722 tests, zero regressions** — full clean rebuild (`rm -rf
+build`), 8 repeat runs, and (learned from Module 3's near-miss) a
+from-scratch `git clone` + configure + build + test cycle, all 722/722.
+
+**Explicitly NOT done by Module 4**: nothing in `PHYSICS` or `COMBAT`
+reads `HitmGameRules` yet — gravity, walk speed, meter costs, and
+hitstop frames have zero effect on any simulation in this engine.
+`cameras.json`/`vfx.json` untouched. This is the fourth "representable +
+validated, not yet consumed" module in a row — see Module 5+ below for
+why that pattern breaks here (rendering/audio/input can't be verified
+the same way in this environment).
+
+**Current Track H total: 722/722 tests passing (was 656 before this track).**
 
 ### Module 5+ — texture/sprite rendering, audio, input, stage (planned)
 

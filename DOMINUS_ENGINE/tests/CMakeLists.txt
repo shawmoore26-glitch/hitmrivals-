@@ -17,6 +17,7 @@ add_executable(dominus_core_tests
   character/test_hitm_identity_importer.cpp
   character/test_hitm_combat_genome.cpp
   character/test_hitm_parts_rig.cpp
+  character/test_hitm_game_rules.cpp
   motion/test_motion_graph.cpp
   motion/test_animation_layers.cpp
   motion/test_ik.cpp

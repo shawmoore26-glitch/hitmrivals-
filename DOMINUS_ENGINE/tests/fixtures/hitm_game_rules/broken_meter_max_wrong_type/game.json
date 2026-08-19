@@ -1,0 +1,56 @@
+{
+  "roster": [
+    "brooklyn",
+    "static",
+    "rocket"
+  ],
+  "view": {
+    "w": 1060,
+    "h": 600
+  },
+  "physics": {
+    "ground": 538,
+    "gravity": 0.6,
+    "wallL": 64,
+    "wallR": 996,
+    "walkSpeed": 4.4,
+    "jumpVel": -13.6,
+    "dashSpeed": 10.5,
+    "dashFrames": 9
+  },
+  "meter": {
+    "max": "one hundred",
+    "onHitGive": 8,
+    "onHitTake": 5,
+    "onBlockGive": 3,
+    "onBlockTake": 2,
+    "breakCost": 50,
+    "burstCost": 100,
+    "bbCost": 100,
+    "perfectGuardGain": 12
+  },
+  "combat": {
+    "scaleMin": 0.3,
+    "scaleStep": 0.08,
+    "chipMult": 0.14,
+    "counterDmgMult": 1.25,
+    "counterStunBonus": 6,
+    "perfectGuardWindow": 5,
+    "otgDmgMult": 0.6,
+    "wallBounceMinVX": 6,
+    "downFrames": 32,
+    "wakeupInvuln": 14,
+    "burstInvuln": 20,
+    "inputBufferFrames": 8,
+    "hitstopLight": 4,
+    "hitstopHeavy": 7,
+    "hitstopCounter": 11
+  },
+  "rounds": {
+    "toWin": 2,
+    "timerSeconds": 60
+  },
+  "sprite": {
+    "displayHeight": 225
+  }
+}

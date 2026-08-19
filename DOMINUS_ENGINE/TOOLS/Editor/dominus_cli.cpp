@@ -18,6 +18,7 @@
 #include "CHARACTER/Genome/GenomeDecoder.h"
 #include "CHARACTER/HitmBridge/HitmCombatGenome.h"
 #include "CHARACTER/HitmBridge/HitmIdentityImporter.h"
+#include "CHARACTER/HitmBridge/HitmGameRules.h"
 #include "CHARACTER/HitmBridge/HitmPartsRig.h"
 #include "CHARACTER/Rig/RigBinder.h"
 #include "COMBAT/CombatController.h"
@@ -717,6 +718,44 @@ int HitmPartsRigDemo(const std::string& characterDirStr) {
                << "\n";
     std::cout << "[result] atlas-space sprite-cutout rig parsed and validated -- NOT bound to a dominus::animation::"
                   "Skeleton, NOT rendered\n";
+    return lossless ? 0 : 1;
+}
+
+// ROADMAP.md Track H Module 4. Imports the real, global
+// data/system/game.json and proves the same import-then-export
+// losslessness live.
+int HitmGameRulesDemo(const std::string& gameJsonPathStr) {
+    using dominus::character::hitm::HitmGameRules;
+
+    auto result = HitmGameRules::Import(gameJsonPathStr);
+    if (!result.ok) {
+        std::cerr << "[hitm-game-rules] FAILED: " << result.error << "\n";
+        return 1;
+    }
+    auto& g = *result.value;
+
+    std::cout << "[hitm-game-rules] roster (" << g.Roster().size() << "):";
+    for (const auto& f : g.Roster()) std::cout << " " << f;
+    std::cout << "\n";
+    std::cout << "[hitm-game-rules] physics: gravity=" << g.Physics().gravity << " walkSpeed=" << g.Physics().walk_speed
+               << " dashSpeed=" << g.Physics().dash_speed << " jumpVel=" << g.Physics().jump_vel << "\n";
+    std::cout << "[hitm-game-rules] combat: chipMult=" << g.Combat().chip_mult
+               << " counterDmgMult=" << g.Combat().counter_dmg_mult << " hitstopLight=" << g.Combat().hitstop_light
+               << " hitstopHeavy=" << g.Combat().hitstop_heavy << " hitstopCounter=" << g.Combat().hitstop_counter << "\n";
+    std::cout << "[hitm-game-rules] rounds: toWin=" << g.Rounds().to_win << " timerSeconds=" << g.Rounds().timer_seconds
+               << "\n";
+
+    std::string sourceDump = dominus::core::json::Value::Parse([&] {
+                                  std::ifstream in(gameJsonPathStr, std::ios::binary);
+                                  std::ostringstream ss;
+                                  ss << in.rdbuf();
+                                  return ss.str();
+                              }())
+                                  .Dump();
+    bool lossless = (sourceDump == g.ToJson().Dump());
+    std::cout << "[hitm-game-rules] round-trip lossless (source dump == exported dump): " << (lossless ? "true" : "false")
+               << "\n";
+    std::cout << "[result] global game-rules table parsed and validated -- NOT wired into PHYSICS or COMBAT yet\n";
     return lossless ? 0 : 1;
 }
 
@@ -2295,7 +2334,8 @@ int main(int argc, char** argv) {
                    << "  dominus-cli reality-reconcile <fixtures_dir> <registry_path>\n"
                    << "  dominus-cli import-hitm-identity <identity_dir>\n"
                    << "  dominus-cli hitm-combat-genome <identity_dir>\n"
-                   << "  dominus-cli hitm-parts-rig <character_dir>\n";
+                   << "  dominus-cli hitm-parts-rig <character_dir>\n"
+                   << "  dominus-cli hitm-game-rules <game.json>\n";
         return 2;
     }
     std::string command = argv[1];
@@ -2483,6 +2523,9 @@ int main(int argc, char** argv) {
     }
     if (command == "hitm-parts-rig") {
         return HitmPartsRigDemo(path);
+    }
+    if (command == "hitm-game-rules") {
+        return HitmGameRulesDemo(path);
     }
 
     std::cerr << "unknown command: " << command << "\n";
