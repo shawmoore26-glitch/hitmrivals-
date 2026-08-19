@@ -1,0 +1,23 @@
+{
+  "name": "combo_starter",
+  "duration": 0.28,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "arm_r",
+      "keys": [
+        { "time": 0.0,  "x": 15, "y": 10, "rotation": 0 },
+        { "time": 0.14, "x": 15, "y": 10, "rotation": -85 },
+        { "time": 0.28, "x": 15, "y": 10, "rotation": -30 }
+      ]
+    },
+    {
+      "bone": "torso",
+      "keys": [
+        { "time": 0.0,  "x": 0, "y": 40, "rotation": 0 },
+        { "time": 0.14, "x": 5, "y": 40, "rotation": 8 },
+        { "time": 0.28, "x": 0, "y": 40, "rotation": 0 }
+      ]
+    }
+  ]
+}

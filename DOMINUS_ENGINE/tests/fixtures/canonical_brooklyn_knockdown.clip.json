@@ -1,0 +1,30 @@
+{
+  "name": "knockdown",
+  "duration": 0.5,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.3,
+          "x": 5,
+          "y": -25,
+          "rotation": 70
+        },
+        {
+          "time": 0.5,
+          "x": 5,
+          "y": -32,
+          "rotation": 90
+        }
+      ]
+    }
+  ]
+}

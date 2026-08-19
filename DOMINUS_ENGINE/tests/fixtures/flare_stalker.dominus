@@ -1,0 +1,18 @@
+{
+  "dominus_version": "0.1.0",
+  "object_id": "flare_stalker",
+  "entity_type": "creature",
+  "identity": { "display_name": "Flare Stalker", "faction": "none" },
+  "skeleton": { "ref": "brooklyn.skel.json" },
+  "creature_genome": { "ref": "flare_stalker_creature.json" },
+  "provenance": {
+    "creator": "Shawn",
+    "creation_method": "monsterforge_creature_genome_v1",
+    "source_assets": ["flare_stalker_creature.json"],
+    "parent_entities": [],
+    "creation_hash": "2d88579e3cc5abbdd7f642f465f644a9410571719ee5aa34f9e87ea5cca5efdb"
+  },
+  "evolution_history": [
+    { "version": "0.1.0", "date": "2026-08-04", "note": "first CreatureGenome test entity" }
+  ]
+}

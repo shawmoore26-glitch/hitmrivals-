@@ -1,0 +1,29 @@
+{
+  "name": "launcher",
+  "motion_trigger": "launcher",
+  "frames": {
+    "startup": 7,
+    "active": 5,
+    "recovery": 18,
+    "hit_advantage": 10,
+    "block_advantage": -8,
+    "cancel_window": 6
+  },
+  "intent": {
+    "purpose": "pops the opponent airborne to open a combo",
+    "risk": "medium",
+    "followups": [
+      "air_combo"
+    ]
+  },
+  "power": 20,
+  "speed": 18,
+  "hitboxes": [
+    {
+      "bone": "hand_R",
+      "radius": 7,
+      "offset_x": 6,
+      "offset_y": 4
+    }
+  ]
+}

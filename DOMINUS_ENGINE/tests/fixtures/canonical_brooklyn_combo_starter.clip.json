@@ -1,0 +1,53 @@
+{
+  "name": "combo_starter",
+  "duration": 0.28,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "hand_R",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.14,
+          "x": 0,
+          "y": 0,
+          "rotation": -85
+        },
+        {
+          "time": 0.28,
+          "x": 0,
+          "y": 0,
+          "rotation": -30
+        }
+      ]
+    },
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.14,
+          "x": 5,
+          "y": 0,
+          "rotation": 8
+        },
+        {
+          "time": 0.28,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}

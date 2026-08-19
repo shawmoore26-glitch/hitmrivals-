@@ -1,0 +1,23 @@
+{
+  "name": "idle",
+  "duration": 1.0,
+  "loop": true,
+  "tracks": [
+    {
+      "bone": "torso",
+      "keys": [
+        { "time": 0.0, "x": 0, "y": 40, "rotation": 0 },
+        { "time": 0.5, "x": 0, "y": 42, "rotation": 1 },
+        { "time": 1.0, "x": 0, "y": 40, "rotation": 0 }
+      ]
+    },
+    {
+      "bone": "head",
+      "keys": [
+        { "time": 0.0, "x": 0, "y": 30, "rotation": 0 },
+        { "time": 0.5, "x": 0, "y": 30, "rotation": -2 },
+        { "time": 1.0, "x": 0, "y": 30, "rotation": 0 }
+      ]
+    }
+  ]
+}

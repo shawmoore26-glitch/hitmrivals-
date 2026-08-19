@@ -1,0 +1,27 @@
+{
+  "name": "air_combo",
+  "motion_trigger": "air_combo",
+  "frames": {
+    "startup": 6,
+    "active": 10,
+    "recovery": 22,
+    "hit_advantage": 2,
+    "block_advantage": -12,
+    "cancel_window": 0
+  },
+  "intent": {
+    "purpose": "aerial flurry combo ender",
+    "risk": "high",
+    "followups": []
+  },
+  "power": 28,
+  "speed": 22,
+  "hitboxes": [
+    {
+      "bone": "hand_R",
+      "radius": 7,
+      "offset_x": 6,
+      "offset_y": 4
+    }
+  ]
+}

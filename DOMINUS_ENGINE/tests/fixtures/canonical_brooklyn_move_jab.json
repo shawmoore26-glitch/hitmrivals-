@@ -1,0 +1,30 @@
+{
+  "name": "jab",
+  "motion_trigger": "attack",
+  "frames": {
+    "startup": 5,
+    "active": 4,
+    "recovery": 15,
+    "hit_advantage": 8,
+    "block_advantage": 2,
+    "cancel_window": 10
+  },
+  "intent": {
+    "purpose": "close-range pressure strike",
+    "risk": "medium",
+    "followups": [
+      "combo_starter",
+      "counter"
+    ]
+  },
+  "power": 18,
+  "speed": 25,
+  "hitboxes": [
+    {
+      "bone": "hand_R",
+      "radius": 6,
+      "offset_x": 5,
+      "offset_y": 0
+    }
+  ]
+}

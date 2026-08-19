@@ -1,0 +1,14 @@
+{
+  "name": "knockdown_recovery",
+  "duration": 0.4,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "torso",
+      "keys": [
+        { "time": 0.0, "x": 5, "y": 8,  "rotation": 90 },
+        { "time": 0.4, "x": 0, "y": 40, "rotation": 0 }
+      ]
+    }
+  ]
+}

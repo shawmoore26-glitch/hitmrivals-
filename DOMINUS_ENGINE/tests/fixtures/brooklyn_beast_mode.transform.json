@@ -1,0 +1,14 @@
+{
+  "name": "beast_mode",
+  "combat_dna_ref": "brooklyn_beast_combat.json",
+  "motion_graph_ref": "brooklyn_beast_motion_graph.json",
+  "moves": [
+    { "name": "beast_slam", "ref": "brooklyn_beast_slam.json" }
+  ],
+  "skeleton_scale": 1.5,
+  "ai_profile": { "behavior_tag": "feral", "difficulty": 0.9 },
+  "physics_profile": { "mass_kg": 110, "gravity_scale": 1.3 },
+  "audio_profile": { "voice_bank": "brooklyn_beast_voice", "hit_sound_bank": "beast_impact" },
+  "visual_profile": { "material_set": "beast_fur_material", "vfx_set": "beast_aura_vfx" },
+  "camera_profile": { "fov_bias": 8.0, "shake_intensity": 1.8 }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "stagger",
+  "duration": 0.25,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.1,
+          "x": 4,
+          "y": -2,
+          "rotation": 8
+        },
+        {
+          "time": 0.25,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "name": "idle",
+  "duration": 1.0,
+  "loop": true,
+  "tracks": [
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.5,
+          "x": 0,
+          "y": 2,
+          "rotation": 1
+        },
+        {
+          "time": 1.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    },
+    {
+      "bone": "head",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.5,
+          "x": 0,
+          "y": 0,
+          "rotation": -2
+        },
+        {
+          "time": 1.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}

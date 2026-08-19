@@ -1,0 +1,102 @@
+{
+  "profile_id": "canonical_biped_identity_v1",
+  "entity_id": "canonical_biped",
+  "mappings": [
+    {
+      "legacy_bone": "root",
+      "canonical_bone": "root"
+    },
+    {
+      "legacy_bone": "pelvis",
+      "canonical_bone": "pelvis"
+    },
+    {
+      "legacy_bone": "spine_01",
+      "canonical_bone": "spine_01"
+    },
+    {
+      "legacy_bone": "spine_02",
+      "canonical_bone": "spine_02"
+    },
+    {
+      "legacy_bone": "spine_03",
+      "canonical_bone": "spine_03"
+    },
+    {
+      "legacy_bone": "chest",
+      "canonical_bone": "chest"
+    },
+    {
+      "legacy_bone": "neck",
+      "canonical_bone": "neck"
+    },
+    {
+      "legacy_bone": "head",
+      "canonical_bone": "head"
+    },
+    {
+      "legacy_bone": "clavicle_L",
+      "canonical_bone": "clavicle_L"
+    },
+    {
+      "legacy_bone": "upperarm_L",
+      "canonical_bone": "upperarm_L"
+    },
+    {
+      "legacy_bone": "forearm_L",
+      "canonical_bone": "forearm_L"
+    },
+    {
+      "legacy_bone": "hand_L",
+      "canonical_bone": "hand_L"
+    },
+    {
+      "legacy_bone": "clavicle_R",
+      "canonical_bone": "clavicle_R"
+    },
+    {
+      "legacy_bone": "upperarm_R",
+      "canonical_bone": "upperarm_R"
+    },
+    {
+      "legacy_bone": "forearm_R",
+      "canonical_bone": "forearm_R"
+    },
+    {
+      "legacy_bone": "hand_R",
+      "canonical_bone": "hand_R"
+    },
+    {
+      "legacy_bone": "thigh_L",
+      "canonical_bone": "thigh_L"
+    },
+    {
+      "legacy_bone": "calf_L",
+      "canonical_bone": "calf_L"
+    },
+    {
+      "legacy_bone": "foot_L",
+      "canonical_bone": "foot_L"
+    },
+    {
+      "legacy_bone": "toe_L",
+      "canonical_bone": "toe_L"
+    },
+    {
+      "legacy_bone": "thigh_R",
+      "canonical_bone": "thigh_R"
+    },
+    {
+      "legacy_bone": "calf_R",
+      "canonical_bone": "calf_R"
+    },
+    {
+      "legacy_bone": "foot_R",
+      "canonical_bone": "foot_R"
+    },
+    {
+      "legacy_bone": "toe_R",
+      "canonical_bone": "toe_R"
+    }
+  ]
+}

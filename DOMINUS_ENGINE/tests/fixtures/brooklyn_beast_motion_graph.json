@@ -1,0 +1,11 @@
+{
+  "entry_state": "idle",
+  "states": [
+    { "name": "idle", "clip": "idle" },
+    { "name": "attack", "clip": "attack_jab" }
+  ],
+  "transitions": [
+    { "from": "idle", "to": "attack", "trigger": "attack", "blend_duration": 0.03 },
+    { "from": "attack", "to": "idle", "trigger": "complete", "blend_duration": 0.05, "auto": true }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "profile_id": "brooklyn_legacy_v1",
+  "entity_id": "brooklyn",
+  "mappings": [
+    { "legacy_bone": "root",  "canonical_bone": "root" },
+    { "legacy_bone": "torso", "canonical_bone": "chest" },
+    { "legacy_bone": "head",  "canonical_bone": "head" },
+    { "legacy_bone": "arm_r", "canonical_bone": "hand_R" },
+    { "legacy_bone": "arm_l", "canonical_bone": "hand_L" },
+    { "legacy_bone": "leg_r", "canonical_bone": "foot_R" },
+    { "legacy_bone": "leg_l", "canonical_bone": "foot_L" }
+  ]
+}

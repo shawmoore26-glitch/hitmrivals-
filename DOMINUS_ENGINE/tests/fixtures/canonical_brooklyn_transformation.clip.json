@@ -1,0 +1,53 @@
+{
+  "name": "transformation",
+  "duration": 0.6,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.3,
+          "x": 0,
+          "y": 6,
+          "rotation": -15
+        },
+        {
+          "time": 0.6,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    },
+    {
+      "bone": "head",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.3,
+          "x": 0,
+          "y": 0,
+          "rotation": -25
+        },
+        {
+          "time": 0.6,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}

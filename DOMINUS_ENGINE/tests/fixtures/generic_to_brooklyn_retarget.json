@@ -1,0 +1,8 @@
+{
+  "bone_map": [
+    { "target_bone": "pelvis",  "source_bone": "root" },
+    { "target_bone": "spine",   "source_bone": "torso" },
+    { "target_bone": "cranium", "source_bone": "head" },
+    { "target_bone": "limb_r",  "source_bone": "arm_r" }
+  ]
+}

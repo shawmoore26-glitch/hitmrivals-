@@ -1,0 +1,43 @@
+{
+  "dominus_version": "0.1.0",
+  "object_id": "brooklyn_canonical",
+  "identity": { "display_name": "Brooklyn (Canonical)", "faction": "Renegades" },
+  "entity_type": "character",
+  "provenance": {
+    "creator": "Shawn",
+    "creation_method": "rig_migration_visual_carry_forward",
+    "source_assets": ["brooklyn_visual.json", "brooklyn_jacket_material.json", "brooklyn_visual_style.json"],
+    "parent_entities": ["brooklyn"],
+    "creation_hash": "10bbf5ea81f2f87e2e3ad66a0d66da7c5eb28465209c0024f3d9baf8dbc616b5"
+  },
+  "visual_genome": { "ref": "brooklyn_visual.json" },
+  "material_genome": { "ref": "brooklyn_jacket_material.json" },
+  "visual_style_genome": { "ref": "brooklyn_visual_style.json" },
+  "skeleton": { "ref": "brooklyn_canonical.skel.json" },
+  "animations": [
+    { "name": "idle", "ref": "canonical_brooklyn_idle.clip.json" },
+    { "name": "attack_jab", "ref": "canonical_brooklyn_attack.clip.json" },
+    { "name": "combo_starter", "ref": "canonical_brooklyn_combo_starter.clip.json" },
+    { "name": "counter", "ref": "canonical_brooklyn_counter.clip.json" },
+    { "name": "dodge", "ref": "canonical_brooklyn_dodge.clip.json" },
+    { "name": "launcher", "ref": "canonical_brooklyn_launcher.clip.json" },
+    { "name": "air_combo", "ref": "canonical_brooklyn_air_combo.clip.json" },
+    { "name": "stagger", "ref": "canonical_brooklyn_stagger.clip.json" },
+    { "name": "knockback", "ref": "canonical_brooklyn_knockback.clip.json" },
+    { "name": "block_impact", "ref": "canonical_brooklyn_block_impact.clip.json" },
+    { "name": "knockdown", "ref": "canonical_brooklyn_knockdown.clip.json" },
+    { "name": "knockdown_recovery", "ref": "canonical_brooklyn_knockdown_recovery.clip.json" },
+    { "name": "transformation", "ref": "canonical_brooklyn_transformation.clip.json" }
+  ],
+  "motion_graph": { "ref": "brooklyn_motion_graph.json" },
+  "combat_dna": { "ref": "brooklyn_combat.json" },
+  "moves": [
+    { "name": "jab", "ref": "canonical_brooklyn_move_jab.json" },
+    { "name": "dodge", "ref": "canonical_brooklyn_move_dodge.json" },
+    { "name": "counter", "ref": "canonical_brooklyn_move_counter.json" },
+    { "name": "combo_starter", "ref": "canonical_brooklyn_move_combo_starter.json" },
+    { "name": "launcher", "ref": "canonical_brooklyn_move_launcher.json" },
+    { "name": "air_combo", "ref": "canonical_brooklyn_move_air_combo.json" }
+  ],
+  "physics_rules": { "mass_kg": 68, "hurtbox_ref": "brooklyn_canonical_hurtboxes.json" }
+}

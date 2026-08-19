@@ -1,0 +1,67 @@
+{
+  "identity": {
+    "species_name": "flare_stalker",
+    "common_name": "Flare Stalker",
+    "origin": "HITM City undercity, post-Long Flare mutation event"
+  },
+  "taxonomy": {
+    "body_plan": "quadrupedal_hybrid",
+    "classification": "apex_predator",
+    "limb_count": 6
+  },
+  "anatomy": {
+    "height_m": 2.4,
+    "weight_kg": 310,
+    "armor_type": "crystalline_carapace",
+    "notable_features": ["bioluminescent flare-marks", "segmented tail", "retractable claws"]
+  },
+  "physiology": {
+    "metabolism": "thermophilic",
+    "energy_sources": ["ambient_radiation", "organic_matter"],
+    "reproduction": "spore_clutch",
+    "mutation_rate": 0.35
+  },
+  "senses": {
+    "sense_types": ["thermal_vision", "electroreception"],
+    "perception_range_m": 120
+  },
+  "locomotion": {
+    "primary_mode": "quadrupedal_sprint",
+    "top_speed_kmh": 65
+  },
+  "cognition": {
+    "tier": "pack",
+    "problem_solving": 0.55,
+    "communication": 0.4
+  },
+  "behavior": {
+    "temperament": "territorial_ambusher",
+    "aggression": 0.75,
+    "territoriality": 0.9,
+    "combat_role": "ambush"
+  },
+  "ecology": {
+    "trophic_role": "apex_predator",
+    "diet_type": "carnivore",
+    "preferred_prey": ["scavenger_packs", "stray_livestock"],
+    "natural_predators": [],
+    "habitat": "HITM City undercity tunnels"
+  },
+  "combat_profile": {
+    "aggression": 0.75,
+    "speed": 0.7,
+    "durability": 0.6,
+    "combat_intelligence": 0.5,
+    "range": "close"
+  },
+  "growth": {
+    "lifespan_years": 18,
+    "life_stages": ["hatchling", "juvenile", "stalker", "elder_stalker"],
+    "maturity_age_years": 3
+  },
+  "evolution": {
+    "evolutionary_origin": "feral canid population exposed to Long Flare radiation",
+    "lineage": ["feral_canid", "irradiated_stray", "flare_stalker"],
+    "adaptation_potential": 0.7
+  }
+}

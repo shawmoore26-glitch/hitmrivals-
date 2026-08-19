@@ -1,0 +1,24 @@
+{
+  "name": "knockdown_recovery",
+  "duration": 0.4,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 5,
+          "y": -32,
+          "rotation": 90
+        },
+        {
+          "time": 0.4,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}

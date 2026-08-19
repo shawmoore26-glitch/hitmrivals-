@@ -1,0 +1,11 @@
+{
+  "style_id": "STYLE-URBAN-COMBAT",
+  "name": "Urban Combat",
+  "visual_rules": {
+    "line_quality": "heavy",
+    "color_behavior": "high_contrast",
+    "shape_behavior": "angular",
+    "motion_behavior": "dramatic"
+  },
+  "influences": ["boxing", "drunken_kung_fu"]
+}

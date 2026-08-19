@@ -1,0 +1,11 @@
+{
+  "bones": [
+    { "name": "root",  "parent": null,   "x": 0,  "y": 0,  "rotation": 0, "scale_x": 1, "scale_y": 1 },
+    { "name": "torso", "parent": "root", "x": 0,  "y": 40, "rotation": 0, "scale_x": 1, "scale_y": 1 },
+    { "name": "head",  "parent": "torso","x": 0,  "y": 30, "rotation": 0, "scale_x": 1, "scale_y": 1 },
+    { "name": "arm_r", "parent": "torso","x": 15, "y": 10, "rotation": 0, "scale_x": 1, "scale_y": 1 },
+    { "name": "arm_l", "parent": "torso","x": -15,"y": 10, "rotation": 0, "scale_x": 1, "scale_y": 1 },
+    { "name": "leg_r", "parent": "root", "x": 13, "y": -68,"rotation": 0, "scale_x": 1, "scale_y": 1 },
+    { "name": "leg_l", "parent": "root", "x": -13,"y": -68,"rotation": 0, "scale_x": 1, "scale_y": 1 }
+  ]
+}

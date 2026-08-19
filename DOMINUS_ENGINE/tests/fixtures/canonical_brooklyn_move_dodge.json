@@ -1,0 +1,22 @@
+{
+  "name": "dodge",
+  "motion_trigger": "dodge",
+  "frames": {
+    "startup": 2,
+    "active": 6,
+    "recovery": 8,
+    "hit_advantage": 0,
+    "block_advantage": 0,
+    "cancel_window": 4
+  },
+  "intent": {
+    "purpose": "evasive repositioning",
+    "risk": "low",
+    "followups": [
+      "counter"
+    ]
+  },
+  "power": 0,
+  "speed": 40,
+  "hitboxes": []
+}

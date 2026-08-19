@@ -1,0 +1,7 @@
+{
+  "bones": [
+    { "name": "shoulder", "parent": null,      "x": 0,  "y": 0, "rotation": 0, "scale_x": 1, "scale_y": 1 },
+    { "name": "elbow",    "parent": "shoulder", "x": 20, "y": 0, "rotation": 0, "scale_x": 1, "scale_y": 1 },
+    { "name": "wrist",    "parent": "elbow",    "x": 15, "y": 0, "rotation": 0, "scale_x": 1, "scale_y": 1 }
+  ]
+}

@@ -1,0 +1,89 @@
+# tests/CMakeLists.txt
+# v0.1 uses a hand-rolled assert-based test runner (tests/TestFramework.h) to
+# stay dependency-free -- see docs/ARCHITECTURE_v0.1.md section 6. Swapping
+# in GoogleTest/Catch2 is a tracked Phase 2 upgrade, not a v0.1 blocker.
+
+add_executable(dominus_core_tests
+  main.cpp
+  core/test_allocator.cpp
+  core/test_metabin_object.cpp
+  core/test_serializer.cpp
+  core/test_application.cpp
+  animation/test_skeleton.cpp
+  animation/test_animation_clip.cpp
+  character/test_rig_and_playback.cpp
+  character/test_motion_intelligence_integration.cpp
+  motion/test_motion_graph.cpp
+  motion/test_animation_layers.cpp
+  motion/test_ik.cpp
+  motion/test_retargeting.cpp
+  motion/test_procedural_hooks.cpp
+  combat/test_move_and_hurtbox.cpp
+  combat/test_collision.cpp
+  combat/test_combo_and_clash.cpp
+  combat/test_reaction_and_controller.cpp
+  combat/test_collision_impact_loop.cpp
+  combat/test_impact_pipeline.cpp
+  combat/test_impact_provenance.cpp
+  combat/test_anime_speed.cpp
+  combat/test_combat_ai.cpp
+  soul/test_genome_decoder.cpp
+  soul/test_style_rank.cpp
+  soul/test_cinematic_director.cpp
+  soul/test_environment.cpp
+  soul/test_transformation.cpp
+  integration/test_ai_genome_pipeline.cpp
+  integration/test_style_collector.cpp
+  integration/test_transformation_profiles.cpp
+  integration/test_world_events.cpp
+  integration/test_motion_library_completion.cpp
+  world/test_entity_registry.cpp
+  world/test_world_tick_and_spatial.cpp
+  world/test_hitm_rivals_as_world_entity.cpp
+  world/test_world_persistence.cpp
+  physics/test_physics_system.cpp
+  physics/test_collision_and_constraints.cpp
+  physics/test_universal_physics_proof.cpp
+  validation/test_package_validator.cpp
+  validation/test_build_pipeline.cpp
+  registry/test_sha256.cpp
+  registry/test_genome_pipeline.cpp
+  integration/test_world_persistence_full_cycle.cpp
+  integration/test_live_impact_capture.cpp
+  genome/test_social_provenance_entity_type.cpp
+  genome/test_creature_genome.cpp
+  genome/test_combat_style_genome.cpp
+  genome/test_combat_physics_genome.cpp
+  genome/test_game_design_genome.cpp
+  genome/test_visual_genome.cpp
+  genome/test_material_genome.cpp
+  genome/test_visual_style_genome.cpp
+  visualforge/test_visual_forge.cpp
+  visualforge/test_visual_forge_v2.cpp
+  visualforge/test_visual_forge_v3.cpp
+  visualforge/test_visualforge_acceptance.cpp
+  graphics/test_frame_compiler.cpp
+  graphics/test_raster_device.cpp
+  graphics/test_render_boundary.cpp
+  graphics/test_material_contract.cpp
+  graphics/test_gpu_resource_lifetime.cpp
+  graphics/test_material_implementation.cpp
+  graphics/test_gpu_resource_authority.cpp
+  rig/test_rig_authority.cpp
+  rig/test_rig_profile.cpp
+  rig/test_brooklyn_migration.cpp
+  rig/test_brooklyn_acceptance.cpp
+  reality/test_reality_compiler.cpp
+  reality/test_reality_rebuilder.cpp
+  reality/test_reality_transactional.cpp
+  reality/test_evidence_graph.cpp
+  reality/test_adversarial_multi_mutation.cpp
+  reality/test_concurrent_registry_safety.cpp
+  reality/test_change_event_normalizer.cpp
+  reality/test_reality_watcher.cpp
+  reality/test_reconciler.cpp
+)
+target_link_libraries(dominus_core_tests PRIVATE dominus_combat dominus_world dominus_physics dominus_registry dominus_visualforge dominus_rig dominus_graphics dominus_validation dominus_reality)
+target_include_directories(dominus_core_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_test(NAME dominus_core_tests COMMAND dominus_core_tests)

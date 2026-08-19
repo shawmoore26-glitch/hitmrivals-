@@ -1,0 +1,9 @@
+{
+  "name": "counter",
+  "motion_trigger": "counter",
+  "frames": { "startup": 3, "active": 4, "recovery": 10, "hit_advantage": 12, "block_advantage": 4, "cancel_window": 0 },
+  "intent": { "purpose": "punish an overextended attacker", "risk": "low", "followups": [] },
+  "power": 22,
+  "speed": 35,
+  "hitboxes": [ { "bone": "arm_r", "radius": 6, "offset_x": 5, "offset_y": 0 } ]
+}

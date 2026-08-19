@@ -1,0 +1,21 @@
+{
+  "style_name": "psycho_drunken_martial_arts",
+  "ancestry": ["drunken_boxing", "capoeira", "catch_wrestling", "silat"],
+  "aggression": 0.85,
+  "defense": 0.4,
+  "mobility": 0.9,
+  "pressure": 0.8,
+  "deception": 0.95,
+  "endurance": 0.7,
+  "precision": 0.5,
+  "adaptability": 0.9,
+  "evolution_capacity": 0.75,
+  "range_control": "close",
+  "rhythm": "erratic, off-beat, feints disguised as stumbles and overcommitted swings",
+  "philosophy": "predictability is death; let chaos read the opponent's timing before they read yours",
+  "weaknesses": [
+    "low defensive structure -- trades hits deliberately, punished hard by disciplined counter-fighters",
+    "exhausts quickly under sustained pressure that refuses to be baited",
+    "precision suffers when the chaos itself isn't landing -- a cornered psycho_drunken fighter has no fallback rhythm"
+  ]
+}

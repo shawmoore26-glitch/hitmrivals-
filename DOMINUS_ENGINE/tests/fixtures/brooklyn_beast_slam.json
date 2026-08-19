@@ -1,0 +1,9 @@
+{
+  "name": "beast_slam",
+  "motion_trigger": "attack",
+  "frames": { "startup": 8, "active": 6, "recovery": 20, "hit_advantage": 4, "block_advantage": -6, "cancel_window": 0 },
+  "intent": { "purpose": "overwhelming reckless strike", "risk": "high", "followups": [] },
+  "power": 40,
+  "speed": 15,
+  "hitboxes": [ { "bone": "arm_r", "radius": 9, "offset_x": 6, "offset_y": 0 } ]
+}

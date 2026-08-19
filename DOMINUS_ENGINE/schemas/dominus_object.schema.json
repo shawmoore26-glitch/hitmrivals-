@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dominus-engine/schemas/dominus_object.schema.json",
+  "title": "DominusObject",
+  "description": "Canonical schema for a .dominus Meta-Bin object. Every asset the engine manages is an instance of this schema.",
+  "type": "object",
+  "required": ["dominus_version", "object_id", "identity"],
+  "properties": {
+    "dominus_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver of the schema this object was authored against. DominusSerializer must refuse to load an object whose major version is newer than the running engine's."
+    },
+    "object_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$",
+      "description": "Stable, lowercase, snake_case identifier. Never renamed once shipped -- rename via a new evolution_history entry, not by mutating this field."
+    },
+    "identity": {
+      "type": "object",
+      "required": ["display_name"],
+      "properties": {
+        "display_name": { "type": "string" },
+        "faction": { "type": "string" }
+      }
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Free-form tag (\"organism\", \"character\", \"npc\", \"economy\", \"city\", ...). The engine does not own or validate this vocabulary -- no behavior is implied by the tag alone, it is metadata a future extension can filter on."
+    },
+    "provenance": {
+      "type": "object",
+      "description": "The entity's birth certificate: who/what created it, from what assets, under what method, descended from which parent entities.",
+      "properties": {
+        "creator": { "type": "string" },
+        "creation_method": { "type": "string" },
+        "source_assets": { "type": "array", "items": { "type": "string" } },
+        "parent_entities": { "type": "array", "items": { "type": "string" } },
+        "creation_hash": {
+          "type": "string",
+          "description": "Free-form -- typically a SHA-256 digest from the Registry Prototype's GenomeCompiler when this entity's genome was compiled through that pipeline, but this field has zero dependency on that system."
+        }
+      }
+    },
+    "social_genome": {
+      "type": "object",
+      "description": "Points at a SocialGenome file (personality traits + relationships). Dominus Engine reads this and interprets nothing -- what a relationship DOES is a future extension's job.",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "creature_genome": {
+      "type": "object",
+      "description": "Points at a CreatureGenome file (12 sections: Identity, Taxonomy, Anatomy, Physiology, Senses, Locomotion, Cognition, Behavior, Ecology, CombatProfile, Growth, Evolution). Strictly validated on load -- species_name is required, all [0,1]-range fields are checked. Pure data; no evolution simulation, no ecosystem generation, no decoder yet.",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "combat_style_genome": {
+      "type": "object",
+      "description": "Points at a CombatStyleGenome file -- a real, structured referent for CombatIdentity.style (which stays a plain free-form string, LAW C002/C003 untouched). Styles are their own entities, decoupled from any one fighter; this ref is how one entity declares which style file it currently uses.",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "combat_physics_genome": {
+      "type": "object",
+      "description": "Points at a CombatPhysicsGenome file (body/energy/impact -- mass, armor, stamina, strike force, durability). Consumed standalone by COMBAT::ImpactSolver; not yet wired into ReactionSystem/CombatController's live hit resolution.",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "game_design_genome": {
+      "type": "object",
+      "description": "Points at a GameDesignGenome file (genre/core_loop/difficulty/risk_reward_balance). Read by GameDesignCoherenceChecker against a CombatStyleGenome/CombatPhysicsGenome to produce advisory (never pass/fail) coherence notes.",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "material_genome": {
+      "type": "object",
+      "description": "Points at a MaterialGenome file (a material/object's type, age, wear, exposure -- state, not rendering). wear_state can be author-set or derived from real WORLD::WorldHistory damage_event entries via MaterialWearDeriver.",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "visual_style_genome": {
+      "type": "object",
+      "description": "Points at a VisualStyleGenome file (an art style as comparable, referenceable data -- line/color/shape/motion behavior, plus influences). Data only, no auto-combine/fusion algorithm.",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "mesh": {
+      "type": "object",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "textures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slot", "ref"],
+        "properties": {
+          "slot": { "type": "string", "enum": ["albedo", "normal", "roughness", "metallic", "emissive", "ao"] },
+          "ref": { "type": "string" }
+        }
+      }
+    },
+    "skeleton": {
+      "type": "object",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "animations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "ref"],
+        "properties": {
+          "name": { "type": "string" },
+          "ref": { "type": "string" }
+        }
+      }
+    },
+    "combat_dna": {
+      "type": "object",
+      "description": "Points at combat-genome-director output. Dominus Engine reads this, it does not generate it.",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "ai_behavior": {
+      "type": "object",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "physics_rules": {
+      "type": "object",
+      "properties": {
+        "mass_kg": { "type": "number", "exclusiveMinimum": 0 },
+        "hurtbox_ref": { "type": "string" }
+      }
+    },
+    "audio": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["event", "ref"],
+        "properties": {
+          "event": { "type": "string" },
+          "ref": { "type": "string" }
+        }
+      }
+    },
+    "lore": {
+      "type": "object",
+      "properties": { "ref": { "type": "string" } }
+    },
+    "evolution_history": {
+      "type": "array",
+      "description": "Append-only. Never rewritten. Every save that changes the object appends an entry here.",
+      "items": {
+        "type": "object",
+        "required": ["version", "date", "note"],
+        "properties": {
+          "version": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

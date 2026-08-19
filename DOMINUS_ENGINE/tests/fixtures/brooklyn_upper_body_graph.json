@@ -1,0 +1,7 @@
+{
+  "entry_state": "attack",
+  "states": [
+    { "name": "attack", "clip": "attack_jab" }
+  ],
+  "transitions": []
+}

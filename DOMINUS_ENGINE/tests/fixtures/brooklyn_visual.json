@@ -1,0 +1,27 @@
+{
+  "form": {
+    "type": "humanoid",
+    "silhouette": "heavy_fighter",
+    "proportion": "street_brawler",
+    "shape_language": "aggressive"
+  },
+  "surface": {
+    "skin": {
+      "roughness": 0.6,
+      "subsurface": 0.3,
+      "age": 29,
+      "damage_response": true
+    },
+    "clothing": {
+      "material": "urban_leather",
+      "adaptive_damage": true,
+      "weather_response": true
+    }
+  },
+  "presence": {
+    "aura": "chaotic",
+    "threat_signature": 0.8,
+    "emotional_visual_weight": 0.75,
+    "style_id": "STYLE-URBAN-COMBAT"
+  }
+}

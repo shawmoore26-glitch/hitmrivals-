@@ -1,0 +1,12 @@
+{
+  "identity": {
+    "common_name": "Nameless Thing"
+  },
+  "combat_profile": {
+    "aggression": 47.0,
+    "speed": -3.0
+  },
+  "growth": {
+    "lifespan_years": -5
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "body_model": {
+    "mass": 78,
+    "height": 1.83,
+    "density": 1.05,
+    "armor": 0.1,
+    "flexibility": 0.85
+  },
+  "energy_model": {
+    "stamina": 100,
+    "recovery": 1.2,
+    "fatigue_rate": 1.3
+  },
+  "impact_profile": {
+    "strike_force": 1.15,
+    "grapple_force": 0.9,
+    "durability": 55
+  }
+}

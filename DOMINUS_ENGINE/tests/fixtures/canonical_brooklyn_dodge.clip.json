@@ -1,0 +1,53 @@
+{
+  "name": "dodge",
+  "duration": 0.2,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.1,
+          "x": -12,
+          "y": -2,
+          "rotation": -8
+        },
+        {
+          "time": 0.2,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    },
+    {
+      "bone": "root",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.1,
+          "x": -10,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.2,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}

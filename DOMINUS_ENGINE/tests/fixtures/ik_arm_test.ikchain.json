@@ -1,0 +1,6 @@
+{
+  "root_bone": "shoulder",
+  "mid_bone": "elbow",
+  "end_bone": "wrist",
+  "bend_direction": 1.0
+}

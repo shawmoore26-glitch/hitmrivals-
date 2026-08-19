@@ -1,0 +1,10 @@
+{
+  "dominus_version": "0.1.0",
+  "object_id": "generic_biped",
+  "identity": { "display_name": "Generic Biped", "faction": "none" },
+  "skeleton": { "ref": "generic_biped.skel.json" },
+  "retarget_map": { "ref": "generic_to_brooklyn_retarget.json" },
+  "evolution_history": [
+    { "version": "0.1.0", "date": "2026-07-31", "note": "retargeting foundation proof rig, not part of HITM CITY canon" }
+  ]
+}

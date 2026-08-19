@@ -1,0 +1,9 @@
+{
+  "dominus_version": "0.1.0",
+  "object_id": "broken_missing_skeleton",
+  "identity": { "display_name": "Broken Rig", "faction": "none" },
+  "skeleton": { "ref": "does_not_exist.skel.json" },
+  "evolution_history": [
+    { "version": "0.1.0", "date": "2026-08-01", "note": "deliberately broken fixture for PackageValidator tests" }
+  ]
+}

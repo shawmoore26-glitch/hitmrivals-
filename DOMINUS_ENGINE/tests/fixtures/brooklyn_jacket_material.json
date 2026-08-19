@@ -1,0 +1,12 @@
+{
+  "material_id": "MAT-JACKET-001",
+  "identity": {
+    "type": "urban_leather"
+  },
+  "properties": {
+    "age": 7,
+    "wear_state": 0.0,
+    "damage_history": false,
+    "weather_exposure": true
+  }
+}

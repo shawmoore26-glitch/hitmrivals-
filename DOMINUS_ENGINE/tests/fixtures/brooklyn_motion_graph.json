@@ -1,0 +1,353 @@
+{
+  "entry_state": "idle",
+  "states": [
+    {
+      "name": "idle",
+      "clip": "idle"
+    },
+    {
+      "name": "attack",
+      "clip": "attack_jab"
+    },
+    {
+      "name": "combo_starter",
+      "clip": "combo_starter"
+    },
+    {
+      "name": "counter",
+      "clip": "counter"
+    },
+    {
+      "name": "dodge",
+      "clip": "dodge"
+    },
+    {
+      "name": "launcher",
+      "clip": "launcher"
+    },
+    {
+      "name": "air_combo",
+      "clip": "air_combo"
+    },
+    {
+      "name": "stagger",
+      "clip": "stagger"
+    },
+    {
+      "name": "knockback",
+      "clip": "knockback"
+    },
+    {
+      "name": "block_impact",
+      "clip": "block_impact"
+    },
+    {
+      "name": "knockdown",
+      "clip": "knockdown"
+    },
+    {
+      "name": "knockdown_recovery",
+      "clip": "knockdown_recovery"
+    },
+    {
+      "name": "transformation",
+      "clip": "transformation"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "idle",
+      "to": "attack",
+      "trigger": "attack",
+      "blend_duration": 0.1
+    },
+    {
+      "from": "attack",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.15,
+      "auto": true
+    },
+    {
+      "from": "attack",
+      "to": "combo_starter",
+      "trigger": "combo_starter",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "combo_starter",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.12,
+      "auto": true
+    },
+    {
+      "from": "combo_starter",
+      "to": "launcher",
+      "trigger": "launcher",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "launcher",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.12,
+      "auto": true
+    },
+    {
+      "from": "launcher",
+      "to": "air_combo",
+      "trigger": "air_combo",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "air_combo",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.15,
+      "auto": true
+    },
+    {
+      "from": "idle",
+      "to": "counter",
+      "trigger": "counter",
+      "blend_duration": 0.06
+    },
+    {
+      "from": "counter",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.1,
+      "auto": true
+    },
+    {
+      "from": "idle",
+      "to": "dodge",
+      "trigger": "dodge",
+      "blend_duration": 0.04
+    },
+    {
+      "from": "dodge",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.08,
+      "auto": true
+    },
+    {
+      "from": "idle",
+      "to": "transformation",
+      "trigger": "transformation",
+      "blend_duration": 0.15
+    },
+    {
+      "from": "transformation",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.2,
+      "auto": true
+    },
+    {
+      "from": "idle",
+      "to": "stagger",
+      "trigger": "stagger",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "idle",
+      "to": "knockback",
+      "trigger": "knockback",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "idle",
+      "to": "block_impact",
+      "trigger": "block_impact",
+      "blend_duration": 0.04
+    },
+    {
+      "from": "idle",
+      "to": "knockdown",
+      "trigger": "knockdown",
+      "blend_duration": 0.08
+    },
+    {
+      "from": "attack",
+      "to": "stagger",
+      "trigger": "stagger",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "attack",
+      "to": "knockback",
+      "trigger": "knockback",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "attack",
+      "to": "block_impact",
+      "trigger": "block_impact",
+      "blend_duration": 0.04
+    },
+    {
+      "from": "attack",
+      "to": "knockdown",
+      "trigger": "knockdown",
+      "blend_duration": 0.08
+    },
+    {
+      "from": "combo_starter",
+      "to": "stagger",
+      "trigger": "stagger",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "combo_starter",
+      "to": "knockback",
+      "trigger": "knockback",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "combo_starter",
+      "to": "block_impact",
+      "trigger": "block_impact",
+      "blend_duration": 0.04
+    },
+    {
+      "from": "combo_starter",
+      "to": "knockdown",
+      "trigger": "knockdown",
+      "blend_duration": 0.08
+    },
+    {
+      "from": "counter",
+      "to": "stagger",
+      "trigger": "stagger",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "counter",
+      "to": "knockback",
+      "trigger": "knockback",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "counter",
+      "to": "block_impact",
+      "trigger": "block_impact",
+      "blend_duration": 0.04
+    },
+    {
+      "from": "counter",
+      "to": "knockdown",
+      "trigger": "knockdown",
+      "blend_duration": 0.08
+    },
+    {
+      "from": "dodge",
+      "to": "stagger",
+      "trigger": "stagger",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "dodge",
+      "to": "knockback",
+      "trigger": "knockback",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "dodge",
+      "to": "block_impact",
+      "trigger": "block_impact",
+      "blend_duration": 0.04
+    },
+    {
+      "from": "dodge",
+      "to": "knockdown",
+      "trigger": "knockdown",
+      "blend_duration": 0.08
+    },
+    {
+      "from": "launcher",
+      "to": "stagger",
+      "trigger": "stagger",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "launcher",
+      "to": "knockback",
+      "trigger": "knockback",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "launcher",
+      "to": "block_impact",
+      "trigger": "block_impact",
+      "blend_duration": 0.04
+    },
+    {
+      "from": "launcher",
+      "to": "knockdown",
+      "trigger": "knockdown",
+      "blend_duration": 0.08
+    },
+    {
+      "from": "air_combo",
+      "to": "stagger",
+      "trigger": "stagger",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "air_combo",
+      "to": "knockback",
+      "trigger": "knockback",
+      "blend_duration": 0.05
+    },
+    {
+      "from": "air_combo",
+      "to": "block_impact",
+      "trigger": "block_impact",
+      "blend_duration": 0.04
+    },
+    {
+      "from": "air_combo",
+      "to": "knockdown",
+      "trigger": "knockdown",
+      "blend_duration": 0.08
+    },
+    {
+      "from": "stagger",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.1,
+      "auto": true
+    },
+    {
+      "from": "knockback",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.12,
+      "auto": true
+    },
+    {
+      "from": "block_impact",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.08,
+      "auto": true
+    },
+    {
+      "from": "knockdown",
+      "to": "knockdown_recovery",
+      "trigger": "complete",
+      "blend_duration": 0.1,
+      "auto": true
+    },
+    {
+      "from": "knockdown_recovery",
+      "to": "idle",
+      "trigger": "complete",
+      "blend_duration": 0.1,
+      "auto": true
+    }
+  ]
+}

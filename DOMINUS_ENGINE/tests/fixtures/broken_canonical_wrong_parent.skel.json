@@ -1,0 +1,220 @@
+{
+  "bones": [
+    {
+      "name": "root",
+      "parent": null,
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "pelvis",
+      "parent": "root",
+      "x": 0,
+      "y": 5,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "spine_01",
+      "parent": "pelvis",
+      "x": 0,
+      "y": 8,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "spine_02",
+      "parent": "spine_01",
+      "x": 0,
+      "y": 8,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "spine_03",
+      "parent": "spine_02",
+      "x": 0,
+      "y": 8,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "chest",
+      "parent": "pelvis",
+      "x": 0,
+      "y": 8,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "neck",
+      "parent": "chest",
+      "x": 0,
+      "y": 7,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "x": 0,
+      "y": 12,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "clavicle_L",
+      "parent": "chest",
+      "x": -5,
+      "y": 5,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "upperarm_L",
+      "parent": "clavicle_L",
+      "x": -3,
+      "y": 0,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "forearm_L",
+      "parent": "upperarm_L",
+      "x": 0,
+      "y": -25,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "hand_L",
+      "parent": "forearm_L",
+      "x": 0,
+      "y": -20,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "clavicle_R",
+      "parent": "chest",
+      "x": 5,
+      "y": 5,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "upperarm_R",
+      "parent": "clavicle_R",
+      "x": 3,
+      "y": 0,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "forearm_R",
+      "parent": "upperarm_R",
+      "x": 0,
+      "y": -25,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "hand_R",
+      "parent": "forearm_R",
+      "x": 0,
+      "y": -20,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "thigh_L",
+      "parent": "pelvis",
+      "x": -8,
+      "y": -5,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "calf_L",
+      "parent": "thigh_L",
+      "x": 0,
+      "y": -34,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "foot_L",
+      "parent": "calf_L",
+      "x": 0,
+      "y": -34,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "toe_L",
+      "parent": "foot_L",
+      "x": 5,
+      "y": -3,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "thigh_R",
+      "parent": "pelvis",
+      "x": 8,
+      "y": -5,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "calf_R",
+      "parent": "thigh_R",
+      "x": 0,
+      "y": -34,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "foot_R",
+      "parent": "calf_R",
+      "x": 0,
+      "y": -34,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    },
+    {
+      "name": "toe_R",
+      "parent": "foot_R",
+      "x": 5,
+      "y": -3,
+      "rotation": 0,
+      "scale_x": 1,
+      "scale_y": 1
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "combo_starter",
+  "motion_trigger": "combo_starter",
+  "frames": {
+    "startup": 6,
+    "active": 5,
+    "recovery": 12,
+    "hit_advantage": 6,
+    "block_advantage": 0,
+    "cancel_window": 8
+  },
+  "intent": {
+    "purpose": "opens a combo route into a launcher",
+    "risk": "medium",
+    "followups": [
+      "launcher"
+    ]
+  },
+  "power": 15,
+  "speed": 20,
+  "hitboxes": [
+    {
+      "bone": "hand_R",
+      "radius": 6,
+      "offset_x": 8,
+      "offset_y": -2
+    }
+  ]
+}

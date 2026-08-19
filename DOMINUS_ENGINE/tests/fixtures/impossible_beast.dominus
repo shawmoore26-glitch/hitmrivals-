@@ -1,0 +1,8 @@
+{
+  "dominus_version": "0.1.0",
+  "object_id": "impossible_beast",
+  "entity_type": "creature",
+  "identity": { "display_name": "Impossible Beast", "faction": "none" },
+  "skeleton": { "ref": "brooklyn.skel.json" },
+  "creature_genome": { "ref": "semantically_broken_creature.json" }
+}

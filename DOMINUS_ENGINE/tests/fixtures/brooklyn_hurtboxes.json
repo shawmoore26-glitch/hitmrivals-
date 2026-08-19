@@ -1,0 +1,10 @@
+{
+  "hurtboxes": [
+    { "bone": "head",  "radius": 8,  "offset_x": 0, "offset_y": 0 },
+    { "bone": "torso", "radius": 12, "offset_x": 0, "offset_y": 0 },
+    { "bone": "arm_r", "radius": 5,  "offset_x": 0, "offset_y": 0 },
+    { "bone": "arm_l", "radius": 5,  "offset_x": 0, "offset_y": 0 },
+    { "bone": "leg_r", "radius": 7,  "offset_x": 0, "offset_y": 0 },
+    { "bone": "leg_l", "radius": 7,  "offset_x": 0, "offset_y": 0 }
+  ]
+}

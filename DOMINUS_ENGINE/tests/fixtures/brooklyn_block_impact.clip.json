@@ -1,0 +1,15 @@
+{
+  "name": "block_impact",
+  "duration": 0.15,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "arm_r",
+      "keys": [
+        { "time": 0.0,  "x": 15, "y": 10, "rotation": -90 },
+        { "time": 0.08, "x": 15, "y": 10, "rotation": -100 },
+        { "time": 0.15, "x": 15, "y": 10, "rotation": -90 }
+      ]
+    }
+  ]
+}

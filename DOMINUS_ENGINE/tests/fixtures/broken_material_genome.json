@@ -1,0 +1,9 @@
+{
+  "identity": {
+    "type": "nothing"
+  },
+  "properties": {
+    "age": -3,
+    "wear_state": 5.0
+  }
+}

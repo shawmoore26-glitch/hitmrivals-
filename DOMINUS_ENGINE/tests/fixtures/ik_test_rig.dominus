@@ -1,0 +1,12 @@
+{
+  "dominus_version": "0.1.0",
+  "object_id": "ik_test_rig",
+  "identity": { "display_name": "IK Test Rig", "faction": "none" },
+  "skeleton": { "ref": "ik_arm_test.skel.json" },
+  "ik_chains": [
+    { "name": "arm_reach", "ref": "ik_arm_test.ikchain.json" }
+  ],
+  "evolution_history": [
+    { "version": "0.1.0", "date": "2026-07-31", "note": "isolated IK proof rig, not part of HITM CITY canon" }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "dominus_version": "0.1.0",
+  "object_id": "brooklyn",
+  "identity": { "display_name": "Brooklyn", "faction": "Renegades" },
+  "entity_type": "character",
+  "provenance": {
+    "creator": "Shawn",
+    "creation_method": "hitm-character-forge",
+    "source_assets": ["brooklyn_art_v3", "brooklyn_motion_bible"],
+    "parent_entities": [],
+    "creation_hash": "10bbf5ea81f2f87e2e3ad66a0d66da7c5eb28465209c0024f3d9baf8dbc616b5"
+  },
+  "social_genome": { "ref": "brooklyn_social.json" },
+  "visual_genome": { "ref": "brooklyn_visual.json" },
+  "combat_style_genome": { "ref": "psycho_drunken_martial_arts_style.json" },
+  "combat_physics_genome": { "ref": "brooklyn_combat_physics.json" },
+  "game_design_genome": { "ref": "design_soulslike.json" },
+  "material_genome": { "ref": "brooklyn_jacket_material.json" },
+  "visual_style_genome": { "ref": "brooklyn_visual_style.json" },
+  "skeleton": { "ref": "brooklyn.skel.json" },
+  "animations": [
+    { "name": "idle", "ref": "brooklyn_idle.clip.json" },
+    { "name": "attack_jab", "ref": "brooklyn_attack.clip.json" },
+    { "name": "combo_starter", "ref": "brooklyn_combo_starter.clip.json" },
+    { "name": "counter", "ref": "brooklyn_counter.clip.json" },
+    { "name": "dodge", "ref": "brooklyn_dodge.clip.json" },
+    { "name": "launcher", "ref": "brooklyn_launcher.clip.json" },
+    { "name": "air_combo", "ref": "brooklyn_air_combo.clip.json" },
+    { "name": "stagger", "ref": "brooklyn_stagger.clip.json" },
+    { "name": "knockback", "ref": "brooklyn_knockback.clip.json" },
+    { "name": "block_impact", "ref": "brooklyn_block_impact.clip.json" },
+    { "name": "knockdown", "ref": "brooklyn_knockdown.clip.json" },
+    { "name": "knockdown_recovery", "ref": "brooklyn_knockdown_recovery.clip.json" },
+    { "name": "transformation", "ref": "brooklyn_transformation.clip.json" }
+  ],
+  "motion_graph": { "ref": "brooklyn_motion_graph.json" },
+  "combat_dna": { "ref": "brooklyn_combat.json" },
+  "moves": [
+    { "name": "jab", "ref": "brooklyn_move_jab.json" },
+    { "name": "dodge", "ref": "brooklyn_move_dodge.json" },
+    { "name": "counter", "ref": "brooklyn_move_counter.json" },
+    { "name": "combo_starter", "ref": "brooklyn_move_combo_starter.json" },
+    { "name": "launcher", "ref": "brooklyn_move_launcher.json" },
+    { "name": "air_combo", "ref": "brooklyn_move_air_combo.json" }
+  ],
+  "ai_behavior": { "ref": "ai/brooklyn_behavior.bt" },
+  "physics_rules": { "mass_kg": 68, "hurtbox_ref": "brooklyn_hurtboxes.json" },
+  "transformations": [
+    { "name": "beast_mode", "ref": "brooklyn_beast_mode.transform.json" }
+  ],
+  "audio": [ { "event": "hit_light", "ref": "audio/brooklyn_hit_light.wav" } ],
+  "lore": { "ref": "lore/brooklyn.md" },
+  "evolution_history": [
+    { "version": "0.1.0", "date": "2026-07-31", "note": "initial import from hitm-engine roster" }
+  ]
+}

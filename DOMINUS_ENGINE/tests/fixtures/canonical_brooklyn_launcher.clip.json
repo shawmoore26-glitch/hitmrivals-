@@ -1,0 +1,53 @@
+{
+  "name": "launcher",
+  "duration": 0.3,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "hand_R",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.15,
+          "x": 0,
+          "y": 0,
+          "rotation": -120
+        },
+        {
+          "time": 0.3,
+          "x": 0,
+          "y": 0,
+          "rotation": -40
+        }
+      ]
+    },
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        },
+        {
+          "time": 0.15,
+          "x": 0,
+          "y": 4,
+          "rotation": -10
+        },
+        {
+          "time": 0.3,
+          "x": 0,
+          "y": 1,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}

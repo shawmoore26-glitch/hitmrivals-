@@ -1,0 +1,7 @@
+{
+  "personality": { "trust": 0.3, "aggression": 0.8, "loyalty": 0.7 },
+  "relationships": [
+    { "entity": "iron_wolves_leader", "relation": "rival", "strength": -85 },
+    { "entity": "static", "relation": "ally", "strength": 60 }
+  ]
+}

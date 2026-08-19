@@ -1,0 +1,23 @@
+{
+  "name": "counter",
+  "duration": 0.22,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "arm_r",
+      "keys": [
+        { "time": 0.0,  "x": 15, "y": 10, "rotation": 20 },
+        { "time": 0.08, "x": 15, "y": 10, "rotation": -60 },
+        { "time": 0.22, "x": 15, "y": 10, "rotation": 0 }
+      ]
+    },
+    {
+      "bone": "torso",
+      "keys": [
+        { "time": 0.0,  "x": 0, "y": 40, "rotation": -4 },
+        { "time": 0.08, "x": -3, "y": 40, "rotation": 4 },
+        { "time": 0.22, "x": 0, "y": 40, "rotation": 0 }
+      ]
+    }
+  ]
+}

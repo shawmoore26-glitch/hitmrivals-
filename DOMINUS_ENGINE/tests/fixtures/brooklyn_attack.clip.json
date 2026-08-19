@@ -1,0 +1,24 @@
+{
+  "name": "attack_jab",
+  "duration": 0.3,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "arm_r",
+      "keys": [
+        { "time": 0.0,  "x": 15, "y": 10, "rotation": 0 },
+        { "time": 0.1,  "x": 15, "y": 10, "rotation": -70 },
+        { "time": 0.18, "x": 15, "y": 10, "rotation": -90 },
+        { "time": 0.3,  "x": 15, "y": 10, "rotation": 0 }
+      ]
+    },
+    {
+      "bone": "torso",
+      "keys": [
+        { "time": 0.0,  "x": 0, "y": 40, "rotation": 0 },
+        { "time": 0.18, "x": 4, "y": 40, "rotation": 6 },
+        { "time": 0.3,  "x": 0, "y": 40, "rotation": 0 }
+      ]
+    }
+  ]
+}

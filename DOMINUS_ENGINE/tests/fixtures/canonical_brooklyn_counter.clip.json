@@ -1,0 +1,53 @@
+{
+  "name": "counter",
+  "duration": 0.22,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "hand_R",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": 20
+        },
+        {
+          "time": 0.08,
+          "x": 0,
+          "y": 0,
+          "rotation": -60
+        },
+        {
+          "time": 0.22,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    },
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": -4
+        },
+        {
+          "time": 0.08,
+          "x": -3,
+          "y": 0,
+          "rotation": 4
+        },
+        {
+          "time": 0.22,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}

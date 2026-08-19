@@ -1,0 +1,15 @@
+{
+  "name": "knockdown",
+  "duration": 0.5,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "torso",
+      "keys": [
+        { "time": 0.0, "x": 0, "y": 40, "rotation": 0 },
+        { "time": 0.3, "x": 5, "y": 15, "rotation": 70 },
+        { "time": 0.5, "x": 5, "y": 8,  "rotation": 90 }
+      ]
+    }
+  ]
+}

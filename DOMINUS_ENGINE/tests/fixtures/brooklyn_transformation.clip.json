@@ -1,0 +1,23 @@
+{
+  "name": "transformation",
+  "duration": 0.6,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "torso",
+      "keys": [
+        { "time": 0.0, "x": 0, "y": 40, "rotation": 0 },
+        { "time": 0.3, "x": 0, "y": 46, "rotation": -15 },
+        { "time": 0.6, "x": 0, "y": 40, "rotation": 0 }
+      ]
+    },
+    {
+      "bone": "head",
+      "keys": [
+        { "time": 0.0, "x": 0, "y": 30, "rotation": 0 },
+        { "time": 0.3, "x": 0, "y": 30, "rotation": -25 },
+        { "time": 0.6, "x": 0, "y": 30, "rotation": 0 }
+      ]
+    }
+  ]
+}

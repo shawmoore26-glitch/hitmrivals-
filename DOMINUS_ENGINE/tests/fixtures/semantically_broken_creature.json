@@ -1,0 +1,31 @@
+{
+  "identity": {
+    "species_name": "impossible_beast",
+    "common_name": "Impossible Beast",
+    "origin": "test fixture -- deliberately semantically inconsistent"
+  },
+  "taxonomy": {
+    "body_plan": "biped",
+    "classification": "apex_predator",
+    "limb_count": 2
+  },
+  "anatomy": {
+    "height_m": 3.0,
+    "weight_kg": 400,
+    "wing_area_m2": 0.2
+  },
+  "locomotion": {
+    "primary_mode": "quadrupedal_flight",
+    "top_speed_kmh": 90
+  },
+  "ecology": {
+    "trophic_role": "apex_predator",
+    "diet_type": "herbivore",
+    "preferred_prey": ["deer", "rabbits"],
+    "habitat": "mountains"
+  },
+  "growth": {
+    "lifespan_years": 5,
+    "maturity_age_years": 12
+  }
+}

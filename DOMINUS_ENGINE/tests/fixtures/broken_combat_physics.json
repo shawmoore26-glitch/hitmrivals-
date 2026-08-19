@@ -1,0 +1,12 @@
+{
+  "body_model": {
+    "mass": -10,
+    "armor": 2.5
+  },
+  "energy_model": {
+    "stamina": 0
+  },
+  "impact_profile": {
+    "durability": -5
+  }
+}

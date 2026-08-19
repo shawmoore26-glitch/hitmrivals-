@@ -1,0 +1,59 @@
+{
+  "name": "air_combo",
+  "duration": 0.4,
+  "loop": false,
+  "tracks": [
+    {
+      "bone": "hand_R",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 0,
+          "rotation": -40
+        },
+        {
+          "time": 0.1,
+          "x": 0,
+          "y": 0,
+          "rotation": -100
+        },
+        {
+          "time": 0.2,
+          "x": 0,
+          "y": 0,
+          "rotation": -50
+        },
+        {
+          "time": 0.3,
+          "x": 0,
+          "y": 0,
+          "rotation": -110
+        },
+        {
+          "time": 0.4,
+          "x": 0,
+          "y": 0,
+          "rotation": 0
+        }
+      ]
+    },
+    {
+      "bone": "chest",
+      "keys": [
+        {
+          "time": 0.0,
+          "x": 0,
+          "y": 8,
+          "rotation": 0
+        },
+        {
+          "time": 0.4,
+          "x": 0,
+          "y": 4,
+          "rotation": 0
+        }
+      ]
+    }
+  ]
+}
