@@ -5963,15 +5963,27 @@ script, byte-identical snapshots every frame, with a negative control
 proving the check isn't vacuous); and invalid inputs/data failing
 loud and deterministically in every case tested.
 
-**A real bug found and fixed in this module, not hidden**: the first
+**A real bug found, then fixed PROPERLY (not routed around)**: the first
 implementation registered fighter-frame logic as a `this`-capturing
 `WorldSystemFn` on `world_.Systems()` — Phase 4.0's own established
 plugin pattern — which produced a dangling-pointer segfault the moment
-the object was moved (every `Result<T>`-returning factory moves it).
-Caught by running the suite, fixed by calling the frame logic directly
-instead of through a registered closure — the real integration
-(`World`/`SpatialComponent`/`PhysicsSystem`/`RigidBody`) is unchanged,
-only the unsafe closure-registration layer was removed.
+the object was moved (every `Result<T>`-returning factory moves it). A
+first pass fixed the symptom by removing the `WorldTick` registration
+entirely; a follow-up continuation fixed the actual cause instead: every
+mutable field now lives in a private `FrameState` allocated once via
+`std::unique_ptr` and never relocated, so the registered closure captures
+a stable `FrameState*` rather than the wrapper's own `this` — restoring
+genuine `WorldTick` integration with zero move-safety trade-off. 6 new
+lifetime-safety tests (move-construct, move-assign, a 4-hop move chain,
+move-out-of-a-function-with-the-original-destroyed, `std::vector`
+reallocation, a long run after heavy relocation) plus a full-suite run
+clean under AddressSanitizer + UndefinedBehaviorSanitizer (4 repeats,
+zero findings) — see `HITM_FIGHTER_RUNTIME_REPORT.md` for the exact
+commands and the additional finding this audit surfaced: the identical
+`this`-capturing pattern already exists, dormant and unexploited, in
+`PHYSICS/PhysicsSystem::AsWorldSystem()` (Phase 4.1) — not fixed here
+(out of this continuation's scope, no failing test triggers it), flagged
+as a real follow-up.
 
 **A real, evidenced move-schema finding**: building `HitmMoveInstance`
 against all three real fighters (not just Brooklyn) found that real
@@ -5981,9 +5993,9 @@ is a rush-type move with no `blockstun`/`range`/`height`; Static's has
 refuses both rather than silently defaulting, live-confirmed via
 `dominus-cli hitm-fighter-runtime`.
 
-**29 new tests, 722 → 751, zero regressions** — full clean rebuild, 10
-repeat runs, and a from-scratch `git clone` build+test cycle this
-session, all green.
+**35 new tests, 722 → 757, zero regressions** — full clean rebuild, 15
+repeat runs across both continuations, a from-scratch `git clone`
+build+test cycle, and 4 more clean runs under ASan+UBSan, all green.
 
 **Explicitly NOT done, per this module's own scope**: no second
 fighter/opponent (the read-engine's real gain/lose trigger CONDITIONS —
@@ -5994,9 +6006,11 @@ damage scaling (`scaleMin`/`scaleStep`, imported but unapplied); no
 basic normals (not authored anywhere in real HITM data); no
 `CombatController`/`MotionGraphEvaluator` integration (would require
 inventing keyframe pose data no real HITM source has — see
-`HitmFighterRuntime.h`'s top comment for the full reasoning).
+`HitmFighterRuntime.h`'s top comment for the full reasoning); the
+dormant `PhysicsSystem::AsWorldSystem()` lifetime hazard noted above is
+reported, not fixed.
 
-**Current Track H total: 751/751 tests passing (was 656 before this track).**
+**Current Track H total: 757/757 tests passing (was 656 before this track).**
 
 ### Module 5B+ — sprite/texture assets, GPU rendering, audio, input, stage (planned)
 

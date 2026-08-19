@@ -1231,9 +1231,17 @@ read-engine mechanic — deterministically, proven by two independent
 runtimes producing byte-identical state from an identical input script.
 Full accounting in `HITM_FIGHTER_RUNTIME_REPORT.md`, including a real
 dangling-pointer bug this module found in itself (a `this`-captured
-closure that went stale on move) and a real finding that HITM's move
-schemas vary by fighter/move-type (Rocket's and Static's real specials
-are missing fields Brooklyn's has). Nothing is rendered, no sound plays,
-and no second real player exists yet. See each module's own "explicitly
-not done" note in `ROADMAP.md` for the honest boundary.
-**751/751 tests passing (was 656 before this track).**
+`WorldTick` closure that went stale on move) and a real finding that
+HITM's move schemas vary by fighter/move-type (Rocket's and Static's real
+specials are missing fields Brooklyn's has). The lifetime bug is now
+fixed properly — every mutable field lives in one heap-allocated,
+never-relocated block, so the registered closure stays valid across any
+number of moves, `Result<T>` returns, or container storage — restoring
+genuine `WorldTick` integration rather than avoiding it, verified safe
+under construction/move/destruction and clean across a full-suite run
+under AddressSanitizer + UndefinedBehaviorSanitizer. The same audit found
+the identical `this`-capturing pattern dormant (unexploited, not yet
+fixed) in `PHYSICS::PhysicsSystem::AsWorldSystem()`. Nothing is rendered,
+no sound plays, and no second real player exists yet. See each module's
+own "explicitly not done" note in `ROADMAP.md` for the honest boundary.
+**757/757 tests passing (was 656 before this track).**

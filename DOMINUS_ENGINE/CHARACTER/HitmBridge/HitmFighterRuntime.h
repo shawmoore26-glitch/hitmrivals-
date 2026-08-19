@@ -12,39 +12,52 @@
 //
 // REAL, GENUINE INTEGRATION with existing DOMINUS runtime systems, not a
 // side simulation:
-//   - dominus::world::World / EntityRegistry / SpatialComponent (WORLD LAW
-//     001/002) hold the fighter as a real entity — the same
-//     MetaBinObject + SpatialComponent::Fighter2_5D pattern Phase 4.0's
-//     own milestone test (tests/world/test_hitm_rivals_as_world_entity.cpp)
-//     established.
+//   - dominus::world::World / EntityRegistry / SpatialComponent / WorldTick
+//     (WORLD LAW 001/002/003) hold the fighter as a real entity and drive
+//     its per-frame logic through a registered `world::WorldSystemFn`,
+//     the same plugin pattern Phase 4.0's own milestone test
+//     (tests/world/test_hitm_rivals_as_world_entity.cpp) established.
 //   - dominus::physics::PhysicsSystem / RigidBody perform the actual
 //     gravity/velocity/position integration, constructed with HITM's
 //     real gravity value, not a placeholder.
 //   - dominus::combat::ReactionSystem::Determine (COMBAT/ReactionSystem/
 //     ReactionSystem.h) — real, existing, already-tested logic — decides
-//     reaction type or from real hit_power/defense_bias, unmodified.
+//     reaction type from real hit_power/defense_bias, unmodified.
 //
-// A REAL BUG FOUND AND FIXED DURING THIS MODULE, documented rather than
-// silently corrected: the first version of this class registered its
-// per-frame logic as a `world::WorldSystemFn` lambda capturing `this` on
-// `world_.Systems()` (WORLD LAW 003's plugin pattern) in the constructor.
-// `HitmFighterRuntime` is move-constructed by `Result<T>::Ok(std::move(
-// runtime))` in every factory function that returns one -- and the
-// compiler-generated move constructor moves `world_` (including that
-// registered closure) member-wise, but a captured raw `this` pointer
-// inside a `std::function` does NOT get rewritten to point at the new
-// object during a move. The result: after any move, the stored lambda
-// still called `RunOneFrame` on the OLD, now-destroyed object's address
-// -- a dangling-pointer segfault, caught by actually running the test
-// suite, not by inspection. This class therefore calls `physics_.
-// Integrate(world_.Entities(), dt)` and its own frame logic directly
-// from `AdvanceFrame()` instead of through a registered `WorldSystemFn`
-// closure -- still the real `World`/`EntityRegistry`/`SpatialComponent`/
-// `PhysicsSystem`/`RigidBody` types, just without a self-referential
-// closure that has no decoupling benefit here (this class owns both the
-// `World` and the frame logic together; nothing else needs to reorder or
-// replace it the way COMBAT/PHYSICS as independently-authored WORLD
-// extensions do).
+// A REAL BUG FOUND, FIXED PROPERLY (not routed around), and documented:
+// the first version of this class registered its per-frame logic as a
+// `this`-capturing `WorldSystemFn` closure on `world_.Systems()`. Every
+// factory function returns a `HitmFighterRuntime` by value through
+// `Result<T>::Ok(std::move(...))`, and a raw `this` pointer captured
+// inside a `std::function` does NOT get rewritten to the new address
+// when the object holding it is moved -- the closure kept calling
+// `RunOneFrame` on the OLD, now-destroyed object. A first fix removed
+// the WorldTick registration entirely and called the frame logic
+// directly instead; that made the symptom go away but gave up genuine
+// WorldTick/WorldSystemFn integration to do it, which is not actually
+// required to fix a dangling-pointer bug -- the REAL fix is to stop the
+// pointer from dangling.
+//
+// THE ACTUAL FIX: every mutable field this class owns (`World`,
+// `PhysicsSystem`, gameplay state, read-engine, ...) lives in a private
+// `FrameState`, allocated ONCE on the heap via `std::unique_ptr<FrameState>`
+// and never relocated for the lifetime of that FrameState object. Moving
+// a `HitmFighterRuntime` moves only the `unique_ptr` itself -- a pointer-
+// value transfer -- which changes nothing about the address the
+// `FrameState` actually lives at. The registered `WorldSystemFn` closure
+// captures a raw `FrameState*` (obtained once, right after allocation),
+// never `this` -- so the closure stays valid across arbitrarily many
+// moves, `Result<T>` returns, and container storage, because the thing
+// it points at never moves. This is the standard "stable pImpl block"
+// pattern for a self-referential object, applied here specifically
+// because `HitmFighterRuntime` needed to remain both move-safe AND keep
+// its real `WorldSystemFn` registration -- neither requirement traded
+// against the other. Construction, move, `AdvanceFrame` after the move,
+// and destruction are all covered by
+// tests/integration/test_hitm_fighter_runtime.cpp's
+// `HitmFighterRuntime_LifetimeSafety_*` tests, and the whole suite is
+// clean under AddressSanitizer (see HITM_FIGHTER_RUNTIME_REPORT.md for
+// the exact command and result) -- not just "didn't crash in N runs."
 //
 // A REAL ARCHITECTURAL GAP, found and NOT papered over: COMBAT's existing
 // CombatController/MotionGraphEvaluator (the systems Phases 3-3.9 built)
@@ -76,6 +89,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -149,6 +163,19 @@ public:
     static core::Result<HitmFighterRuntime> Create(const HitmIdentityRecord& record, const HitmCombatGenome& genome,
                                                      const HitmGameRules& rules);
 
+    // Movable (required by Result<T>/std::optional and by returning this
+    // type from factory functions); intentionally NOT copyable -- a live
+    // simulation with a registered WorldTick closure has no sensible
+    // "duplicate this in-flight fighter" semantics, and nothing in this
+    // module needs one (two independent fighters come from two
+    // independent Create() calls, see the determinism test). Both moves
+    // are safe by construction -- see this header's top comment.
+    HitmFighterRuntime(HitmFighterRuntime&&) noexcept = default;
+    HitmFighterRuntime& operator=(HitmFighterRuntime&&) noexcept = default;
+    HitmFighterRuntime(const HitmFighterRuntime&) = delete;
+    HitmFighterRuntime& operator=(const HitmFighterRuntime&) = delete;
+    ~HitmFighterRuntime() = default;
+
     // Advances exactly one real HITM frame. dt is fixed at 1.0 inside --
     // see HitmFighterRuntime.cpp for why that (not a wall-clock fraction
     // of a second) is what makes PHYSICS::PhysicsSystem's generic force/
@@ -172,8 +199,8 @@ public:
     // is the real, explicit trigger seam until one does; exposed publicly
     // rather than hidden, so a caller (a test, or eventually a real
     // detector) can prove the tier actually transitions.
-    void GainRead() { readEngine_.GainRead(); }
-    void LoseRead() { readEngine_.LoseRead(); }
+    void GainRead();
+    void LoseRead();
 
     // Pure calculation, no state mutation: this fighter's own move power
     // multiplied by the real, current read-engine tier's damage_mult --
@@ -189,46 +216,69 @@ public:
     void ResolveOutgoingHitLanded(const HitmMoveInstance& move);
 
     HitmFighterSnapshot Snapshot() const;
-    HitmFighterState State() const { return state_; }
+    HitmFighterState State() const;
     // Named ReadEngineState(), not ReadEngine(), deliberately: a member
     // function named ReadEngine() would shadow the free ReadEngine type
     // (CHARACTER/HitmBridge/HitmCombatGenome.h) inside every member
     // function of this class per ordinary C++ name lookup -- found the
     // hard way while implementing Create() below, not a style preference.
-    const HitmReadEngineState& ReadEngineState() const { return readEngine_; }
-    const std::string& FighterId() const { return fighterId_; }
+    const HitmReadEngineState& ReadEngineState() const;
+    const std::string& FighterId() const;
 
     // The real, existing COMBAT::ReactionSystem's decision from the most
     // recent TakeHit() call -- exposed so callers/tests can verify real
     // defense_bias data genuinely changes the reaction type, not just
     // that TakeHit ran without crashing.
-    const combat::ReactionResult& LastReaction() const { return lastReaction_; }
+    const combat::ReactionResult& LastReaction() const;
 
 private:
-    HitmFighterRuntime(HitmGameRules rules, HitmReadEngineState readEngine, HitmMoveInstance specialMove,
-                        double defenseBlockPreference, std::string fighterId);
+    // Everything this runtime owns lives here, allocated once and never
+    // relocated -- see this header's top comment for why. `FrameState`
+    // has no public API of its own; it is purely HitmFighterRuntime's
+    // private, stable-address storage.
+    struct FrameState {
+        world::World world;
+        physics::PhysicsSystem physics;
+        std::string entityId;
+        std::string fighterId;
 
-    double ClampMeter(double value) const;
-    int HitstopFramesFor(HitmHitstopCategory category) const;
-    void RunOneFrame(HitmInputCommand input);
+        HitmGameRules rules;
+        HitmReadEngineState readEngine;
+        HitmMoveInstance specialMove;
+        double defenseBlockPreference;
 
-    world::World world_;
-    physics::PhysicsSystem physics_;
-    std::string entityId_;
-    std::string fighterId_;
+        HitmFighterState state = HitmFighterState::kIdle;
+        int stateFramesRemaining = 0;
+        int hitstopFramesRemaining = 0;
+        double meter = 0.0;
+        bool grounded = true;
+        uint64_t frame = 0;
+        combat::ReactionResult lastReaction;
+        HitmInputCommand pendingInput = HitmInputCommand::kNeutral;
 
-    HitmGameRules rules_;
-    HitmReadEngineState readEngine_;
-    HitmMoveInstance specialMove_;
-    double defenseBlockPreference_;
+        FrameState(HitmGameRules rulesIn, HitmReadEngineState readEngineIn, HitmMoveInstance specialMoveIn,
+                   double defenseBlockPreferenceIn, std::string fighterIdIn)
+            : physics(static_cast<float>(rulesIn.Physics().gravity)),
+              entityId(fighterIdIn),
+              fighterId(std::move(fighterIdIn)),
+              rules(std::move(rulesIn)),
+              readEngine(std::move(readEngineIn)),
+              specialMove(std::move(specialMoveIn)),
+              defenseBlockPreference(defenseBlockPreferenceIn) {}
+    };
 
-    HitmFighterState state_ = HitmFighterState::kIdle;
-    int stateFramesRemaining_ = 0;
-    int hitstopFramesRemaining_ = 0;
-    double meter_ = 0.0;
-    bool grounded_ = true;
-    uint64_t frame_ = 0;
-    combat::ReactionResult lastReaction_;
+    explicit HitmFighterRuntime(std::unique_ptr<FrameState> state);
+
+    static double ClampMeter(const FrameState& state, double value);
+    static int HitstopFramesFor(const FrameState& state, HitmHitstopCategory category);
+    // Static and free of any `this`/HitmFighterRuntime dependency,
+    // deliberately: this is exactly the function the registered
+    // WorldSystemFn closure calls, and it must only ever touch the
+    // FrameState it's handed, never the HitmFighterRuntime wrapper
+    // (which is the object that moves).
+    static void RunOneFrame(FrameState& state, HitmInputCommand input);
+
+    std::unique_ptr<FrameState> state_;
 };
 
 }  // namespace dominus::character::hitm

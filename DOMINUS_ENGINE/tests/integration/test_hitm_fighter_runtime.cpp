@@ -14,6 +14,8 @@
 #include "tests/TestFramework.h"
 
 #include <filesystem>
+#include <utility>
+#include <vector>
 
 using dominus::character::hitm::HitmCombatGenome;
 using dominus::character::hitm::HitmFighterRuntime;
@@ -378,4 +380,167 @@ DOMINUS_TEST(HitmFighterRuntime_DivergentInputSequencesProduceDivergentStates) {
     runtimeA.AdvanceFrame(HitmInputCommand::kRight);
     runtimeB.AdvanceFrame(HitmInputCommand::kLeft);
     DOMINUS_EXPECT(!(runtimeA.Snapshot() == runtimeB.Snapshot()));
+}
+
+// --- 6/7. Lifetime safety: construction -> move/return -> frame execution
+// -> destruction. See HitmFighterRuntime.h's top comment for the real bug
+// these tests guard against: a WorldTick-registered closure capturing
+// `this` went dangling the moment the object was moved, because a raw
+// `HitmFighterRuntime*` baked into a std::function does not get rewritten
+// by a move. The fix makes the registered closure capture a stable
+// FrameState* instead -- these tests exercise every relocation path that
+// could have re-triggered the old bug's symptom (a segfault or a frame
+// silently not applying real HITM data), specifically to prove none of
+// them do.
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_MoveConstructThenAdvanceFrame) {
+    auto original = MakeBrooklynRuntime();
+    auto rules = RealRules();
+    float startX = original.Snapshot().x;
+
+    // Move-construct a second wrapper from the first. The registered
+    // WorldTick closure must keep pointing at the real, still-live
+    // FrameState -- not at `original`, which is now moved-from.
+    HitmFighterRuntime moved(std::move(original));
+    moved.AdvanceFrame(HitmInputCommand::kRight);
+
+    auto snap = moved.Snapshot();
+    DOMINUS_EXPECT(snap.state == HitmFighterState::kWalking);
+    // Real walkSpeed still drives the moved-to instance correctly.
+    DOMINUS_EXPECT(snap.x == startX + static_cast<float>(rules.Physics().walk_speed));
+    DOMINUS_EXPECT(moved.FighterId() == "brooklyn");
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_MoveAssignThenAdvanceFrame) {
+    auto destination = MakeBrooklynRuntime();
+    auto source = MakeBrooklynRuntime();
+    source.AdvanceFrame(HitmInputCommand::kRight);
+    source.AdvanceFrame(HitmInputCommand::kRight);
+    uint64_t sourceFrameBeforeAssign = source.Snapshot().frame;
+
+    // Move-assign: destination's original FrameState is destroyed, its
+    // WorldTick closure (which pointed at ITS OWN FrameState, never at
+    // `destination` the wrapper) is destroyed along with it -- no
+    // dangling reference is possible because nothing outlives its own
+    // FrameState. destination now owns source's former FrameState.
+    destination = std::move(source);
+    DOMINUS_EXPECT(destination.Snapshot().frame == sourceFrameBeforeAssign);
+
+    destination.AdvanceFrame(HitmInputCommand::kJump);
+    auto rules = RealRules();
+    DOMINUS_EXPECT(destination.Snapshot().state == HitmFighterState::kJumping);
+    DOMINUS_EXPECT(destination.Snapshot().velocity_y ==
+                    static_cast<float>(rules.Physics().jump_vel) + static_cast<float>(rules.Physics().gravity));
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_MultipleSequentialMoves) {
+    // Chains several relocations -- the shape Result<T>/std::optional/
+    // return-by-value actually produce in practice (Create() alone
+    // already moves the object at least twice before a caller ever sees
+    // it). Real Brooklyn data must still drive the runtime correctly at
+    // the end of the chain.
+    auto rules = RealRules();
+    HitmFighterRuntime a = MakeBrooklynRuntime();
+    HitmFighterRuntime b = std::move(a);
+    HitmFighterRuntime c = std::move(b);
+    HitmFighterRuntime d = std::move(c);
+
+    // Expected position accumulated the same way the runtime itself
+    // accumulates it (repeated float addition, not a single
+    // multiplication) -- float addition is not associative with
+    // multiplication at this precision (verified: 5 sequential +4.4f
+    // steps land one ULP-scale away from a single *5.0f), and this test
+    // is about lifetime safety, not floating-point rounding, so it
+    // compares against the same accumulation method under test.
+    float startX = d.Snapshot().x;
+    float expectedX = startX;
+    for (int i = 0; i < 5; ++i) expectedX += static_cast<float>(rules.Physics().walk_speed);
+    for (int i = 0; i < 5; ++i) d.AdvanceFrame(HitmInputCommand::kRight);
+    DOMINUS_EXPECT(d.Snapshot().x == expectedX);
+    DOMINUS_EXPECT(d.Snapshot().frame == 5);
+    DOMINUS_EXPECT(d.FighterId() == "brooklyn");
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_OriginalWrapperDestroyedAfterMove) {
+    // The original wrapper's scope ends (its destructor runs on a
+    // moved-from, null unique_ptr -- a safe no-op) while the moved-to
+    // instance is still very much alive and in use. This is the literal
+    // shape of the bug: does anything the closure touches still exist
+    // after the ORIGINAL object is gone?
+    auto MakeAndReturn = []() -> HitmFighterRuntime {
+        auto inner = MakeBrooklynRuntime();
+        inner.AdvanceFrame(HitmInputCommand::kRight);  // real work done before the move-out
+        return inner;  // `inner`'s destructor runs immediately after this move
+    };
+
+    auto rules = RealRules();
+    // Same accumulation-consistent expected value as
+    // MultipleSequentialMoves above -- one real frame already happened
+    // inside MakeAndReturn() before the wrapper it ran on was destroyed.
+    float expectedX = (static_cast<float>(rules.Physics().wall_l) + static_cast<float>(rules.Physics().wall_r)) / 2.0f;
+    expectedX += static_cast<float>(rules.Physics().walk_speed);  // the frame run inside MakeAndReturn()
+
+    HitmFighterRuntime runtime = MakeAndReturn();
+    // `inner` from inside the lambda is unambiguously destroyed by now.
+    for (int i = 0; i < 10; ++i) {
+        runtime.AdvanceFrame(HitmInputCommand::kRight);
+        expectedX += static_cast<float>(rules.Physics().walk_speed);
+    }
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 11);  // 1 from inside the lambda + 10 here
+    DOMINUS_EXPECT(runtime.Snapshot().x == expectedX);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_StoredInVectorAndReallocated) {
+    // std::vector reallocation is a real, common relocation path
+    // (push_back beyond capacity move-constructs every existing element
+    // into new storage and destroys the old storage) -- exactly the
+    // "stored in containers" case. Reserve nothing, so growth is
+    // guaranteed to reallocate at least once across these insertions.
+    std::vector<HitmFighterRuntime> fighters;
+    for (int i = 0; i < 8; ++i) {
+        fighters.push_back(MakeBrooklynRuntime());
+    }
+    DOMINUS_EXPECT(fighters.size() == 8);
+
+    auto rules = RealRules();
+    for (auto& f : fighters) {
+        float startX = f.Snapshot().x;
+        f.AdvanceFrame(HitmInputCommand::kRight);
+        f.AdvanceFrame(HitmInputCommand::kJump);
+        auto snap = f.Snapshot();
+        DOMINUS_EXPECT(snap.state == HitmFighterState::kJumping);
+        DOMINUS_EXPECT(snap.x == startX + static_cast<float>(rules.Physics().walk_speed));
+        DOMINUS_EXPECT(snap.velocity_y ==
+                        static_cast<float>(rules.Physics().jump_vel) + static_cast<float>(rules.Physics().gravity));
+    }
+
+    // Every element independently reached frame 2 -- proves each
+    // fighter's own FrameState (and its own registered WorldTick
+    // closure) survived the vector's internal reallocation(s) without
+    // cross-talk between fighters.
+    for (auto& f : fighters) {
+        DOMINUS_EXPECT(f.Snapshot().frame == 2);
+    }
+}
+
+DOMINUS_TEST(HitmFighterRuntime_LifetimeSafety_ManyMovesThenManyFrames) {
+    // An aggressive stress case: several real relocations (each a genuine
+    // move-construction into a new named object, not a redundant cast)
+    // followed by a long real run (attack cycle + landing + more
+    // movement), maximizing exposure for any lingering lifetime issue --
+    // not just a couple of frames right after a single move.
+    HitmFighterRuntime hop1 = MakeBrooklynRuntime();
+    HitmFighterRuntime hop2 = std::move(hop1);
+    HitmFighterRuntime hop3 = std::move(hop2);
+    HitmFighterRuntime runtime = std::move(hop3);
+
+    runtime.AdvanceFrame(HitmInputCommand::kSpecial);
+    for (int i = 0; i < 40; ++i) runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kIdle);  // full 14+4+18=36 frame cycle completed
+
+    runtime.AdvanceFrame(HitmInputCommand::kJump);
+    while (!runtime.Snapshot().grounded) runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kIdle);
+    DOMINUS_EXPECT(runtime.Snapshot().frame > 40);
+    DOMINUS_EXPECT(runtime.FighterId() == "brooklyn");
 }

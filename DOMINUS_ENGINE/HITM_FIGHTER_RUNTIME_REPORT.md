@@ -1,6 +1,7 @@
 # Track H Module 5A — CPU-Observable HITM Runtime Vertical Slice
 
-Date: 2026-08-19 (continued session)
+Date: 2026-08-19 (continued session; lifetime-safety fix added in a
+further continuation the same day)
 Scope: does real, authored HITM Rivals fighter data actually DRIVE
 DOMINUS simulation behavior — not just load and validate — and, where it
 doesn't yet, exactly what stops it?
@@ -19,8 +20,15 @@ walks, jumps under real gravity, executes his real "special" move
 through real startup/active/recovery frame counts, takes a hit with real
 damage/hitstun/meter/hitstop numbers, and transitions his real five-tier
 read-engine mechanic — all deterministically, all CPU-only, all verified
-by 29 new tests (751/751 total) and a live `dominus-cli
-hitm-fighter-runtime` run reproduced below.
+by 35 new tests (757/757 total) and a live `dominus-cli
+hitm-fighter-runtime` run reproduced below. The `WorldTick`-registration
+lifetime bug the first pass introduced has been fixed properly (stable
+heap-allocated state, genuine `WorldTick` integration restored, not
+routed around) and specifically verified safe under construction, every
+kind of move/relocation, and destruction — including a clean run under
+AddressSanitizer + UndefinedBehaviorSanitizer, not just repeated runs
+that happened not to crash. See "A real bug this module found, then
+fixed PROPERLY" below.
 
 **He cannot be seen, heard, or actually fought against another player.**
 No pixel has been drawn, no sound has played, no second fighter's
@@ -104,7 +112,7 @@ a design intention.
   Module 3's and Module 4's established discipline) a from-scratch `git
   clone` build+test cycle before pushing.
 
-### A real bug this module found and fixed in itself
+### A real bug this module found, then fixed PROPERLY (not routed around)
 
 The first implementation registered `HitmFighterRuntime`'s per-frame
 logic as a `this`-capturing `world::WorldSystemFn` closure on
@@ -114,10 +122,102 @@ function returns a `HitmFighterRuntime` by value through
 constructor moves `world_` (including that closure) member-wise without
 rewriting the captured raw `this` pointer. Result: a dangling-pointer
 segfault the moment any moved-to runtime's `AdvanceFrame` ran the stale
-closure — caught by actually running the test suite (not by review), and
-fixed by calling the frame logic directly instead of through a
-registered closure. See `HitmFighterRuntime.h`'s top comment for the
-full account; documented rather than quietly patched.
+closure — caught by actually running the test suite, not by review.
+
+**First pass (superseded)**: removed the `WorldTick` registration
+entirely and called the frame logic directly from `AdvanceFrame()`. That
+made the segfault stop, but it also gave up genuine
+`WorldTick`/`WorldSystemFn` integration to do it — treating "the
+registration is unsafe" as a reason to stop registering, rather than
+fixing why it was unsafe.
+
+**The actual fix**: every mutable field `HitmFighterRuntime` owns
+(`World`, `PhysicsSystem`, gameplay state, the read-engine, ...) now
+lives in a private `FrameState`, allocated exactly once on the heap via
+`std::unique_ptr<FrameState>` and never relocated for that FrameState's
+life. `HitmFighterRuntime` itself holds nothing but that one
+`unique_ptr` — so its compiler-generated move constructor only ever
+transfers a pointer *value*; the `FrameState` object it points at never
+moves, copies, or changes address. The registered `WorldSystemFn`
+closure captures a raw `FrameState*` (obtained once, immediately after
+allocation, before the state is ever handed to anything that could move
+it) — never `this`. This is the standard "stable pImpl block" pattern
+for a self-referential object, and it restores real `WorldTick`
+registration (`world_.Systems().RegisterSystem(...)`, `world_.Tick(1.0f)`
+from `AdvanceFrame()`) with **zero** trade-off against move-safety —
+neither requirement was weakened to satisfy the other.
+
+**Verification, specifically targeting this fix, all in this
+continuation**:
+- 6 new tests exercising construction → move-construct → move-assign →
+  a 4-hop move chain → move-out-of-a-returning-function-with-the-
+  original-destroyed → storage in a `std::vector` that reallocates
+  (pushing 8 elements with no reserved capacity) → a long real run after
+  heavy relocation. All pass, and each asserts real Brooklyn numbers
+  (real `walkSpeed`, real `jumpVel`+`gravity`) still drive the
+  post-move instance correctly, not just "didn't crash."
+- Full suite (757/757) clean under **AddressSanitizer + UndefinedBehaviorSanitizer**
+  (`-fsanitize=address,undefined`), 4 separate runs, zero findings —
+  this is the actual, credible answer to "verify the WorldTick callback
+  cannot reference a destroyed or relocated HitmFighterRuntime": ASan
+  detects a stale-pointer dereference deterministically and loudly the
+  first time it happens, regardless of whether the corrupted memory
+  happens to still look plausible (which is exactly what made the
+  original bug pass several clean-looking runs before the crash that
+  caught it). Exact commands:
+  ```
+  cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+    -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" ..
+  ninja tests/dominus_core_tests dominus-cli
+  ./tests/dominus_core_tests   # 757/757, no ASan/UBSan output
+  ./dominus-cli hitm-fighter-runtime <brooklyn identity dir> <game.json>  # identical real output, clean
+  ```
+- The live CLI demo (`dominus-cli hitm-fighter-runtime`) produces
+  byte-identical real output before and after the fix (same frame
+  numbers, same real `walkSpeed`/`jumpVel`/`gravity`/damage/meter/
+  hitstop/reaction values) — the fix changed nothing about what real
+  data drives, only how safely it survives relocation.
+- Full clean rebuild (`rm -rf build`) + 15 repeat runs across the
+  Release build, zero failures, zero flakes.
+
+See `HitmFighterRuntime.h`'s top comment for the complete account.
+
+### An additional architectural issue this fix uncovered, not yet exploited
+
+Auditing every `RegisterSystem`/`AsWorldSystem` call in the engine (not
+just this module's own code) while diagnosing the bug above found the
+**same latent hazard already present in `PHYSICS/PhysicsSystem.h`**
+(Phase 4.1, long-since-verified, untouched by Track H):
+
+```cpp
+world::WorldSystemFn AsWorldSystem() const {
+    return [this](world::EntityRegistry& registry, float dt) { Integrate(registry, dt); };
+}
+```
+
+This captures `this` exactly the way `HitmFighterRuntime`'s first,
+buggy version did. It is **not currently triggered anywhere** —
+grepping every real call site (`tests/physics/test_physics_system.cpp`,
+`tests/physics/test_universal_physics_proof.cpp`,
+`tests/world/test_hitm_rivals_as_world_entity.cpp`,
+`TOOLS/Editor/dominus_cli.cpp`) shows every one of them keeps the
+`PhysicsSystem` instance as a stable local variable for the registration's
+entire lifetime, never moving or relocating it afterward — so the dormant
+bug has simply never been exercised. `COMBAT/PhysicsCombat`'s sibling,
+`PHYSICS/CollisionSystem::AsWorldSystem()`, is unaffected: it is `static`
+and its lambda captures nothing.
+
+**Not fixed in this session** — it is a different file, in a different,
+already-shipped phase, with no failing test and no current caller that
+triggers it, and fixing it is outside this continuation's explicit scope
+(the `HitmFighterRuntime` lifetime bug). Recorded here as a real,
+specific, actionable follow-up: any future code that constructs a
+`PhysicsSystem`, calls `AsWorldSystem()` on it, and then moves or
+relocates that `PhysicsSystem` (returns it by value, stores it in a
+`std::vector` that reallocates, etc.) will hit the identical dangling-
+`this` bug this module already found and fixed once. The same stable
+pImpl-block fix would apply if/when a real caller needs it.
 
 ### A real, evidenced move-schema finding
 
@@ -201,10 +301,16 @@ module was scoped against:
 
 ## Test count
 
-751/751 (was 722 before this module). 29 new tests: 5 in
-`test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`, 17
-in `test_hitm_fighter_runtime.cpp`. Full clean rebuild + 10 repeat runs
-this session, all green; no flakes observed. (The one segfault
-encountered was deterministic — it reproduced on every run before the
-fix, and has not recurred once since — so it is reported above as a
-found-and-fixed bug, not logged as flakiness.)
+757/757 (was 722 before this module). 35 new tests: 5 in
+`test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`, 23
+in `test_hitm_fighter_runtime.cpp` (17 covering the vertical slice's
+gameplay behavior, 6 added in the lifetime-safety continuation covering
+move-construct, move-assign, a 4-hop move chain, move-out-of-a-function-
+with-the-original-destroyed, `std::vector` reallocation, and a long real
+run after heavy relocation). Full clean rebuild + 15 repeat runs across
+both continuations, all green; a further 4 runs clean under
+AddressSanitizer + UndefinedBehaviorSanitizer specifically for the
+lifetime fix (see above) — no flakes observed anywhere. (The one segfault
+encountered in the first continuation was deterministic — it reproduced
+on every run before the fix, and has not recurred once since — so it is
+reported above as a found-and-fixed bug, not logged as flakiness.)
