@@ -18,6 +18,7 @@
 #include "CHARACTER/Genome/GenomeDecoder.h"
 #include "CHARACTER/HitmBridge/HitmCombatGenome.h"
 #include "CHARACTER/HitmBridge/HitmIdentityImporter.h"
+#include "CHARACTER/HitmBridge/HitmPartsRig.h"
 #include "CHARACTER/Rig/RigBinder.h"
 #include "COMBAT/CombatController.h"
 #include "COMBAT/HitSystem/AssetValidation.h"
@@ -674,6 +675,48 @@ int HitmCombatGenomeDemo(const std::string& identityDirStr) {
     std::cout << "[hitm-combat-genome] round-trip lossless (source dump == exported dump): " << (lossless ? "true" : "false")
                << "\n";
     std::cout << "[result] genome mapped and validated -- NOT wired to any consumer, NOT gameplay-affecting yet\n";
+    return lossless ? 0 : 1;
+}
+
+// ROADMAP.md Track H Module 3. Imports a real fighter's generated
+// parts.json (hitm-engine/data/characters/<fighter>/) and proves the same
+// import-then-export losslessness live, plus surfaces the real duplicate-
+// bone-name finding documented in HitmPartsRig.h.
+int HitmPartsRigDemo(const std::string& characterDirStr) {
+    using dominus::character::hitm::HitmPartsRig;
+
+    auto result = HitmPartsRig::Import(characterDirStr);
+    if (!result.ok) {
+        std::cerr << "[hitm-parts-rig] FAILED: " << result.error << "\n";
+        return 1;
+    }
+    auto& rig = *result.value;
+
+    std::cout << "[hitm-parts-rig] fighter_id=" << rig.FighterId() << " atlas=" << rig.Atlas() << " sourceSize=["
+               << rig.SourceWidth() << "x" << rig.SourceHeight() << "]\n";
+    std::cout << "[hitm-parts-rig] parts=" << rig.Parts().size() << " bones=" << rig.Bones().size()
+               << " drawOrder=" << rig.DrawOrder().size() << " handBone=" << rig.HandBone() << "\n";
+
+    std::size_t springBones = 0;
+    for (const auto& b : rig.Bones()) {
+        if (b.follow.has_value()) ++springBones;
+    }
+    std::cout << "[hitm-parts-rig] " << springBones
+               << " bone entries carry real secondary-motion 'follow' spring params (render-layer only, per the "
+                  "Constitution's law -- not gameplay-affecting)\n";
+
+    std::string sourceDump = dominus::core::json::Value::Parse([&] {
+                                  std::ifstream in(std::filesystem::path(characterDirStr) / "parts.json", std::ios::binary);
+                                  std::ostringstream ss;
+                                  ss << in.rdbuf();
+                                  return ss.str();
+                              }())
+                                  .Dump();
+    bool lossless = (sourceDump == rig.ToJson().Dump());
+    std::cout << "[hitm-parts-rig] round-trip lossless (source dump == exported dump): " << (lossless ? "true" : "false")
+               << "\n";
+    std::cout << "[result] atlas-space sprite-cutout rig parsed and validated -- NOT bound to a dominus::animation::"
+                  "Skeleton, NOT rendered\n";
     return lossless ? 0 : 1;
 }
 
@@ -2251,7 +2294,8 @@ int main(int argc, char** argv) {
                    << "  dominus-cli reality-watch   <fixtures_dir> <registry_path>\n"
                    << "  dominus-cli reality-reconcile <fixtures_dir> <registry_path>\n"
                    << "  dominus-cli import-hitm-identity <identity_dir>\n"
-                   << "  dominus-cli hitm-combat-genome <identity_dir>\n";
+                   << "  dominus-cli hitm-combat-genome <identity_dir>\n"
+                   << "  dominus-cli hitm-parts-rig <character_dir>\n";
         return 2;
     }
     std::string command = argv[1];
@@ -2436,6 +2480,9 @@ int main(int argc, char** argv) {
     }
     if (command == "hitm-combat-genome") {
         return HitmCombatGenomeDemo(path);
+    }
+    if (command == "hitm-parts-rig") {
+        return HitmPartsRigDemo(path);
     }
 
     std::cerr << "unknown command: " << command << "\n";

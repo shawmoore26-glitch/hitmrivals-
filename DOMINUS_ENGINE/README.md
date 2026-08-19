@@ -1181,7 +1181,7 @@ Thirteen real candidates, in rough priority order:
 
 ---
 
-**TRACK H / HITM RIVALS INTEGRATION — Modules 0–2 complete:**
+**TRACK H / HITM RIVALS INTEGRATION — Modules 0–3 complete:**
 Opened by a full audit of DOMINUS against the real, existing HITM Rivals
 codebase and its real authored fighter data — full findings in
 `HITM_INTEGRATION_AUDIT.md`, full sequenced plan in `ROADMAP.md`'s
@@ -1202,6 +1202,16 @@ mechanic, built on top of Module 1's output, provably lossless
 hitm-combat-genome <dir>` proves it live). `CombatIdentity` — the
 original six-field strawman — is deliberately untouched, not replaced;
 nothing in the engine reads `HitmCombatGenome` yet, so no gameplay
-behavior has changed. See each module's own "explicitly not done" note
-in `ROADMAP.md` for the honest boundary.
-**691/691 tests passing (was 656 before this track).**
+behavior has changed. Module 3 (`CHARACTER/HitmBridge/HitmPartsRig`) gives
+HITM's real, generated `parts.json` (atlas name/size, per-part pivot +
+normalized size + pixel frame, draw order, hand anchor, bone hierarchy) a
+typed home — `ANIMATION/SkeletonSystem/Skeleton.h` had no part/pivot/
+atlas-frame concept at all. Found and preserved a real, non-obvious fact
+in the actual data: `handFar`/`handNear` each appear twice in every real
+fighter's bone list, once rigid and once as a secondary-motion glove-bounce
+overlay — a naive name-keyed map (the pattern `Skeleton::AddBone` itself
+uses) would have silently discarded one. Deliberately does not bind into
+a `Skeleton` (would require inventing bind-pose data the source doesn't
+have) or touch rendering. See each module's own "explicitly not done"
+note in `ROADMAP.md` for the honest boundary.
+**708/708 tests passing (was 656 before this track).**

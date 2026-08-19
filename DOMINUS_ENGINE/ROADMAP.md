@@ -5819,13 +5819,75 @@ left untouched, not extended — same reasoning as `CombatIdentity`.
 
 **Current Track H total: 691/691 tests passing (was 656 before this track).**
 
-### Module 3 — 2D sprite-cutout rig representation (planned, not started)
+### Module 3 — 2D sprite-cutout rig representation  ← **complete (representation only, no Skeleton binding, no rendering)**
 
-`ANIMATION/SkeletonSystem/Skeleton.h` has no part/pivot/atlas-frame concept
-at all. HITM's real `parts.json` (atlas name, source size, per-part pivot +
-normalized size + pixel frame rect) needs a home before any real Brooklyn
-art can bind to a DOMINUS skeleton. Gated on Module 1 (needs `design.json`'s
-granted-parts list, which drives HITM's own `rig_compiler.py`).
+`CHARACTER/HitmBridge/HitmPartsRig` — gives HITM's real, **generated**
+`parts.json` (`hitm-engine/data/characters/<fighter>/`, compiled by
+`tools/slice_rig.py` from the sprite sheet + the authored `design.json`
+Module 1 already imports) a real, typed, validated home. Same
+architecture as Modules 1–2: reads the real file, keeps the exact parsed
+tree (`raw_`), every typed accessor is a read-only extractive view over
+it, `ToJson()` returns it verbatim.
+
+Typed: `atlas` (cross-checked against the real, evidenced 3/3 fighters
+`"<dir>_atlas"` naming convention — a mismatch fails closed, the same
+class of check as Module 1's directory/id match), `sourceSize`,
+`handBone`/`handPoint`, `drawOrder` (z-order, no prior DOMINUS
+equivalent), the atlas-space `parts` map (pivot + normalized size + pixel
+`frame` rect per part — the literal thing this module exists for), and
+the `bones` array (name/parent/`_why`/optional `len`/optional `follow`
+secondary-motion spring params).
+
+**A real, non-obvious finding from the actual data, not asserted**:
+`parts.json`'s `bones` array contains genuine duplicate names —
+`handFar`/`handNear` each appear twice in all three real fighters, once
+as the rigid kinetic-chain bone and again later carrying `follow` spring
+params for a glove-bounce secondary-motion overlay on the same joint.
+`Bones()` is therefore an order-preserving `std::vector`, not a
+name-keyed map — a map (the pattern `ANIMATION::Skeleton::AddBone` itself
+uses) would have silently discarded one of the two real entries. Proven
+by a dedicated test (`HitmPartsRig_BrooklynDuplicateBoneNamesBothPreserved`)
+that finds both `handNear` entries and confirms one is rigid and one is a
+spring, not an accidental double-count.
+
+**Deliberately does NOT bind into `dominus::animation::Skeleton`**: `len`
+alone is not a full bind-pose `Transform2D` (no position/rotation
+present in the source), and synthesizing one would be exactly the
+invented-value failure mode this track refuses. That binding is real,
+separately-gated future work once a real decision exists for how `len` +
+the kinetic-chain ordering maps to a placed transform.
+
+**Validation beyond presence**: `handBone` must resolve to a real bone in
+the same file; every non-root bone's `parent` must name a bone that
+exists; `drawOrder` must name exactly the parts the file actually has (no
+fewer, no more) — three real structural checks with no equivalent in
+HITM's own pipeline reference, added because the data shape makes them
+checkable and a silent dangling reference here is a real class of bug.
+Eight new deliberate-break fixtures (real Brooklyn `parts.json`, one
+mutation each). **A genuine test-authoring bug was caught and fixed
+during this module**: the first four break fixtures kept Brooklyn's real
+`atlas: "brooklyn_atlas"` value under a differently-named directory,
+so the (correct, working) atlas/directory mismatch check fired first and
+masked the fixture's actually-intended failure — caught by running the
+suite, not assumed clean; fixed by setting each fixture's `atlas` to
+match its own directory before mutating its real intended field.
+
+**Losslessness proven the same two ways as Module 2**: a unit test
+comparing the independently re-parsed source file's canonical `Dump()`
+against `ToJson().Dump()` for both Brooklyn and Rocket, and `dominus-cli
+hitm-parts-rig <character_dir>` proving the same thing live, run this
+session against real Brooklyn and Rocket data.
+
+**17 new tests, 691 → 708, zero regressions** — full clean rebuild
+(`rm -rf build`) and 14 repeat runs this session, all 708/708.
+
+**Explicitly NOT done by Module 3**: no `Skeleton`/bind-pose binding (see
+above), no atlas texture/PNG loading, no sprite rendering, no
+`design.json`'s `core_parts` reconciliation against this generated
+output (both are real data about part placement; this module does not
+attempt to prove they agree). `GRAPHICS` is untouched.
+
+**Current Track H total: 708/708 tests passing (was 656 before this track).**
 
 ### Module 4 — Global game-rules table (planned, not started)
 

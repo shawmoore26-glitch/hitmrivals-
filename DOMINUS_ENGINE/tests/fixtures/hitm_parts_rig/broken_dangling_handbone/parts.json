@@ -1,0 +1,575 @@
+{
+ "atlas": "broken_dangling_handbone_atlas",
+ "sourceSize": [
+  206,
+  480
+ ],
+ "parts": {
+  "torso": {
+   "pivot": [
+    0.5,
+    0.1
+   ],
+   "normW": 0.5188349514563106,
+   "normH": 0.3466666666666666,
+   "frame": [
+    104,
+    0,
+    107,
+    166
+   ]
+  },
+  "head": {
+   "pivot": [
+    0.5,
+    0.93
+   ],
+   "normW": 0.45883495145631065,
+   "normH": 0.29666666666666663,
+   "frame": [
+    333,
+    0,
+    95,
+    143
+   ]
+  },
+  "armFarU": {
+   "pivot": [
+    0.654,
+    0.214
+   ],
+   "normW": 0.28883495145631066,
+   "normH": 0.19166666666666665,
+   "frame": [
+    870,
+    0,
+    60,
+    92
+   ]
+  },
+  "armFarL": {
+   "pivot": [
+    0.72,
+    0.08
+   ],
+   "normW": 0.27883495145631065,
+   "normH": 0.20666666666666667,
+   "frame": [
+    695,
+    0,
+    57,
+    100
+   ]
+  },
+  "armNearU": {
+   "pivot": [
+    0.38,
+    0.12
+   ],
+   "normW": 0.28883495145631066,
+   "normH": 0.19166666666666665,
+   "frame": [
+    930,
+    0,
+    60,
+    92
+   ]
+  },
+  "armNearL": {
+   "pivot": [
+    0.28,
+    0.08
+   ],
+   "normW": 0.27883495145631065,
+   "normH": 0.20666666666666667,
+   "frame": [
+    752,
+    0,
+    57,
+    100
+   ]
+  },
+  "legFarU": {
+   "pivot": [
+    0.5,
+    0.08
+   ],
+   "normW": 0.24883495145631068,
+   "normH": 0.27666666666666667,
+   "frame": [
+    428,
+    0,
+    52,
+    132
+   ]
+  },
+  "legFarL": {
+   "pivot": [
+    0.5,
+    0.06
+   ],
+   "normW": 0.29883495145631067,
+   "normH": 0.24166666666666675,
+   "frame": [
+    532,
+    0,
+    62,
+    116
+   ]
+  },
+  "footFar": {
+   "pivot": [
+    0.42,
+    0.28
+   ],
+   "normW": 0.4288349514563106,
+   "normH": 0.1816666666666667,
+   "frame": [
+    0,
+    181,
+    88,
+    88
+   ]
+  },
+  "legNearU": {
+   "pivot": [
+    0.5,
+    0.08
+   ],
+   "normW": 0.24883495145631063,
+   "normH": 0.27666666666666667,
+   "frame": [
+    480,
+    0,
+    52,
+    132
+   ]
+  },
+  "legNearL": {
+   "pivot": [
+    0.5,
+    0.06
+   ],
+   "normW": 0.29883495145631067,
+   "normH": 0.24166666666666675,
+   "frame": [
+    594,
+    0,
+    62,
+    116
+   ]
+  },
+  "footNear": {
+   "pivot": [
+    0.58,
+    0.28
+   ],
+   "normW": 0.4288349514563106,
+   "normH": 0.1816666666666667,
+   "frame": [
+    88,
+    181,
+    88,
+    88
+   ]
+  },
+  "hat": {
+   "pivot": [
+    0.5,
+    0.85
+   ],
+   "normW": 0.4988349514563106,
+   "normH": 0.10666666666666666,
+   "frame": [
+    360,
+    181,
+    103,
+    51
+   ]
+  },
+  "jaw": {
+   "pivot": [
+    0.5,
+    0.1
+   ],
+   "normW": 0.3788349514563107,
+   "normH": 0.14666666666666667,
+   "frame": [
+    282,
+    181,
+    78,
+    70
+   ]
+  },
+  "dreadFar": {
+   "pivot": [
+    0.762,
+    0.116
+   ],
+   "normW": 0.23883495145631067,
+   "normH": 0.37666666666666665,
+   "frame": [
+    0,
+    0,
+    50,
+    181
+   ]
+  },
+  "dreadNear": {
+   "pivot": [
+    0.217,
+    0.121
+   ],
+   "normW": 0.25883495145631064,
+   "normH": 0.37666666666666665,
+   "frame": [
+    50,
+    0,
+    54,
+    181
+   ]
+  },
+  "tie": {
+   "pivot": [
+    0.5,
+    0.06
+   ],
+   "normW": 0.18883495145631063,
+   "normH": 0.22666666666666668,
+   "frame": [
+    656,
+    0,
+    39,
+    109
+   ]
+  },
+  "chain": {
+   "pivot": [
+    0.5,
+    0.05
+   ],
+   "normW": 0.29883495145631067,
+   "normH": 0.20666666666666667,
+   "frame": [
+    809,
+    0,
+    61,
+    99
+   ]
+  },
+  "coatFar": {
+   "pivot": [
+    0.68,
+    0.04
+   ],
+   "normW": 0.29883495145631067,
+   "normH": 0.33666666666666667,
+   "frame": [
+    211,
+    0,
+    61,
+    161
+   ]
+  },
+  "coatNear": {
+   "pivot": [
+    0.32,
+    0.04
+   ],
+   "normW": 0.29883495145631067,
+   "normH": 0.33666666666666667,
+   "frame": [
+    272,
+    0,
+    61,
+    161
+   ]
+  },
+  "handFar": {
+   "pivot": [
+    0.62,
+    0.14
+   ],
+   "normW": 0.2588349514563107,
+   "normH": 0.16666666666666657,
+   "frame": [
+    176,
+    181,
+    53,
+    80
+   ]
+  },
+  "handNear": {
+   "pivot": [
+    0.38,
+    0.14
+   ],
+   "normW": 0.25883495145631064,
+   "normH": 0.16666666666666657,
+   "frame": [
+    229,
+    181,
+    53,
+    80
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "_why": "origin"
+  },
+  {
+   "name": "hip",
+   "parent": "root",
+   "_why": "kinetic chain: where ground force enters the body"
+  },
+  {
+   "name": "torso",
+   "parent": "hip",
+   "_why": "kinetic chain: spine compression and counter-rotation",
+   "len": 0.1
+  },
+  {
+   "name": "neck",
+   "parent": "torso",
+   "_why": "lets the head lag behind the chest"
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "_why": "kinetic chain terminus, and the readable one",
+   "len": 0.1
+  },
+  {
+   "name": "shoulderFar",
+   "parent": "torso",
+   "_why": "shoulder compression before the arm moves"
+  },
+  {
+   "name": "shoulderNear",
+   "parent": "torso",
+   "_why": "shoulder compression before the arm moves"
+  },
+  {
+   "name": "armFarU",
+   "parent": "shoulderFar",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "armFarL",
+   "parent": "armFarU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "handFar",
+   "parent": "armFarL",
+   "_why": "wrist — a punch may not originate here, but it must finish here"
+  },
+  {
+   "name": "armNearU",
+   "parent": "shoulderNear",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "armNearL",
+   "parent": "armNearU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "handNear",
+   "parent": "armNearL",
+   "_why": "wrist"
+  },
+  {
+   "name": "legFarU",
+   "parent": "hip",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "legFarL",
+   "parent": "legFarU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "footFar",
+   "parent": "legFarL",
+   "_why": "foot roll — power begins at the ground",
+   "len": 0.1
+  },
+  {
+   "name": "legNearU",
+   "parent": "hip",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "legNearL",
+   "parent": "legNearU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "footNear",
+   "parent": "legNearL",
+   "_why": "foot roll — power begins at the ground",
+   "len": 0.1
+  },
+  {
+   "name": "hat",
+   "parent": "head",
+   "_why": "hat recoil — it must lag when the head snaps",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 0.6,
+    "maxAngle": 16,
+    "gravity": 0.0
+   }
+  },
+  {
+   "name": "jaw",
+   "parent": "head",
+   "_why": "the grin is the character; it must be able to open",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 0.4,
+    "maxAngle": 14,
+    "gravity": 0.0
+   }
+  },
+  {
+   "name": "dreadFar",
+   "parent": "head",
+   "_why": "Volume 5: dreads travel a full beat after he stops",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.4,
+    "maxAngle": 46,
+    "gravity": 0.5
+   }
+  },
+  {
+   "name": "dreadNear",
+   "parent": "head",
+   "_why": "Volume 5: dreads travel a full beat after he stops",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.3,
+    "maxAngle": 46,
+    "gravity": 0.5
+   }
+  },
+  {
+   "name": "tie",
+   "parent": "torso",
+   "_why": "tie swing — reads the chest's counter-rotation",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.1,
+    "maxAngle": 38,
+    "gravity": 0.7
+   }
+  },
+  {
+   "name": "chain",
+   "parent": "torso",
+   "_why": "Volume 5: chain arrives a full beat late",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.6,
+    "maxAngle": 30,
+    "gravity": 0.9
+   }
+  },
+  {
+   "name": "coatFar",
+   "parent": "hip",
+   "_why": "coat lag — the largest silhouette element he owns",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.5,
+    "maxAngle": 42,
+    "gravity": 0.6
+   }
+  },
+  {
+   "name": "coatNear",
+   "parent": "hip",
+   "_why": "coat lag",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.5,
+    "maxAngle": 42,
+    "gravity": 0.6
+   }
+  },
+  {
+   "name": "handFar",
+   "parent": "armFarL",
+   "_why": "glove bounce; a punch finishes here",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 0.5,
+    "maxAngle": 22,
+    "gravity": 0.0
+   }
+  },
+  {
+   "name": "handNear",
+   "parent": "armNearL",
+   "_why": "glove bounce",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 0.5,
+    "maxAngle": 22,
+    "gravity": 0.0
+   }
+  }
+ ],
+ "drawOrder": [
+  "coatFar",
+  "dreadFar",
+  "armFarU",
+  "armFarL",
+  "handFar",
+  "legFarU",
+  "legFarL",
+  "footFar",
+  "torso",
+  "chain",
+  "tie",
+  "head",
+  "jaw",
+  "hat",
+  "dreadNear",
+  "legNearU",
+  "legNearL",
+  "footNear",
+  "armNearU",
+  "armNearL",
+  "handNear",
+  "coatNear"
+ ],
+ "handBone": "handThatDoesNotExist",
+ "handPoint": [
+  0.5,
+  0.55
+ ]
+}
