@@ -6415,3 +6415,44 @@ without changing this phase's work. Full account in
 (13 `PngDecoder`, 8 `RasterDevice`), **899/899** total, clean under
 Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs). Fresh-
 clone verified before push.
+
+**Phase 5B closed: the HITM sprite bridge.** New, pure
+`CHARACTER::hitm::BuildHitmSceneEntities` (`CHARACTER/HitmBridge/
+HitmSceneBridge.h/.cpp`) closes the exact gap Phase 5A's own report
+named ("nothing connects [HitmPartDraw and DrawCommand] yet"): each
+real `HitmPartDraw` `HitmSpriteDrawData` already computes becomes one
+real, positioned, textured `GRAPHICS::SceneEntity` — real atlas-pixel
+rect (`frame_x/y/w/h`, byte for byte), real placement (`place_x/y` +
+real sampled pose offset, both already documented as sharing one real
+scale reference — `HitmAnimationSet.h`'s own header comment), scaled by
+the one real authored screen value (`game.json`'s `sprite.displayHeight`,
+via `HitmGameRules`), anchored at the fighter's own real position
+(`HitmFighterSnapshot.x/y`, HITM's real Y-down screen convention
+converted to DOMINUS's own real Y-up world convention). Deliberately
+does NOT replicate hitm-engine's own debug-only `tools/rig_render.py`
+verification script's exact placement arithmetic — that script's
+`0.62`/`0.42` constants are undocumented, internally inconsistent
+debug-tool fudges with no citation anywhere in real authored data, not
+meaningful design values worth reverse-engineering byte for byte; see
+`HitmSceneBridge.h`'s own header comment for the full, disclosed
+derivation of what this module uses instead and why. `SceneEntity`/
+`FrameCompiler` gained the same additive texture fields `DrawCommand`
+already had (Phase 5A) so the real chain now runs end to end:
+`HitmFighterRuntime` → `HitmSpriteDrawData` → `HitmPartDraw` →
+`HitmSceneBridge` → `SceneEntity`/`DrawCommand` → `TextureAtlas` →
+`RasterDevice` → actual HITM pixels. The strongest of 6 new tests does
+not just check "something rendered": it independently recomputes, from
+the bridge's own real transform, exactly which real atlas pixel
+specific rendered screen pixels should sample from, decodes the real
+committed `brooklyn_atlas.png` fixture directly (bypassing the renderer
+entirely), and asserts byte-for-byte RGBA equality against what
+`RasterDevice` actually drew — a real fixture comparison, not a
+plausibility check. A separate test proves real secondary motion
+survives the bridge unchanged (a follow bone's spring-driven rotation
+differs, entity for entity, between a run with secondary motion enabled
+and one without). Vulkan, `FillTriangle`, bone-hierarchy FK, the combat
+runtime, Ghost Dash, input, camera, and the application loop are all
+untouched, per the explicit scope of this checkpoint. 6 new tests,
+**905/905** total, clean under Release, AddressSanitizer+
+UndefinedBehaviorSanitizer (2 runs). Fresh-clone verified before push.
+Full account in `HITM_SPRITE_BRIDGE_REPORT.md`.

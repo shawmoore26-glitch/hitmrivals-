@@ -127,8 +127,9 @@ add_library(dominus_hitm_runtime STATIC
   CHARACTER/HitmBridge/HitmMeleeHitCheck.cpp
   CHARACTER/HitmBridge/HitmRushAttack.cpp
   CHARACTER/HitmBridge/HitmMatch.cpp
+  CHARACTER/HitmBridge/HitmSceneBridge.cpp
 )
-target_link_libraries(dominus_hitm_runtime PUBLIC dominus_combat dominus_world dominus_physics)
+target_link_libraries(dominus_hitm_runtime PUBLIC dominus_combat dominus_world dominus_physics dominus_graphics)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(dominus_hitm_runtime PRIVATE -Wall -Wextra -Wpedantic)
 endif()

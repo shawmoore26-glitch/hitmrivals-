@@ -21,11 +21,19 @@ public:
     // `viewport` is optional (defaults to {0,0}, "unspecified") --
     // purely descriptive metadata carried in the resulting Frame, see
     // Viewport's own comment in Frame.h for why it does not bind or
-    // change any computed screen_transform.
-    static Frame Compile(const Scene& scene, const Camera& camera, Viewport viewport = Viewport{}) {
+    // change any computed screen_transform. `atlases` is optional
+    // (defaults to empty, preserving every pre-existing call site byte
+    // for byte -- HITM Sprite Bridge phase, Track H Phase 5B) and is
+    // copied straight into the resulting Frame's own `atlases`; it is
+    // the caller's job to have already decoded the real TextureAtlas
+    // data any `textured` SceneEntity in `scene` references by
+    // `atlas_id` (see GRAPHICS/Raster/PngDecoder.h).
+    static Frame Compile(const Scene& scene, const Camera& camera, Viewport viewport = Viewport{},
+                          std::vector<TextureAtlas> atlases = {}) {
         Frame frame;
         frame.camera = camera;
         frame.viewport = viewport;
+        frame.atlases = std::move(atlases);
         for (const auto& entity : scene.entities) {
             DrawCommand cmd;
             cmd.entity_id = entity.entity_id;
@@ -38,6 +46,12 @@ public:
             cmd.material_r = entity.material_r;
             cmd.material_g = entity.material_g;
             cmd.material_b = entity.material_b;
+            cmd.textured = entity.textured;
+            cmd.atlas_id = entity.atlas_id;
+            cmd.atlas_src_x = entity.atlas_src_x;
+            cmd.atlas_src_y = entity.atlas_src_y;
+            cmd.atlas_src_w = entity.atlas_src_w;
+            cmd.atlas_src_h = entity.atlas_src_h;
             frame.commands.push_back(std::move(cmd));
         }
 

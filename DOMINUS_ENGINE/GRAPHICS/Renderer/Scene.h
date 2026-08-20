@@ -59,6 +59,23 @@ struct SceneEntity {
     std::uint8_t material_r = 0;
     std::uint8_t material_g = 0;
     std::uint8_t material_b = 0;
+
+    // HITM Sprite Bridge phase (Track H Phase 5B). When `textured` is
+    // false (the default -- every SceneEntity built before this phase
+    // existed), this entity compiles to a DrawCommand exactly as it
+    // always has. See GRAPHICS/Renderer/Frame.h's own `DrawCommand`
+    // fields of the same name for the full explanation -- these mirror
+    // them exactly, one field for one field, so FrameCompiler::Compile
+    // can copy them straight across with no reinterpretation. Populated
+    // by CHARACTER::hitm::BuildHitmSceneEntities (CHARACTER/HitmBridge/
+    // HitmSceneBridge.h) from a real HitmPartDraw's own `frame_x/y/w/h`
+    // -- never by SceneFromEntities, which has no texture data to give.
+    bool textured = false;
+    std::string atlas_id;
+    int atlas_src_x = 0;
+    int atlas_src_y = 0;
+    int atlas_src_w = 0;
+    int atlas_src_h = 0;
 };
 
 struct Scene {

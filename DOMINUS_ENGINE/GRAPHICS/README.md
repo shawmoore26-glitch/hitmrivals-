@@ -1783,13 +1783,50 @@ than left implicit.
   session with a real Vulkan SDK and GPU (or `llvmpipe`, as the GPU
   Rendering Milestone above used) can add the GPU-side sampler/
   descriptor pipeline against this same real data without changing it.
-- **The HITM sprite bridge** (`HitmPartDraw` -> `SceneEntity`/
-  `DrawCommand`). `HitmSpriteDrawData` still computes real per-part
-  atlas rects/placement/pose (Module 5B, Track H) and this phase's new
-  `DrawCommand` fields are deliberately shaped to receive them
-  (pixel-space, matching `frame_x/y/w/h` exactly) -- but nothing
-  connects the two yet. That is Track H Phase 5B, the next checkpoint,
-  not this one.
 - **The authored-asset ref/hash/bind pipeline** for textures (see
   "Asset Boundary" above) -- unchanged, still not built, still a
   separate, later gap.
+
+## The HITM sprite bridge (Track H Phase 5B)
+
+Closed. `HitmPartDraw` -> `SceneEntity`/`DrawCommand` is real now:
+`CHARACTER::hitm::BuildHitmSceneEntities`
+(`CHARACTER/HitmBridge/HitmSceneBridge.h/.cpp`) turns each real
+`HitmPartDraw` `HitmSpriteDrawData` already computes into a real,
+positioned, textured `SceneEntity` -- real atlas-pixel source rect
+(byte for byte from `frame_x/y/w/h`), real placement (`rig.json`'s real
+`place_x/y` plus `anim.json`'s real sampled pose offset, both already
+documented as sharing one real scale reference), scaled by the one
+real authored screen value (`game.json`'s `sprite.displayHeight`),
+anchored at the fighter's own real `HitmFighterSnapshot.x/y` (HITM's
+real Y-down screen convention, converted to this engine's own real
+Y-up world convention -- the same axis flip `RasterDevice` already
+performs on every entity, applied once here instead of left implicit).
+`SceneEntity` gained the same additive `textured`/`atlas_id`/
+`atlas_src_x/y/w/h` fields `DrawCommand` already had (Phase 5A, above),
+and `FrameCompiler::Compile` carries them straight through, plus an
+optional `atlases` parameter (defaults to empty, every pre-existing
+call site unaffected). The real chain now runs end to end:
+`HitmFighterRuntime` -> `HitmSpriteDrawData` -> `HitmPartDraw` ->
+`HitmSceneBridge` -> `SceneEntity`/`DrawCommand` -> `TextureAtlas` ->
+`RasterDevice` -> actual HITM pixels.
+
+Does NOT replicate hitm-engine's own debug-only `tools/rig_render.py`
+verification script's exact placement arithmetic (an undocumented,
+internally-inconsistent `0.62`/`0.42`-constant debug convenience, not
+evidenced anywhere in real authored data) -- see `HitmSceneBridge.h`'s
+own header comment for the full derivation of what this module uses
+instead. No animation math, no clip/frame selection, no secondary-
+motion spring integration happens in this file -- all of that remains
+`HitmSpriteDrawData`'s own, already-closed, already-tested job; this
+bridge only positions and textures whatever real pose it is handed.
+
+Proven against the real, committed atlas fixture directly, not just
+"something rendered": `tests/integration/test_hitm_scene_bridge.cpp`'s
+strongest test independently recomputes, from the bridge's own real
+transform, exactly which real atlas pixel specific rendered screen
+pixels should sample from, decodes `brooklyn_atlas.png` directly
+(bypassing the renderer), and asserts byte-for-byte RGBA equality
+against what `RasterDevice` actually drew. A separate test proves real
+secondary motion survives the bridge unchanged. Full account in
+`HITM_SPRITE_BRIDGE_REPORT.md`.

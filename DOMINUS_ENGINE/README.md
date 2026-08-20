@@ -1363,4 +1363,23 @@ side is deliberately deferred — this sandbox has no Vulkan SDK or GPU
 to build or verify it against — with the new data model kept
 renderer-agnostic for when that becomes possible. Full account in
 `GRAPHICS/README.md`'s "Texture Capability" section.
-**899/899 tests passing (was 656 before this track).**
+**Phase 5B built the HITM sprite bridge**: a new, pure
+`CHARACTER::hitm::BuildHitmSceneEntities` (`CHARACTER/HitmBridge/
+HitmSceneBridge.h`) turns each real `HitmPartDraw` `HitmSpriteDrawData`
+already computes into a real, positioned, textured `GRAPHICS::SceneEntity`
+— real atlas-pixel source rect, real rig.json placement + anim.json
+pose (including real secondary motion, carried through unchanged),
+scaled by the one real authored screen-scale value (`game.json`'s
+`sprite.displayHeight`), anchored at the fighter's own real
+(Y-down-to-Y-up-converted) position. `SceneEntity`/`FrameCompiler`
+gained the same additive texture fields `DrawCommand` already had, so
+the full real chain now runs: `HitmFighterRuntime` →
+`HitmSpriteDrawData` → `HitmPartDraw` → `HitmSceneBridge` →
+`SceneEntity`/`DrawCommand` → `TextureAtlas` → `RasterDevice` → actual
+HITM pixels. Proven not just by "something rendered": one test
+independently recomputes, from the bridge's own real transform, exactly
+which real atlas pixel specific rendered screen pixels should sample
+from, decodes the real committed `brooklyn_atlas.png` fixture directly,
+and asserts byte-for-byte RGBA equality against what `RasterDevice`
+actually drew. Full account in `HITM_SPRITE_BRIDGE_REPORT.md`.
+**905/905 tests passing (was 656 before this track).**
