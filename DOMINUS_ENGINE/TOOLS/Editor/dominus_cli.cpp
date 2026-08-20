@@ -825,7 +825,8 @@ int HitmFighterRuntimeDemo(const std::string& identityDirStr, const std::string&
         std::cout << "[hitm-fighter-runtime] frame=" << s.frame << " (" << label << ") state=" << stateName(s.state)
                    << " x=" << s.x << " y=" << s.y << " vx=" << s.velocity_x << " vy=" << s.velocity_y
                    << " grounded=" << (s.grounded ? "true" : "false") << " meter=" << s.meter
-                   << " reads=" << s.read_engine_reads << " hitstop=" << s.hitstop_frames_remaining << "\n";
+                   << " reads=" << s.read_engine_reads << " hitstop=" << s.hitstop_frames_remaining
+                   << " hp=" << s.hp << "/" << s.max_hp << " facing=" << s.facing << "\n";
     };
 
     std::cout << "[hitm-fighter-runtime] fighter_id=" << fighter.FighterId() << " special_move=\"" << move.move_def.name
@@ -856,8 +857,8 @@ int HitmFighterRuntimeDemo(const std::string& identityDirStr, const std::string&
     fighter.GainRead();
     fighter.GainRead();
     std::cout << "[hitm-fighter-runtime] after 3 real GainRead() calls: reads=" << fighter.Snapshot().read_engine_reads
-               << " tier=\"" << fighter.ReadEngineState().CurrentTierName()
-               << "\" outgoing damage (real mult " << fighter.ReadEngineState().CurrentDamageMultiplier()
+               << " tier=\"" << fighter.ReadEngineState()->CurrentTierName()
+               << "\" outgoing damage (real mult " << fighter.ReadEngineState()->CurrentDamageMultiplier()
                << "): " << fighter.ResolveOutgoingDamage(move) << "\n";
 
     fighter.TakeHit(move, /*blocking=*/false);

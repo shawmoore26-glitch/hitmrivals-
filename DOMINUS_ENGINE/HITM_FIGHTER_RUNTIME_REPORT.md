@@ -500,28 +500,30 @@ module was scoped against:
 
 765/765 as of this module's own formal closure (was 722 before this
 module, 656 before Track H); 837/837 as of the fifth continuation's
-`state_frame` closure above (see that section, and
-`HITM_SPRITE_ASSET_REPORT.md`, for everything added by Module 5B and the
-Track A gap closures in between). 43 new tests at this module's own
-closure: 5 in `test_hitm_move_instance.cpp`, 7 in
-`test_hitm_read_engine_state.cpp`, 28 in `test_hitm_fighter_runtime.cpp`
-(17 covering the vertical slice's gameplay behavior, 11
-`LifetimeSafety_*` tests added across two continuations covering every
-relocation path requested), and 3 in `test_physics_system.cpp`
-(`PhysicsSystem_AsWorldSystem_*`, added in the fourth continuation to
-close the dormant lifetime hazard); plus 6 more in
-`test_hitm_fighter_runtime.cpp` in the fifth continuation
-(`state_frame`, see above) — 34 in that file total. Full clean rebuilds
-+ repeat runs across all five continuations (Release: 15+ repeats;
-ASan+UBSan: 4 repeats of the full suite plus the live CLI demo for the
-first four continuations, run once more for the fifth), all green — no
-flakes observed anywhere. (The one segfault encountered in the first
-lifetime continuation was deterministic — it reproduced on every run
-before the fix, and has not recurred once, under any build
-configuration, since — so it is reported as a found-and-fixed bug, not
-logged as flakiness. The `PhysicsSystem` hazard never actually crashed
-in this codebase, since no call site exploited it — it was found by
-audit and closed pre-emptively, not by chasing an observed failure.)
+`state_frame` closure (see that section, and `HITM_SPRITE_ASSET_REPORT.md`,
+for everything added by Module 5B and the Track A gap closures in
+between); **842/842** as of the sixth continuation's Phase 1 runtime
+foundation closure above. 43 new tests at this module's own closure: 5 in
+`test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`, 28
+in `test_hitm_fighter_runtime.cpp` (17 covering the vertical slice's
+gameplay behavior, 11 `LifetimeSafety_*` tests added across two
+continuations covering every relocation path requested), and 3 in
+`test_physics_system.cpp` (`PhysicsSystem_AsWorldSystem_*`, added in the
+fourth continuation to close the dormant lifetime hazard); plus 6 more in
+`test_hitm_fighter_runtime.cpp` in the fifth continuation (`state_frame`,
+see above); plus 5 net new in the sixth continuation (Phase 1 — one
+existing test rewritten in place, five added, see above) — 39 in that
+file total. Full clean rebuilds + repeat runs across all six
+continuations (Release: 15+ repeats; ASan+UBSan: 4 repeats of the full
+suite plus the live CLI demo for the first four continuations, run once
+more for the fifth and again for the sixth), all green — no flakes
+observed anywhere. (The one segfault encountered in the first lifetime
+continuation was deterministic — it reproduced on every run before the
+fix, and has not recurred once, under any build configuration, since —
+so it is reported as a found-and-fixed bug, not logged as flakiness. The
+`PhysicsSystem` hazard never actually crashed in this codebase, since no
+call site exploited it — it was found by audit and closed pre-emptively,
+not by chasing an observed failure.)
 
 ## Final Module 5A status
 
@@ -643,3 +645,99 @@ push, per this session's standing discipline.
 This reopening does not reopen Module 5A's formal closure above — it is
 the one, explicitly-authorized, additive exception to it, and the module
 remains closed to everything else.
+
+## A second scoped reopening (sixth continuation): Phase 1 runtime foundation
+
+`HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md` (a pure dependency-map
+audit, zero implementation, committed separately) proposed a four-phase,
+dependency-ordered sequence toward a real Brooklyn-vs-Rocket CPU match.
+The user explicitly authorized only its Phase 1 — "the narrowly scoped
+runtime extension for HP + facing + the read-engine requirement — not the
+full match driver yet" — and asked for a stop-and-verify checkpoint
+before any further phase. This section is that checkpoint.
+
+Three real, additive changes, each held to the same "deliberately scoped
+extension" discipline as the `state_frame` reopening above:
+
+1. **The read engine is now optional.** `Create()` previously hard-failed
+   any fighter with no `read_engine` in their real combat genome. Rocket
+   and Static genuinely, permanently have none — real, verified data
+   about them (confirmed again by direct read of both real
+   `combat_genome.json` fixtures), not a gap — so failing on it was a
+   DOMINUS implementation choice, not a reflection of missing authoring.
+   `FrameState::readEngine` is now `std::optional<HitmReadEngineState>`;
+   `GainRead()`/`LoseRead()` degrade to real, documented no-ops for a
+   fighter with none; `ResolveOutgoingDamage()` degrades to a real 1.0x
+   (no table to multiply by); `ReadEngineState()` now returns
+   `const HitmReadEngineState*` (nullptr instead of a reference) and a new
+   `HasReadEngine()` lets a caller ask explicitly. Brooklyn's own behavior
+   is byte-identical — verified by the live CLI demo reproducing the exact
+   same numbers as before this change.
+   **This does NOT unblock Rocket/Static's own `Create()` call.** They
+   still fail — now provably for only one reason: their real move schemas
+   don't fit `HitmMoveInstance::Extract`'s current required-field set
+   (Rocket's real "Ghost Dash" has no `blockstun`). A new test
+   (`HitmFighterRuntime_Break_Rocket_StillBlockedByMoveSchemaNotReadEngine`)
+   asserts the failure message names the move schema and does NOT mention
+   `read_engine` — proving the scope of this change precisely, not just
+   asserting "it still fails."
+2. **Real per-fighter HP.** `max_hp = round(1000 * healthMult)` — `1000`
+   is a real, hardcoded, uniform engine constant (hitm-engine's own
+   `Fighter.js:23`, not authored per-fighter data); `healthMult` is real,
+   per-fighter data already imported losslessly by Module 1
+   (`HitmIdentityRecord::character_dna`'s real `frames.healthMult`) but
+   never before extracted into a typed field — extracted locally in
+   `HitmFighterRuntime.cpp` rather than reopening Module 2's
+   `HitmCombatGenome` (per the audit's own "which modules should not be
+   reopened" finding). Brooklyn: `round(1000*0.94) = 940` — confirmed by
+   both a dedicated test and the live CLI demo. **`hp` starts at `max_hp`
+   and Phase 1 does not reduce it** — `TakeHit` is completely unchanged;
+   wiring real damage into `hp` and detecting KO is the audit's own
+   separately-scoped Phase 2, deliberately not touched here.
+3. **Real facing**, exposed via a new explicit seam, `SetFacing(int)` —
+   the same "real, explicit, publicly-callable seam" discipline
+   `GainRead()`/`LoseRead()` already use for real triggers this
+   single-fighter runtime cannot detect on its own (no opponent exists to
+   derive a real value from — the same reasoning `TakeHit`'s own
+   `impactDirX=1.0f` default already documents). Defaults to `+1` at
+   `Create()`. The one piece of real logic this runtime DOES enforce
+   itself, because it needs no opponent to know: the real engine's own
+   rule that facing never changes while a fighter is committed to any
+   attack sub-state (`CombatSystem.js:488,509`) — `SetFacing()` is a real
+   no-op, not a caller error, during
+   kAttackStartup/kAttackActive/kAttackRecovery, proven by a test that
+   calls it at each of the three sub-states and confirms it only takes
+   effect once the fighter returns to `kIdle`.
+
+**Tests**: 6 new/rewritten in `test_hitm_fighter_runtime.cpp` — the old
+`Break_FighterWithoutReadEngine_Fails` (whose entire premise this change
+deliberately reverses) rewritten to `NoReadEngine_CreateSucceedsWithRealNoOpDefaults`
+asserting the new behavior; a new Rocket-specific test proving the
+read-engine relaxation's exact scope (above); a deliberate-break test for
+a `character_dna.json` missing `healthMult`; an HP-initializes-from-940
+test; and two facing tests (default + explicit set, and the attack-lock
+rule across all three real sub-states). `TOOLS/Editor/dominus_cli.cpp`
+updated for the new pointer-returning `ReadEngineState()` and to print
+`hp`/`facing`, so both live demos now double as real verification of every
+new field.
+
+**Verification**: full suite green with zero regressions confirmed at
+every step (842/842, up from 836 baseline going into this work — 5 net
+new tests, since one existing test was rewritten in place rather than
+added alongside); clean Release rebuild (`rm -rf build`); clean
+Debug+AddressSanitizer+UndefinedBehaviorSanitizer build, 2 full-suite
+runs, zero sanitizer findings; both live `dominus-cli` demos
+(`hitm-fighter-runtime`, `hitm-sprite-draw-data`) run under ASan too,
+reproducing identical real gameplay numbers (`hp=940/940 facing=1`
+appended, nothing else changed) — the sprite-draw-data demo's entire
+output is byte-identical to before this change, confirming zero
+cross-module impact. Fresh-clone verification performed before push.
+
+This is a second, separate, additive exception to Module 5A's formal
+closure — same discipline as `state_frame`, not a reopening of the
+module's own scope. The audit's Phase 2 (real `_melee` hit-check, HP/
+damage/hitstun/hitstop wiring, KO/round/timer via `HitmGameRules`) and
+Phase 3 (the actual two-fighter match driver) remain explicitly
+unimplemented, per the user's own "stop and verify" instruction — see
+`HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md` for the full proposed
+sequence this checkpoint is one step into.

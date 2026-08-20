@@ -1,12 +1,49 @@
 // CHARACTER/HitmBridge/HitmFighterRuntime.cpp
 #include "CHARACTER/HitmBridge/HitmFighterRuntime.h"
 
+#include <cmath>
+
+#include "CORE/Serialization/MiniJson.h"
 #include "PHYSICS/RigidBody.h"
 #include "WORLD/Core/SpatialComponent.h"
 
 namespace dominus::character::hitm {
 
 using core::Result;
+
+namespace {
+
+// Real, hardcoded, uniform-across-every-fighter engine constant -- NOT
+// authored per-fighter data (hitm-engine's own `Fighter.js:23`: "const hp
+// = Math.round(1000 * def.stats.healthMult)"). Same category as
+// COMBAT::kFramesPerSecond: a real literal from the real engine's own
+// source, safe to port directly.
+constexpr double kBaseHp = 1000.0;
+
+// Real, per-fighter data: character_dna.json's own real
+// `frames.healthMult` (confirmed present, and genuinely different, for
+// all three real fighters -- Brooklyn 0.94, Rocket 1.09, Static 0.96 --
+// see HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md's "HP/KO" finding).
+// Already imported losslessly by Module 1 as
+// HitmIdentityRecord::character_dna, but never extracted into a typed
+// field before this change -- extracted here, locally to Module 5A,
+// rather than reopening Module 2's HitmCombatGenome (per that audit's own
+// "which modules should not be reopened" finding).
+Result<double> ExtractHealthMult(const HitmIdentityRecord& record) {
+    std::string context = "HitmFighterRuntime::Create: fighter '" + record.fighter_id +
+                           "' character_dna.frames.healthMult";
+    const core::json::Value* framesObj = record.character_dna.Get("frames");
+    if (!framesObj || !framesObj->IsObject()) {
+        return Result<double>::Fail(context + " -- character_dna.json has no 'frames' object");
+    }
+    const core::json::Value* v = framesObj->Get("healthMult");
+    if (!v || !v->IsNumber()) {
+        return Result<double>::Fail(context + " -- missing or not a number");
+    }
+    return Result<double>::Ok(v->AsNumber());
+}
+
+}  // namespace
 
 Result<HitmFighterRuntime> HitmFighterRuntime::Create(const HitmIdentityRecord& record, const HitmCombatGenome& genome,
                                                         const HitmGameRules& rules) {
@@ -20,13 +57,16 @@ Result<HitmFighterRuntime> HitmFighterRuntime::Create(const HitmIdentityRecord& 
         return Result<HitmFighterRuntime>::Fail("HitmFighterRuntime::Create: " + moveResult.error);
     }
 
-    const ReadEngine* readEngine = genome.GetReadEngine();
-    if (!readEngine) {
-        return Result<HitmFighterRuntime>::Fail(
-            "HitmFighterRuntime::Create: fighter '" + record.fighter_id +
-            "' has no read_engine in their real combat genome -- this vertical slice starts with Brooklyn "
-            "specifically because he is the one real fighter who has one (see combat_genome.json across all "
-            "three real fighters -- Rocket and Static genuinely do not)");
+    // Real data: not every fighter has a read engine -- Rocket and Static
+    // genuinely do not (see combat_genome.json across all three real
+    // fighters). That is real, verified information about them, not a
+    // gap, so it is no longer a Create()-blocking failure -- see this
+    // header's top comment ("PHASE 1"). GainRead()/LoseRead()/
+    // ReadEngineState()/ResolveOutgoingDamage() below all degrade to
+    // real, documented no-ops/defaults for a fighter with none.
+    std::optional<HitmReadEngineState> readEngineState;
+    if (const ReadEngine* readEngine = genome.GetReadEngine()) {
+        readEngineState = HitmReadEngineState(*readEngine);
     }
 
     if (!genome.Defense().block_preference.has_value()) {
@@ -34,12 +74,21 @@ Result<HitmFighterRuntime> HitmFighterRuntime::Create(const HitmIdentityRecord& 
                                                   "' has no defense_profile.blockPreference in their real combat genome");
     }
 
+    auto healthMultResult = ExtractHealthMult(record);
+    if (!healthMultResult.ok) {
+        return Result<HitmFighterRuntime>::Fail(healthMultResult.error);
+    }
+    // Real hardcoded engine constant x real per-fighter multiplier -- see
+    // ExtractHealthMult/kBaseHp above. Phase 1 only: hp starts at maxHp
+    // and stays there; nothing here reduces it yet.
+    int maxHp = static_cast<int>(std::lround(kBaseHp * (*healthMultResult.value)));
+
     // Allocated ONCE, here, and never relocated for the rest of this
     // FrameState's life -- see this class's header comment for why that
     // is the actual fix for the move-safety bug this module found.
-    auto state = std::make_unique<HitmFighterRuntime::FrameState>(rules, HitmReadEngineState(*readEngine),
-                                                                    *moveResult.value,
-                                                                    *genome.Defense().block_preference, record.fighter_id);
+    auto state = std::make_unique<HitmFighterRuntime::FrameState>(
+        rules, std::move(readEngineState), *moveResult.value, *genome.Defense().block_preference, maxHp,
+        record.fighter_id);
 
     // Real integration with WORLD's real entity/component substrate (WORLD
     // LAW 002) -- not a bespoke position struct. Start position: centered
@@ -212,8 +261,9 @@ void HitmFighterRuntime::RunOneFrame(FrameState& state, HitmInputCommand input) 
     // 5. Read-engine decay clock -- ticks every real frame regardless of
     // gameplay state, the literal reading of "stand still and the
     // knowledge goes stale" (nothing in the real data scopes decay to a
-    // specific state).
-    state.readEngine.TickFrame();
+    // specific state). Real no-op for a fighter with no real read engine
+    // (Rocket/Static) -- there is no decay clock to tick.
+    if (state.readEngine) state.readEngine->TickFrame();
 
     // Net state change across this whole frame (see the comment above
     // `stateAtFrameStart`) -- 0 on the frame `state` lands on a new
@@ -267,16 +317,40 @@ void HitmFighterRuntime::TakeHit(const HitmMoveInstance& incoming, bool blocking
 
 double HitmFighterRuntime::ResolveOutgoingDamage(const HitmMoveInstance& move) const {
     // The real authored law, implemented literally: "the read engine
-    // multiplies OUTPUT, never the table."
-    return move.move_def.power * state_->readEngine.CurrentDamageMultiplier();
+    // multiplies OUTPUT, never the table." A fighter with no real read
+    // engine (Rocket/Static) has no table to multiply by -- real 1.0x,
+    // not a guessed value.
+    double multiplier = state_->readEngine ? state_->readEngine->CurrentDamageMultiplier() : 1.0;
+    return move.move_def.power * multiplier;
 }
 
 void HitmFighterRuntime::ResolveOutgoingHitLanded(const HitmMoveInstance& move) {
     state_->meter = ClampMeter(*state_, state_->meter + move.meter_gain + state_->rules.Meter().on_hit_give);
 }
 
-void HitmFighterRuntime::GainRead() { state_->readEngine.GainRead(); }
-void HitmFighterRuntime::LoseRead() { state_->readEngine.LoseRead(); }
+void HitmFighterRuntime::GainRead() {
+    // Real no-op for a fighter with no real read engine (Rocket/Static) --
+    // not an error: there is nothing to gain.
+    if (state_->readEngine) state_->readEngine->GainRead();
+}
+void HitmFighterRuntime::LoseRead() {
+    if (state_->readEngine) state_->readEngine->LoseRead();
+}
+
+void HitmFighterRuntime::SetFacing(int facing) {
+    // A direct port of the real engine's own rule (CombatSystem.js:488,
+    // 509: `if (f.state!==ATTACK) f.facing = ...`) -- facing does not
+    // change while this fighter is committed to any attack sub-state.
+    // Real no-op, not a caller error, matching "facing locks for the
+    // attack's duration." See this header's top comment ("PHASE 1") for
+    // why every OTHER frame's real value is the caller's (a future
+    // two-fighter match driver's) responsibility, not computed here.
+    if (state_->state == HitmFighterState::kAttackStartup || state_->state == HitmFighterState::kAttackActive ||
+        state_->state == HitmFighterState::kAttackRecovery) {
+        return;
+    }
+    state_->facing = facing;
+}
 
 double HitmFighterRuntime::ClampMeter(const FrameState& state, double value) {
     double maxMeter = state.rules.Meter().max;
@@ -311,15 +385,23 @@ HitmFighterSnapshot HitmFighterRuntime::Snapshot() const {
     snap.velocity_y = body->velocity_y;
     snap.grounded = state_->grounded;
     snap.meter = state_->meter;
-    snap.read_engine_reads = state_->readEngine.CurrentReads();
+    // 0 for a fighter with no real read engine (Rocket/Static) -- the same
+    // real baseline value Brooklyn himself starts at, not a special case.
+    snap.read_engine_reads = state_->readEngine ? state_->readEngine->CurrentReads() : 0;
     snap.hitstop_frames_remaining = state_->hitstopFramesRemaining;
     snap.state_frames_remaining = state_->stateFramesRemaining;
     snap.state_frame = state_->stateFrame;
+    snap.max_hp = state_->maxHp;
+    snap.hp = state_->hp;
+    snap.facing = state_->facing;
     return snap;
 }
 
 HitmFighterState HitmFighterRuntime::State() const { return state_->state; }
-const HitmReadEngineState& HitmFighterRuntime::ReadEngineState() const { return state_->readEngine; }
+const HitmReadEngineState* HitmFighterRuntime::ReadEngineState() const {
+    return state_->readEngine ? &(*state_->readEngine) : nullptr;
+}
+bool HitmFighterRuntime::HasReadEngine() const { return state_->readEngine.has_value(); }
 const std::string& HitmFighterRuntime::FighterId() const { return state_->fighterId; }
 const combat::ReactionResult& HitmFighterRuntime::LastReaction() const { return state_->lastReaction; }
 

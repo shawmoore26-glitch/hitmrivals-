@@ -6264,3 +6264,38 @@ be closed without inventing data, stays documented, not attempted.
 `land`/`walkBack` clip selection remains out of scope (no landing-
 recovery timer, no facing/opponent concept in Module 5A's single-fighter
 vertical slice) — a real gap, not manufactured around.
+
+### Brooklyn-vs-Rocket playability: audit, then Phase 1 of 4
+
+`HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md` — a pure dependency-map
+audit, zero implementation — mapped what DOMINUS has, what real HITM
+combat systems exist and have never been ported (real hitm-engine
+`CombatSystem.js`, never previously cited in any Track H report), what's
+missing and why, which modules must not be reopened, and a proposed
+four-phase sequence toward a real Brooklyn-vs-Rocket CPU match. The user
+authorized only Phase 1 ("runtime foundation"), with an explicit
+stop-and-verify checkpoint before any further phase.
+
+**Phase 1 closed**: `HitmFighterRuntime::Create()`'s read-engine
+requirement is now optional (Rocket/Static genuinely have none — real
+data, not a gap; this does NOT unblock their own `Create()` call, which
+still fails, now provably only on their real move-schema mismatch — a
+dedicated test proves the narrowed failure reason). Real per-fighter HP
+(`round(1000*healthMult)`, all three real fighters' multipliers
+confirmed distinct) added, uninitialized by any damage yet — Phase 2's
+scope, not this one's. Real facing added via an explicit `SetFacing()`
+seam, enforcing the one piece of real logic this single-fighter runtime
+can know on its own (facing locks during any attack sub-state, a direct
+port of `CombatSystem.js`'s own rule). Full details in
+`HITM_FIGHTER_RUNTIME_REPORT.md`'s "A second scoped reopening (sixth
+continuation)" section. 6 new/rewritten tests, **842/842** total, clean
+under Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs), and
+both live CLI demos (including under ASan). Fresh-clone verified before
+push.
+
+Phases 2 (real `_melee` hit-check, HP/damage/hitstun/hitstop wiring,
+KO/round/timer via already-imported `HitmGameRules`), 3 (the actual
+two-fighter match driver), and 4 (Rocket's own real "Ghost Dash", a
+structurally different move type requiring its own `_zoneHit`+travel
+port) remain explicitly unimplemented, per the audit's own proposed
+ordering and the user's phase-by-phase authorization discipline.

@@ -104,6 +104,56 @@
 // convention -- the real, intended effect: the displayed animation frame
 // holds during a hitstop freeze, the same way a real fighting game's
 // hit-freeze visually holds the current pose.
+//
+// PHASE 1 -- RUNTIME FOUNDATION (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md):
+// the first of that audit's four explicitly-authorized, narrowly-scoped
+// steps toward a real Brooklyn-vs-Rocket CPU match. Three real, additive
+// changes, nothing else:
+//   1. The read engine is now OPTIONAL. `Create()` previously hard-failed
+//      any fighter with no `read_engine` in their real combat genome.
+//      Rocket and Static genuinely, permanently have none -- that is real,
+//      verified data about them, not a gap -- so failing on it was a
+//      DOMINUS implementation choice, not a reflection of missing
+//      authoring. `GainRead()`/`LoseRead()`/`ResolveOutgoingDamage()` all
+//      degrade to real, documented no-ops/1.0x defaults for such a
+//      fighter (see each one's own comment in the .cpp); `ReadEngineState()`
+//      returns nullptr instead of a reference, and the new `HasReadEngine()`
+//      lets a caller ask explicitly rather than guess. Brooklyn's own
+//      behavior is byte-identical -- he still has a real read engine, so
+//      every existing code path for him is unchanged.
+//      NOTE: this does NOT make Rocket/Static's `Create()` call succeed --
+//      they still fail at the earlier "special" move extraction (their
+//      real move schemas don't fit `HitmMoveInstance::Extract`'s current
+//      required-field set, a separate, still-open gap the audit's Step 2
+//      names explicitly). This step only removes the read-engine
+//      requirement as a SECOND, independent blocker -- verified by its own
+//      test proving Rocket's `Create()` failure message now names the move
+//      schema, not `read_engine`.
+//   2. Real per-fighter HP. `maxHp = round(1000 * healthMult)` -- `1000` is
+//      a real, hardcoded, uniform-across-every-fighter engine constant
+//      (hitm-engine's own `Fighter.js:23`, not authored per-fighter data);
+//      `healthMult` is real, per-fighter data already imported losslessly
+//      by Module 1 (`HitmIdentityRecord::character_dna`'s real
+//      `frames.healthMult`) but never before extracted into a typed field.
+//      `hp` starts at `maxHp` and PHASE 1 DOES NOT REDUCE IT -- `TakeHit`
+//      still only resolves reaction type/hitstun/blockstun/meter/hitstop,
+//      exactly as before; wiring real damage into `hp` and detecting KO is
+//      the audit's own separately-scoped Phase 2, deliberately not done
+//      here.
+//   3. Real facing, exposed the same way `GainRead()`/`LoseRead()` already
+//      are: an explicit, publicly-callable seam (`SetFacing()`), not
+//      something this single-fighter runtime computes on its own -- there
+//      is still no opponent here to derive a real value from (the same
+//      reasoning `TakeHit`'s own `impactDirX=1.0f` default already
+//      documents). Defaults to `+1` (facing right) at `Create()`. The one
+//      piece of real logic this runtime DOES enforce itself, because it
+//      needs no opponent to know: the real engine's own rule that facing
+//      never changes while a fighter is committed to any attack sub-state
+//      (`CombatSystem.js:488,509`, `f.state!==ATTACK`) -- `SetFacing()`
+//      below is a real no-op, not a caller error, during
+//      kAttackStartup/Active/Recovery. A future two-fighter match driver,
+//      which will know both fighters' real positions, is the real caller
+//      for every other frame.
 #pragma once
 
 #include <cstdint>
@@ -171,6 +221,17 @@ struct HitmFighterSnapshot {
     // DELIBERATELY SCOPED EXTENSION") for exactly what this does and
     // does not add.
     int state_frame = 0;
+    // Real: round(1000 * this fighter's own real healthMult). See this
+    // header's top comment ("PHASE 1 -- RUNTIME FOUNDATION"). `hp` starts
+    // equal to `max_hp` and nothing in this class reduces it yet -- that
+    // is real, separately-scoped future work, not silently implied here.
+    int max_hp = 0;
+    int hp = 0;
+    // +1 = facing right, -1 = facing left. Defaults to +1 at Create() and
+    // only ever changes via the explicit SetFacing() seam -- see this
+    // header's top comment for why this runtime cannot compute a real
+    // value on its own.
+    int facing = 1;
 
     bool operator==(const HitmFighterSnapshot&) const = default;
 };
@@ -223,8 +284,25 @@ public:
     // is the real, explicit trigger seam until one does; exposed publicly
     // rather than hidden, so a caller (a test, or eventually a real
     // detector) can prove the tier actually transitions.
+    //
+    // Real, documented no-op for a fighter with no real read engine
+    // (Rocket/Static) -- see HasReadEngine(). Not an error: there is
+    // nothing to gain or lose.
     void GainRead();
     void LoseRead();
+
+    // Real, explicit query -- true for a fighter whose real combat genome
+    // has a read_engine (Brooklyn), false for one that genuinely does not
+    // (Rocket/Static). GainRead()/LoseRead() are safe to call either way;
+    // ReadEngineState() returns nullptr exactly when this is false.
+    bool HasReadEngine() const;
+
+    // Sets this fighter's facing direction explicitly (+1 = right, -1 =
+    // left) -- see this header's top comment ("PHASE 1") for why this is
+    // an explicit seam rather than something this runtime computes on its
+    // own, and for the one real rule (facing locks during any attack
+    // sub-state) this method DOES enforce itself.
+    void SetFacing(int facing);
 
     // Pure calculation, no state mutation: this fighter's own move power
     // multiplied by the real, current read-engine tier's damage_mult --
@@ -246,7 +324,11 @@ public:
     // (CHARACTER/HitmBridge/HitmCombatGenome.h) inside every member
     // function of this class per ordinary C++ name lookup -- found the
     // hard way while implementing Create() below, not a style preference.
-    const HitmReadEngineState& ReadEngineState() const;
+    //
+    // Returns nullptr for a fighter with no real read engine
+    // (Rocket/Static) -- see HasReadEngine(). Non-null, and unchanged, for
+    // every fighter that has one (Brooklyn).
+    const HitmReadEngineState* ReadEngineState() const;
     const std::string& FighterId() const;
 
     // The real, existing COMBAT::ReactionSystem's decision from the most
@@ -267,9 +349,17 @@ private:
         std::string fighterId;
 
         HitmGameRules rules;
-        HitmReadEngineState readEngine;
+        // Optional: real data (Rocket/Static genuinely have none) -- see
+        // header top comment "PHASE 1". std::nullopt for such a fighter;
+        // every member function that touches this checks first, rather
+        // than assuming it is always present the way earlier modules did.
+        std::optional<HitmReadEngineState> readEngine;
         HitmMoveInstance specialMove;
         double defenseBlockPreference;
+        // See header top comment "PHASE 1". hp starts at maxHp; nothing
+        // in Phase 1 reduces it.
+        int maxHp = 0;
+        int hp = 0;
 
         HitmFighterState state = HitmFighterState::kIdle;
         int stateFramesRemaining = 0;
@@ -277,19 +367,23 @@ private:
         int hitstopFramesRemaining = 0;
         double meter = 0.0;
         bool grounded = true;
+        int facing = 1;  // see header comment "PHASE 1"; only ever set via SetFacing()
         uint64_t frame = 0;
         combat::ReactionResult lastReaction;
         HitmInputCommand pendingInput = HitmInputCommand::kNeutral;
 
-        FrameState(HitmGameRules rulesIn, HitmReadEngineState readEngineIn, HitmMoveInstance specialMoveIn,
-                   double defenseBlockPreferenceIn, std::string fighterIdIn)
+        FrameState(HitmGameRules rulesIn, std::optional<HitmReadEngineState> readEngineIn,
+                   HitmMoveInstance specialMoveIn, double defenseBlockPreferenceIn, int maxHpIn,
+                   std::string fighterIdIn)
             : physics(static_cast<float>(rulesIn.Physics().gravity)),
               entityId(fighterIdIn),
               fighterId(std::move(fighterIdIn)),
               rules(std::move(rulesIn)),
               readEngine(std::move(readEngineIn)),
               specialMove(std::move(specialMoveIn)),
-              defenseBlockPreference(defenseBlockPreferenceIn) {}
+              defenseBlockPreference(defenseBlockPreferenceIn),
+              maxHp(maxHpIn),
+              hp(maxHpIn) {}
     };
 
     explicit HitmFighterRuntime(std::unique_ptr<FrameState> state);

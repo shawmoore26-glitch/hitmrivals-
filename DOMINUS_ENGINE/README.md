@@ -1307,6 +1307,15 @@ Still nothing is rendered — no pixel is ever decoded or drawn, no sound
 plays, and no second real player exists yet. The one remaining real
 Track A gap — full bone-hierarchy forward kinematics — stays blocked on
 missing upstream `parts.json` bind-pose data, not attempted without it.
-See each module's own "explicitly not done" note in `ROADMAP.md` for the
-honest boundary.
-**837/837 tests passing (was 656 before this track).**
+A dependency-map audit (`HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md`,
+zero implementation) then mapped the smallest real path to an actual
+Brooklyn-vs-Rocket CPU match; its explicitly-authorized Phase 1 is done —
+`HitmFighterRuntime`'s read engine is now optional (Rocket/Static
+genuinely have none; this alone does not unblock their own `Create()`,
+which still fails, now provably only on their real move-schema
+mismatch), real per-fighter HP (`round(1000*healthMult)`) and real
+facing (an explicit `SetFacing()` seam) were added — nothing wired into
+damage/hit-detection/a match yet, that is Phases 2–3, deliberately not
+started. See each module's own "explicitly not done" note in
+`ROADMAP.md` for the honest boundary.
+**842/842 tests passing (was 656 before this track).**
