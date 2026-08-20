@@ -6201,17 +6201,38 @@ varied replay, a two-independent-replays determinism proof matching
 Module 5A's own methodology, a `Reset()` proof, the duplicate-bone-name
 regression, and the disabled-by-default backward-compatibility proof),
 all green under a clean Debug+AddressSanitizer+UndefinedBehaviorSanitizer
-build, zero findings. **824/824 total** (was 656 before Track H).
+build, zero findings. 824/824 at this closure's own initial count (was
+656 before Track H) — since raised to **831/831** by gap #2 below.
 
-Remaining real Track A gaps, in the order they'd next be worth closing:
-full bone-hierarchy forward kinematics (blocked on real, missing
-upstream `parts.json` bind-pose data — cannot be closed without
-inventing data, so stays documented, not attempted); proving
-`BuildSpriteDrawData` end to end against Rocket's and Static's own real
-idle/walk snapshots (their asset layer already imports cleanly — this
-would just be test coverage confirming the pipeline executes their real
-asset set too, not blocked on anything); `land`/`walkBack` clip selection
-and per-state elapsed-frame tracking (both require a small, real
-extension to `HitmFighterRuntime::FrameState` — genuinely Module 5A's
-territory, not Track A's, and still deliberately not attempted without
-explicit direction to reopen it).
+### Track A gap #2 closed: BuildSpriteDrawData proven against Rocket's and Static's own real assets
+
+Their asset layer (`HitmAssetImporter`) already imported cleanly —
+`BuildSpriteDrawData` itself had never been exercised against their real
+data. `HitmFighterRuntime::Create` still cannot build a full runtime for
+either of them (Module 5A's own real move-schema gap, unchanged, not
+reopened), but `HitmFighterSnapshot` is a plain public struct and
+idle/walking/jumping states need no move data at all, so
+`test_hitm_sprite_draw_data_multi_fighter.cpp` proves the pipeline
+against hand-constructed, real-physics-grounded snapshots for both:
+real clip selection, real atlas frame rects, and real secondary motion
+proven via the same exact-arithmetic differential methodology as
+Brooklyn's own proof, against each fighter's own genuinely different
+real spring constants (Rocket 0.268/0.784, Static 0.184/0.652, Brooklyn
+0.118/0.634 — three distinct real values). This closure's own audit also
+caught and fixed a real documentation error the first closure introduced
+— an inaccurate claim that stiffness/damping were identical across all
+three fighters, when each fighter actually has its own uniform,
+DNA-derived pair — corrected in `HitmSpriteDrawData.h` rather than left
+standing.
+
+7 new tests, all green under a clean AddressSanitizer+
+UndefinedBehaviorSanitizer build, zero findings. **831/831 total** (was
+656 before Track H).
+
+Remaining real Track A gaps: full bone-hierarchy forward kinematics
+(blocked on real, missing upstream `parts.json` bind-pose data — cannot
+be closed without inventing data, stays documented, not attempted);
+`land`/`walkBack` clip selection and per-state elapsed-frame tracking
+(both require a small, real extension to `HitmFighterRuntime::
+FrameState` — genuinely Module 5A's territory, not Track A's, still
+deliberately not attempted without explicit direction to reopen it).

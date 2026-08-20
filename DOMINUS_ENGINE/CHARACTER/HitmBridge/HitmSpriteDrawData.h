@@ -81,11 +81,20 @@
 // line-by-line port of the real function, including its real quirks:
 //   - `f.stiffness || 0.2` / `f.damping || 0.7` / `f.maxAngle || 30`:
 //     JavaScript's `||` treats 0 as falsy, silently substituting the
-//     default even for an explicit authored 0. Real data never actually
-//     authors 0 for these fields (evidenced identical 0.118/0.634 across
-//     all three real fighters' every real follow bone), so this never
-//     fires in practice, but the port keeps the same fallback rule
-//     faithfully rather than silently diverging from it.
+//     default even for an explicit authored 0. Real `stiffness`/
+//     `damping` are never 0 in any real fighter's data, but they are
+//     NOT one universal constant either -- corrected from an earlier,
+//     inaccurate claim here: each fighter has its own uniform pair,
+//     evidenced across every one of that fighter's own real follow
+//     bones (Brooklyn 0.118/0.634, Rocket 0.268/0.784, Static
+//     0.184/0.652) -- matching `HitmBoneFollow`'s own header comment,
+//     "Spring constants are DNA-derived: a heavy, inelastic body
+//     produces a stiff, well-damped coat; a light chaotic one produces
+//     a coat that never quite settles." `gravity`, by contrast, *is*
+//     legitimately 0 for several real bones (e.g. every fighter's real
+//     `handFar`/`handNear`/ears) -- exactly the case this fallback rule
+//     exists for, faithfully replicated rather than silently diverging
+//     from it.
 //   - The real engine's bone lookup is a plain object keyed by name
 //     (`bones[b.name] = b`), so when a name appears twice in the real
 //     source array (Module 3's own documented finding: `handFar`/

@@ -25,6 +25,7 @@ add_executable(dominus_core_tests
   character/test_hitm_asset_importer.cpp
   integration/test_hitm_fighter_runtime.cpp
   integration/test_hitm_sprite_draw_data.cpp
+  integration/test_hitm_sprite_draw_data_multi_fighter.cpp
   motion/test_motion_graph.cpp
   motion/test_animation_layers.cpp
   motion/test_ik.cpp

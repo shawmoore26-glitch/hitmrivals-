@@ -262,22 +262,51 @@ regression test described above. All pass under a clean AddressSanitizer
 - Everything Module 5A itself does not implement (second fighter,
   audio, input devices, stage) -- unchanged, not touched by this module.
 
+## Track A gap #2 closed: BuildSpriteDrawData proven against Rocket's and Static's own real assets
+
+Their asset layer (`HitmAssetImporter`) already imported cleanly; what
+had never been exercised was `BuildSpriteDrawData` itself against their
+real data. `HitmFighterRuntime::Create` still cannot build a full
+runtime for either of them (Module 5A's own real move-schema gap,
+unchanged, not reopened) -- but `HitmFighterSnapshot` is a plain, public
+struct, and idle/walking/jumping states need no move data at all, so
+`test_hitm_sprite_draw_data_multi_fighter.cpp` proves the draw-data
+pipeline against hand-constructed (but real-physics-grounded -- the
+exact same `(wallL+wallR)/2`/`ground` start-position formula
+`HitmFighterRuntime::Create` itself uses) snapshots for both fighters:
+real clip selection (idle/walk/jumpUp/jumpDown), real atlas frame rects,
+and -- most valuably -- real secondary motion, proven via the same
+exact-arithmetic differential methodology used for Brooklyn's "chain",
+against each fighter's own genuinely different real spring constants
+(Rocket stiffness=0.268/damping=0.784; Static stiffness=0.184/
+damping=0.652; Brooklyn 0.118/0.634 -- three distinct real values, not
+one constant silently reused). This also caught and corrected a real
+documentation error this closure's own audit surfaced: an earlier claim
+here that stiffness/damping were "identical across all three real
+fighters" was wrong -- each fighter has its own uniform pair, matching
+`HitmBoneFollow`'s own DNA-derived-spring-constants design intent, fixed
+in `HitmSpriteDrawData.h`'s header comment rather than left standing.
+
+7 new tests, all green under a clean AddressSanitizer+
+UndefinedBehaviorSanitizer build, zero findings.
+
 ## Test count
 
-59 new tests: 15 in `test_hitm_animation_set.cpp`, 11 in
+66 new tests: 15 in `test_hitm_animation_set.cpp`, 11 in
 `test_hitm_rig_placement.cpp`, 18 in `test_hitm_asset_importer.cpp`, 22
 in `test_hitm_sprite_draw_data.cpp` (exact frame-arithmetic proofs for
 every attack sub-state and both stun states, the secondary-motion
 suite described above, a determinism proof, and 3 deliberate-break
-tests). **824/824 total** (was 765 before this module, 656 before Track
-H).
+tests), 7 in `test_hitm_sprite_draw_data_multi_fighter.cpp` (Rocket/
+Static real draw-data + secondary-motion proofs, described above).
+**831/831 total** (was 765 before this module, 656 before Track H).
 
 ## Verification
 
 1. Clean Release build (`rm -rf build`): zero errors, zero warnings.
-2. Full suite: **824/824 passed**, exit 0.
+2. Full suite: **831/831 passed**, exit 0.
 3. Clean Debug+AddressSanitizer+UndefinedBehaviorSanitizer build: zero
-   errors, zero warnings. Full suite under it: **824/824 passed**, zero
+   errors, zero warnings. Full suite under it: **831/831 passed**, zero
    sanitizer findings (checked via precise diagnostic-marker greps, not
    a naive substring match).
 4. Live `dominus-cli hitm-sprite-draw-data` run against real Brooklyn

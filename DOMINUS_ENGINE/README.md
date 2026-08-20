@@ -1288,8 +1288,13 @@ beat after he stops") is now a direct port of hitm-engine's own real
 `SkeletonSystem._secondary()`, driven by real, already-imported per-bone
 spring params nothing had used until now — `dreadFar`, which authors no
 track in any real clip, now shows continuous real spring motion instead
-of sitting frozen at zero. Full accounting in `HITM_SPRITE_ASSET_REPORT.md`.
+of sitting frozen at zero. Then closed a second gap: `BuildSpriteDrawData`
+is now proven against Rocket's and Static's own real assets too (not
+just Brooklyn's) — real clip selection, real atlas data, and real
+secondary motion using each fighter's own genuinely different real
+spring constants, all confirmed via the same exact-arithmetic
+differential proof method. Full accounting in `HITM_SPRITE_ASSET_REPORT.md`.
 Still nothing is rendered — no pixel is ever decoded or drawn, no sound
 plays, and no second real player exists yet. See each module's own
 "explicitly not done" note in `ROADMAP.md` for the honest boundary.
-**824/824 tests passing (was 656 before this track).**
+**831/831 tests passing (was 656 before this track).**
