@@ -63,8 +63,15 @@ do not exist.
   color is derived from a hash of the material's *identity string*, not
   from any real color/shading data the material genome actually
   carries -- there is no shading model in this engine to draw from.
-- **No triangle rasterization, no depth buffer, no texturing.** Real
-  area-fill rectangles, not real mesh geometry.
+- **No depth buffer, no real mesh geometry beyond one unit quad.**
+  Still true. **"No texturing" is no longer true on the CPU path** --
+  see "Texture Capability -- Track H Phase 5A" near the end of this
+  file: a `DrawCommand` that opts in (`textured=true`) now samples real,
+  decoded RGBA8 atlas pixel data with real alpha compositing, not a
+  flat hash-derived color. Every command that does NOT opt in draws
+  exactly the same real area-fill rectangle this bullet always
+  described, unchanged. The GPU (`VulkanFrameRenderer`) path does not
+  have this capability yet -- see that same section for why.
 - **"Logical determinism" and "raster determinism" are now BOTH real,
   but for different things.** `Frame`'s determinism is about frame
   CONTENT (same scene -> same `frame_hash`). `RasterDevice`'s
@@ -1633,3 +1640,156 @@ buffers, sync objects) -- verified by actually installing a Vulkan SDK,
 GLFW, and `glslc` in this environment and building it, not by reading
 the source and assuming. Copied into this tree as-is (zero warnings
 were found on the real build, so nothing needed fixing).
+
+## Texture Capability -- Track H Phase 5A: Real Atlas Sampling, CPU-Verified
+
+Triggered by `HITM_RENDER_INPUT_LOOP_AUDIT.md` section A (the
+DOMINUS -> HITM playability audit's own finding: "DOMINUS's rendering
+path today can draw a positioned, colored rectangle per entity. It
+cannot draw a textured sprite at all -- not 'not yet wired,' but
+structurally absent: no image/texture asset type, no sampler, no UV,
+nothing for a real HITM atlas PNG to be sampled into"), and the first
+of that audit's six dependency-ordered pieces, per explicit direction:
+"Rendering First." Scoped deliberately narrow -- the renderer's own
+capability to sample a real texture, nothing about *what* feeds it
+real HITM data yet (that bridge is Phase 5B, not this phase).
+
+### What this phase is not
+
+Not a rebuild of the "Asset Boundary" investigation's conclusion
+above -- that investigation is about the AUTHORED-asset pipeline (a
+`.dominus` file declaring `{"texture": {"ref": "..."}}`, discovered by
+`REALITY`, bound by `RigBinder` into a `TextureComponent`). None of
+that was built here; `Texture authority: NOT YET PRESENT` (that
+section's own words) remains the accurate answer for the authored-ref
+pipeline. This phase closes a different, narrower, renderer-facing
+gap: given real pixel data from *somewhere*, can either renderer
+actually sample and draw it. Two real, separate gaps; this phase closes
+one.
+
+### Real PNG decoding, not a placeholder
+
+`GRAPHICS/Raster/PngDecoder.h/.cpp` -- a real PNG decoder, scoped
+honestly to exactly the format HITM Rivals' three real atlas PNGs
+actually use (verified directly: 8-bit depth, color type 6 -- truecolor
+with alpha, non-interlaced), not generic PNG support. Real chunk
+parsing (IHDR/IDAT/IEND), real zlib (system library, `find_package
+(ZLIB REQUIRED)`) for DEFLATE decompression, and a real, from-spec
+scanline defilter (None/Sub/Up/Average/Paeth, including the real Paeth
+predictor) -- the compressed bytes are not the real pixel bytes until
+that runs. Chunk CRC32 is parsed but not verified (disclosed, not
+silent -- see the file's own header comment for why). Refuses, with a
+specific real error, anything outside that real scope: bad signature,
+wrong color type/bit depth, interlacing, truncated/malformed chunks.
+
+Tested directly against the real, already-committed HITM atlas
+fixtures (`tests/fixtures/hitm_sprite_assets/assets/parts/{brooklyn,
+rocket,static}_atlas.png` -- the exact files `CHARACTER::
+HitmAssetImporter` already validates), not synthetic data: real known
+dimensions, real non-uniform pixel content (proving defiltering
+actually ran, not a zero-filled buffer of the right size),
+determinism, plus the exact real `broken_corrupt_atlas_signature`
+negative-control fixture Module 5B's own tests already use, reused
+here rather than re-fabricated.
+
+### Real texture sampling in `RasterDevice` (CPU)
+
+`GRAPHICS::TextureAtlas` (new, `GRAPHICS/Renderer/TextureAtlas.h`) --
+real, decoded RGBA8 pixel data, the minimum real texture resource this
+engine has ever had (the exact gap `Mesh.h`'s own header comment named
+when it was written: "no texture/image asset representation anywhere
+for a UV to sample... When a real shading or texture system exists,
+those fields belong here; not before").
+
+`Frame` gained a real, additive `atlases` list; `DrawCommand` gained a
+real, additive `textured`/`atlas_id`/`atlas_src_x/y/w/h` (real
+atlas-PIXEL rect, top-left origin, the SAME convention `CHARACTER::
+hitm::HitmPartDraw`'s own `frame_x/y/w/h` already uses -- deliberately
+not a normalized 0..1 UV, since no real HITM data has that concept).
+Every field defaults to "off" -- a command that does not set
+`textured=true` renders through the EXACT same, byte-for-byte
+unmodified flat-color code path this file has used since the Raster
+phase; confirmed by every pre-existing `RasterDevice`/`FrameCompiler`
+test still passing unmodified.
+
+`RasterDevice::Rasterize` samples a textured command's real atlas
+pixels via the same real edge-function barycentric interpolation the
+existing rasterizer already uses for position (an affine 2D transform,
+so linear UV interpolation is exact, not approximated), nearest-
+neighbor (a real, disclosed, simple choice -- no bilinear filtering
+edge cases to reason about), and composites with real per-pixel alpha
+("over" blending) against whatever is already drawn -- proven with a
+real 4-quadrant atlas (four independently verified real colors), a real
+sub-rect selector (proves `atlas_src_x/y/w/h` actually restricts
+sampling, not decoration), a real alpha-blend value (computed in the
+test via the identical float expression `RasterDevice` itself uses,
+never a hand-rounded literal), full transparency (a real no-op, buffer
+stays exactly the default opaque background), a real "missing
+`atlas_id`" refusal (draws nothing, rather than silently falling back
+to the flat-color path and masking a real caller bug), determinism, and
+mixed textured/flat-color commands compositing correctly in one Frame
+(the same painter's-algorithm "later draw wins" rule, now proven across
+the texture/flat-color boundary). One real, disclosed, pre-existing
+rasterizer property surfaced by this work (not introduced by it): a
+pixel center sitting exactly on the shared diagonal edge between the
+unit quad's two triangles can be covered, and blended, by both --
+invisible for a flat color (redrawing the same solid color twice is a
+no-op) but real for an alpha blend. Documented in the relevant test
+rather than "fixed" -- changing `FillTriangle`'s shared-edge inclusion
+rule is a separate, out-of-scope change that would affect the
+pre-existing flat-color path too.
+
+A final, real, end-to-end test decodes the actual Brooklyn atlas PNG
+via `PngDecoder` and renders it through `RasterDevice`, confirming real,
+visible, non-background pixel content -- the real PNG-decode and
+real-texture-sample capabilities proven together, not just each in
+isolation.
+
+**21 new tests** (13 `PngDecoder`, 8 `RasterDevice` textured-path),
+**899/899 total** (was 878 after Track H Phase 4). Full clean rebuild
+(zero warnings, `-Wall -Wextra -Wpedantic`), full suite under
+AddressSanitizer + UndefinedBehaviorSanitizer (two independent runs,
+zero findings), clean Release rebuild, fresh-clone verification before
+push.
+
+### The one new, disclosed external dependency
+
+`find_package(ZLIB REQUIRED)`, linked into `dominus_graphics` --
+unlike `DOMINUS_ENABLE_VULKAN`, this is NOT gated behind a flag: zlib
+is the real, standard, canonical implementation of the real DEFLATE
+algorithm the PNG spec itself mandates (RFC 1950/1951), present on
+essentially every real development/CI environment already (confirmed
+present in this sandbox with zero extra install steps), not a
+hand-rolled reimplementation of general-purpose compression for a game
+engine. This is a real, if small, change to the CPU test suite's
+previously "zero new dependencies" claim -- named here plainly rather
+than left implicit.
+
+### Deliberately not built this phase
+
+- **The GPU/Vulkan texture pipeline** (`VkImage`/`VkImageView`/
+  `VkSampler`/descriptor set/textured pipeline in
+  `VulkanFrameRenderer`). Real, disclosed reason, not an oversight:
+  this sandbox has neither a Vulkan SDK (no `vulkan.h`, no `glslc`) nor
+  a GPU/software ICD available, so any Vulkan code written here could
+  not be built OR verified -- and `DOMINUS_ENABLE_VULKAN` has defaulted
+  `OFF`, outside this repo's own default-verified pipeline, since it
+  was introduced (see "GPU renderer" above: "so the established CPU
+  test suite... stays buildable with zero new dependencies"). Writing
+  unverifiable GPU code would violate the same "never claim unproven
+  functionality" discipline this whole engine runs on. The `Frame`/
+  `DrawCommand`/`TextureAtlas` data model added this phase is
+  deliberately renderer-agnostic for exactly this reason: a future
+  session with a real Vulkan SDK and GPU (or `llvmpipe`, as the GPU
+  Rendering Milestone above used) can add the GPU-side sampler/
+  descriptor pipeline against this same real data without changing it.
+- **The HITM sprite bridge** (`HitmPartDraw` -> `SceneEntity`/
+  `DrawCommand`). `HitmSpriteDrawData` still computes real per-part
+  atlas rects/placement/pose (Module 5B, Track H) and this phase's new
+  `DrawCommand` fields are deliberately shaped to receive them
+  (pixel-space, matching `frame_x/y/w/h` exactly) -- but nothing
+  connects the two yet. That is Track H Phase 5B, the next checkpoint,
+  not this one.
+- **The authored-asset ref/hash/bind pipeline** for textures (see
+  "Asset Boundary" above) -- unchanged, still not built, still a
+  separate, later gap.

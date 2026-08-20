@@ -156,13 +156,23 @@ target_link_libraries(dominus_registry INTERFACE dominus_character)
 # strictly VISUALFORGE -> GRAPHICS, never the reverse. Now a real
 # static library (RasterDevice.cpp is real, compiled code), not
 # header-only.
+#
+# Texture Capability phase (Track H Phase 5A): GRAPHICS/Raster/
+# PngDecoder.cpp is a real PNG decoder (see its own header comment for
+# exact scope) that uses the system's real zlib for DEFLATE
+# decompression -- the one real, new, disclosed external dependency
+# this phase adds to the CPU test suite (unlike DOMINUS_ENABLE_VULKAN
+# below, this is NOT gated -- zlib is a real, standard, near-universally
+# available system library, not an optional GPU SDK).
+find_package(ZLIB REQUIRED)
 add_library(dominus_graphics STATIC
   GRAPHICS/Raster/RasterDevice.cpp
+  GRAPHICS/Raster/PngDecoder.cpp
   GRAPHICS/Renderer/SceneFromEntities.cpp
   GRAPHICS/Renderer/MeshLibrary.cpp
   GRAPHICS/Renderer/MaterialContract.cpp
 )
-target_link_libraries(dominus_graphics PUBLIC dominus_animation dominus_registry dominus_world dominus_character)
+target_link_libraries(dominus_graphics PUBLIC dominus_animation dominus_registry dominus_world dominus_character ZLIB::ZLIB)
 
 # --- GRAPHICS/Vulkan (real GPU renderer, gated -- OFF by default) --------
 # The first real GPU backend: Frame -> CPU vertex staging -> Vulkan

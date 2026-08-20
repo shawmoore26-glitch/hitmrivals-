@@ -6376,3 +6376,42 @@ round/timer/KO/round-win/match-win resolution — the first actual
 DOMINUS-powered HITM Rivals combat vertical slice. Still nothing
 rendered, still no third fighter, still no bind-pose FK, exactly as
 scoped throughout.
+
+**A second dependency-map audit, then a second phase sequence:
+rendering/input/game-loop/camera readiness.** `HITM_RENDER_INPUT_LOOP_AUDIT.md`
+(docs only, left untouched since) inspected — without changing code —
+the path from the proven CPU-observable Brooklyn-vs-Rocket match to an
+actual windowed, playable fight: a real Scene→Frame→pixels pipeline and
+windowed present loop already exist, but draw colored rectangles only
+(zero texture/sampler/UV anywhere, self-documented absent); real
+per-part atlas data already exists (`HitmSpriteDrawData`) but is never
+bridged to the renderer; input sampling doesn't exist yet though the
+combat state machine's per-frame command seam already does;
+`Application::Tick()` is an empty stub; a real 2D `Camera` exists but
+nothing updates it per frame, and real arena bounds are already
+enforced in simulation, just never drawn. Six dependency-ordered pieces
+named for the next milestone, sequenced explicitly as "Rendering
+First": (5A) texture capability, (5B) HITM sprite bridge, (5C) input,
+(5D) application loop, (5E) camera, (5F) first playable Brooklyn vs
+Rocket — each its own checkpoint, none reopening Track H's closed
+combat modules.
+
+**Phase 5A closed: real texture capability, CPU-verified.** `GRAPHICS/
+Raster/PngDecoder` — a real PNG decoder scoped to exactly the format
+HITM's own atlas PNGs use (8-bit RGBA truecolor, non-interlaced),
+system zlib for DEFLATE, a real from-spec scanline defilter. `Frame`/
+`DrawCommand` gained real, additive, opt-in texture fields
+(`textured`/`atlas_id`/`atlas_src_x/y/w/h`, pixel-space to match
+`HitmPartDraw`'s own convention); `RasterDevice` now really samples and
+alpha-composites real atlas pixels for a command that opts in, with
+zero behavior change for any command that doesn't. The GPU/Vulkan
+texture pipeline is deliberately not built this phase — this sandbox
+has no Vulkan SDK and no GPU/software ICD to build or verify it
+against, and writing unverifiable GPU code would be exactly the kind
+of unproven claim this project has always refused; the new data model
+is renderer-agnostic so a future GPU-capable session can add it
+without changing this phase's work. Full account in
+`GRAPHICS/README.md`'s own "Texture Capability" section. 21 new tests
+(13 `PngDecoder`, 8 `RasterDevice`), **899/899** total, clean under
+Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs). Fresh-
+clone verified before push.

@@ -80,6 +80,7 @@ add_executable(dominus_core_tests
   visualforge/test_visualforge_acceptance.cpp
   graphics/test_frame_compiler.cpp
   graphics/test_raster_device.cpp
+  graphics/test_png_decoder.cpp
   graphics/test_render_boundary.cpp
   graphics/test_material_contract.cpp
   graphics/test_gpu_resource_lifetime.cpp

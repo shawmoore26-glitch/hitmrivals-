@@ -1348,4 +1348,19 @@ a real match — the first actual DOMINUS-powered HITM Rivals combat
 vertical slice. See each module's own "explicitly not done" note in
 `ROADMAP.md` for the honest boundary (rendering, a third fighter,
 bind-pose FK, and blocking-vs-rush all remain out).
-**878/878 tests passing (was 656 before this track).**
+A second dependency-map audit (`HITM_RENDER_INPUT_LOOP_AUDIT.md`, zero
+implementation) then mapped the path from that proven combat slice to
+an actual windowed, playable fight — rendering, input, game loop, and
+camera — sequenced "Rendering First" into six checkpoints (5A-5F).
+**Phase 5A built real texture capability**: `GRAPHICS/Raster/PngDecoder`
+(a real PNG decoder scoped to HITM's own real atlas format, system
+zlib for DEFLATE, a real from-spec scanline defilter) plus real,
+additive, opt-in texture fields on `Frame`/`DrawCommand`
+(pixel-space, matching `HitmPartDraw`'s own convention) that
+`RasterDevice` now really samples and alpha-composites, with zero
+behavior change for any command that doesn't opt in. The GPU/Vulkan
+side is deliberately deferred — this sandbox has no Vulkan SDK or GPU
+to build or verify it against — with the new data model kept
+renderer-agnostic for when that becomes possible. Full account in
+`GRAPHICS/README.md`'s "Texture Capability" section.
+**899/899 tests passing (was 656 before this track).**

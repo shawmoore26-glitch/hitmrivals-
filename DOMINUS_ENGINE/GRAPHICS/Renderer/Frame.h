@@ -39,6 +39,7 @@
 
 #include "ANIMATION/SkeletonSystem/Transform2D.h"
 #include "GRAPHICS/Renderer/Camera.h"
+#include "GRAPHICS/Renderer/TextureAtlas.h"
 
 namespace dominus::graphics {
 
@@ -55,6 +56,32 @@ struct DrawCommand {
     std::uint8_t material_r = 0;
     std::uint8_t material_g = 0;
     std::uint8_t material_b = 0;
+
+    // Texture Capability phase (Track H Phase 5A). When `textured` is
+    // false (the default -- every DrawCommand built before this phase
+    // existed), this command renders EXACTLY as it always has: a flat,
+    // material_ref-hash (or MaterialContract-resolved) colored rect.
+    // Nothing above changes behavior for a non-textured command --
+    // this is a strictly additive capability, not a replacement of the
+    // existing color path.
+    //
+    // When true, `atlas_id` must name an entry in this Frame's own
+    // `atlases` (below); `atlas_src_x/y/w/h` is the real atlas-PIXEL
+    // source rect to sample -- top-left origin, top-to-bottom
+    // row-major, the SAME convention CHARACTER::hitm::HitmPartDraw's
+    // own `frame_x/y/w/h` already uses (real `parts.json` data) and
+    // GRAPHICS::TextureAtlas's own real, decoded pixel layout already
+    // matches. Deliberately pixel-space, not a normalized 0..1 UV rect
+    // -- HITM's real per-part atlas data has no normalized-UV concept
+    // anywhere; carrying the exact real pixel rect through is real,
+    // not invented, and needs no conversion at the Phase 5B bridge that
+    // will populate these fields from a real HitmPartDraw.
+    bool textured = false;
+    std::string atlas_id;
+    int atlas_src_x = 0;
+    int atlas_src_y = 0;
+    int atlas_src_w = 0;
+    int atlas_src_h = 0;
 };
 
 // Descriptive, not prescriptive: the render-target dimensions a Frame
@@ -86,6 +113,23 @@ struct Frame {
     Viewport viewport;
     std::vector<DrawCommand> commands;  // fixed, deterministic order -- see FrameCompiler
     std::string frame_hash;             // real content hash of the whole frame, including camera and viewport
+
+    // Texture Capability phase (Track H Phase 5A). Real, already-decoded
+    // texture atlases this Frame's `textured` DrawCommands may reference
+    // by `atlas_id` -- see GRAPHICS/Renderer/TextureAtlas.h and
+    // GRAPHICS/Raster/PngDecoder.h for how a real one is produced.
+    // Empty for every Frame built before this capability existed, and
+    // for every Frame FrameCompiler::Compile still produces today --
+    // Scene/SceneEntity have no texture fields yet (that bridge is
+    // Track H Phase 5B, not this phase; see this repo's
+    // HITM_RENDER_INPUT_LOOP_AUDIT.md section A). `frame_hash` does NOT
+    // yet fold `atlases`/the new per-command texture fields into its
+    // content hash -- FrameCompiler::Serialize is unchanged by this
+    // phase (see GRAPHICS/README.md's "Texture Capability" section for
+    // why), so a real
+    // Frame built directly with texture data set should not rely on
+    // `frame_hash` to reflect it.
+    std::vector<TextureAtlas> atlases;
 };
 
 }  // namespace dominus::graphics

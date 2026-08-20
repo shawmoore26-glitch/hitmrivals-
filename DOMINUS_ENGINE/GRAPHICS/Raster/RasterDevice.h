@@ -31,6 +31,23 @@
 // that gate is specifically about resolved, rendered character
 // assets, which still do not exist. See GRAPHICS/README.md and
 // VISUALFORGE/README.md for why this is a real, separate, later step.
+//
+// Texture Capability phase (Track H Phase 5A): the paragraph above is
+// no longer the whole story for a command that opts in. When
+// `DrawCommand.textured` is true, RasterDevice instead samples real,
+// decoded RGBA8 pixel data from a `GRAPHICS::TextureAtlas` this
+// Frame's own `atlases` carries (see Frame.h, TextureAtlas.h, and
+// GRAPHICS/Raster/PngDecoder.h for how a real one is produced from a
+// real PNG) -- real per-pixel content, real alpha compositing, not a
+// flat Sha256-derived color. This does NOT change behavior for any
+// `textured=false` command (the default, and every command any
+// pre-existing caller has ever built) -- that path is untouched, byte
+// for byte. It also still does not unlock VISUALFORGE's `ACTIVE` state
+// on its own: this closes the "no texture/image representation
+// anywhere" gap (Mesh.h's own header comment), not "resolved character
+// assets are rendered end-to-end" -- see this phase's own
+// GRAPHICS/README.md's own "Texture Capability" section for exactly
+// what is and is not wired together yet.
 #pragma once
 
 #include <cstdint>
