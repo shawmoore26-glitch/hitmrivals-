@@ -100,6 +100,16 @@ void HitmFighterRuntime::RunOneFrame(FrameState& state, HitmInputCommand input) 
         return;
     }
 
+    // Captured before any of this frame's transitions run, compared again
+    // at the bottom -- see the header's "A DELIBERATELY SCOPED EXTENSION"
+    // comment. Deliberately a single before/after comparison, not a reset
+    // at each of the (several) individual places `state.state` can change
+    // below -- correct regardless of how many times state changes within
+    // one real frame (e.g. a hypothetical 1-frame startup could transition
+    // twice in a single call), and touches nothing else about how those
+    // transitions already work.
+    const HitmFighterState stateAtFrameStart = state.state;
+
     // 1. Input-driven velocity / state transitions, before physics moves
     // anything this frame.
     switch (state.state) {
@@ -205,6 +215,15 @@ void HitmFighterRuntime::RunOneFrame(FrameState& state, HitmInputCommand input) 
     // specific state).
     state.readEngine.TickFrame();
 
+    // Net state change across this whole frame (see the comment above
+    // `stateAtFrameStart`) -- 0 on the frame `state` lands on a new
+    // value, otherwise one more frame in the same state.
+    if (state.state != stateAtFrameStart) {
+        state.stateFrame = 0;
+    } else {
+        ++state.stateFrame;
+    }
+
     ++state.frame;
 }
 
@@ -236,6 +255,14 @@ void HitmFighterRuntime::TakeHit(const HitmMoveInstance& incoming, bool blocking
         state_->state = HitmFighterState::kHitstun;
         state_->stateFramesRemaining = incoming.hitstun_frames;
     }
+    // TakeHit mutates `state` synchronously, outside RunOneFrame's own
+    // before/after transition tracking -- reset unconditionally (not
+    // "only if the enum value actually changed"), because a fresh hit is
+    // always a new reaction, even when it lands on a fighter already in
+    // kHitstun (`input.defender_already_staggered` above) -- getting hit
+    // again mid-hitstun restarts the hurt reaction from its own frame 0,
+    // the same way a real fighting game's hit reaction always does.
+    state_->stateFrame = 0;
 }
 
 double HitmFighterRuntime::ResolveOutgoingDamage(const HitmMoveInstance& move) const {
@@ -287,6 +314,7 @@ HitmFighterSnapshot HitmFighterRuntime::Snapshot() const {
     snap.read_engine_reads = state_->readEngine.CurrentReads();
     snap.hitstop_frames_remaining = state_->hitstopFramesRemaining;
     snap.state_frames_remaining = state_->stateFramesRemaining;
+    snap.state_frame = state_->stateFrame;
     return snap;
 }
 

@@ -113,8 +113,10 @@ DOMINUS_TEST(HitmSpriteDrawData_MultiFighter_RocketWalking_SelectsRealWalkClip) 
     auto rules = RealRules();
     auto bundle = RealBundle("rocket");
     auto snap = RealInitSnapshot(rules);
-    snap.frame = 5;
+    snap.frame = 40;  // deliberately different from state_frame below --
+                       // proves raw_frame tracks state_frame, not frame
     snap.state = HitmFighterState::kWalking;
+    snap.state_frame = 5;  // 5 real frames into this walk
 
     auto result = dominus::character::hitm::BuildSpriteDrawData(snap, nullptr, bundle);
     DOMINUS_EXPECT(result.ok);
@@ -165,6 +167,13 @@ DOMINUS_TEST(HitmSpriteDrawData_MultiFighter_RocketSecondaryMotion_TailFollowsHi
     for (int frame = 0; frame < 20; ++frame) {
         auto snap = RealInitSnapshot(rules);
         snap.frame = static_cast<uint64_t>(frame);
+        // This hand-built scenario represents a fighter idle continuously
+        // since frame 0 (state never transitions), so state_frame == frame
+        // -- see HitmFighterRuntime.h's "A DELIBERATELY SCOPED EXTENSION"
+        // for what state_frame actually tracks (frames since the last
+        // real state transition, reset to 0 on one, not the match-wide
+        // frame counter animation frame selection used before it existed).
+        snap.state_frame = frame;
 
         auto result = dominus::character::hitm::BuildSpriteDrawData(snap, nullptr, bundle, &state);
         DOMINUS_EXPECT(result.ok);
@@ -244,6 +253,13 @@ DOMINUS_TEST(HitmSpriteDrawData_MultiFighter_StaticSecondaryMotion_WireFollowsTo
     for (int frame = 0; frame < 20; ++frame) {
         auto snap = RealInitSnapshot(rules);
         snap.frame = static_cast<uint64_t>(frame);
+        // This hand-built scenario represents a fighter idle continuously
+        // since frame 0 (state never transitions), so state_frame == frame
+        // -- see HitmFighterRuntime.h's "A DELIBERATELY SCOPED EXTENSION"
+        // for what state_frame actually tracks (frames since the last
+        // real state transition, reset to 0 on one, not the match-wide
+        // frame counter animation frame selection used before it existed).
+        snap.state_frame = frame;
 
         auto result = dominus::character::hitm::BuildSpriteDrawData(snap, nullptr, bundle, &state);
         DOMINUS_EXPECT(result.ok);

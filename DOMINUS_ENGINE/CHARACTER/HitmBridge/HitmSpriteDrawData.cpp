@@ -96,9 +96,16 @@ double ComputeRawFrame(const HitmFighterSnapshot& snap, const HitmMoveInstance* 
             return raw < 0.0 ? 0.0 : raw;
         }
         default:
-            // idle/walk/jump/blockingStance -- see this file's header
-            // comment for the documented animT-vs-match-frame gap.
-            return static_cast<double>(snap.frame);
+            // idle/walk/jump/blockingStance -- real `f.animT`, a counter
+            // that resets to 0 on every state transition (Module 5A's
+            // `HitmFighterSnapshot::state_frame`, the deliberately
+            // scoped extension this file's header comment describes;
+            // see its own header comment for exactly what it is and is
+            // not). This was `snap.frame` (the match-wide monotonic
+            // counter) before that extension existed -- a walk that
+            // started mid-cycle rather than at its own frame 0. Fixed,
+            // not papered over.
+            return static_cast<double>(snap.state_frame);
     }
 }
 

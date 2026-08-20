@@ -252,13 +252,6 @@ regression test described above. All pass under a clean AddressSanitizer
   facing/opponent concept (see HitmSpriteDrawData.h's header comment);
   this module always selects `'idle'`/`'walk'` respectively, documented,
   not silently wrong.
-- Per-state elapsed-frame tracking for idle/walk/jump (`animT`-equivalent)
-  -- Module 5A's public `HitmFighterSnapshot` only exposes the match-wide
-  monotonic `frame` counter for these states; the smallest correct
-  extension (a `state_entry_frame` field on `HitmFighterRuntime::
-  FrameState`) is identified but deliberately not implemented here, per
-  the explicit instruction not to reopen Module 5A without a genuine
-  defect forcing it.
 - Everything Module 5A itself does not implement (second fighter,
   audio, input devices, stage) -- unchanged, not touched by this module.
 
@@ -290,25 +283,85 @@ in `HitmSpriteDrawData.h`'s header comment rather than left standing.
 7 new tests, all green under a clean AddressSanitizer+
 UndefinedBehaviorSanitizer build, zero findings.
 
+## Track A gap #3 closed: per-state elapsed-frame tracking (`state_frame`)
+
+The gap this module's own "NOT IMPLEMENTED" list previously named --
+`frameFor()`'s default branch (idle/walk/jump) needing the real engine's
+own `animT`/`stateT` reset-on-transition convention, which Module 5A's
+`HitmFighterSnapshot` did not yet expose -- is now closed at the source,
+per the user's own explicit authorization to reopen Module 5A "for a
+deliberately scoped change, not an excuse to reopen the entire module."
+
+`HitmFighterRuntime` (Module 5A) gained exactly one new piece of state:
+a `state_frame` field (public on `HitmFighterSnapshot`, private as
+`FrameState::stateFrame`) that counts frames elapsed since `state` last
+changed -- 0 on the frame a transition happens, incrementing every real
+frame after that, frozen (neither reset nor incremented) during hitstop,
+and reset unconditionally by `TakeHit()` even when the fighter is
+already in `kHitstun` (a fresh hit is always a new hurt reaction, the
+same way a real fighting game's hit reaction always restarts mid-stun).
+See `HitmFighterRuntime.h`'s own "A DELIBERATELY SCOPED EXTENSION"
+header comment for the complete account of what it adds and, just as
+importantly, what it deliberately does not: no landing-recovery timer,
+no facing, no change to any existing gameplay number, no bind-pose/FK
+data manufactured to close the *other*, still-blocked real gap. That
+gap (`bones[].at`/`.part` missing from real `parts.json`) remains
+exactly as blocked as it was -- untouched by this closure.
+
+`ComputeRawFrame()`'s default branch in `HitmSpriteDrawData.cpp` now
+reads `snap.state_frame` directly instead of the match-wide `snap.frame`
+it used before this field existed, fixing the real, documented gap: a
+walk (or idle, or jump) that started mid-match no longer samples its
+animation clip starting from some arbitrary nonzero frame -- it now
+starts from its own real frame 0, exactly like the real engine.
+
+6 new tests in `test_hitm_fighter_runtime.cpp` (Module 5A's own test
+file -- direct coverage in the module that owns the field, not just the
+indirect coverage `HitmSpriteDrawData`'s own tests already provided):
+starts-at-zero; resets-on-transition-then-increments-within-state;
+resets-again-on-a-second-transition; frozen-during-hitstop (mirroring
+the existing `HitstopFreezesEverythingExceptItself` proof for
+`state_frames_remaining`); resets-on-`TakeHit()`-even-mid-hitstun; and
+an independently-re-derived reset/increment invariant checked at every
+frame across a real attack's full startup/active/recovery/idle
+sub-state sequence, not just at the boundaries pinned down by
+`AttackTransitionsThroughRealFrameCounts`. Three existing
+`HitmSpriteDrawData` tests needed updating for the corrected values this
+produces (`raw_frame` now legitimately differs from the old, match-wide-
+counter-driven expectation) -- fixed, not weakened; two of the three
+fixes make their own test strictly more meaningful (one now deliberately
+sets `frame` and `state_frame` to different values to prove the function
+reads the right one).
+
+Full suite green with zero regressions (837/837, up from 831/831 -- the
+6 new direct tests, no existing test removed or weakened), clean under a
+second Debug+AddressSanitizer+UndefinedBehaviorSanitizer build (2 runs),
+and the live `dominus-cli hitm-sprite-draw-data` demo reproduces the real
+walk/attack sequence with the corrected, per-state `raw_frame` values
+(e.g. `frame=3` walking now reports `raw_frame=2`, not 3 -- exactly one
+real frame into that walk, not three frames into the whole match).
+
 ## Test count
 
-66 new tests: 15 in `test_hitm_animation_set.cpp`, 11 in
+72 new tests: 15 in `test_hitm_animation_set.cpp`, 11 in
 `test_hitm_rig_placement.cpp`, 18 in `test_hitm_asset_importer.cpp`, 22
 in `test_hitm_sprite_draw_data.cpp` (exact frame-arithmetic proofs for
 every attack sub-state and both stun states, the secondary-motion
 suite described above, a determinism proof, and 3 deliberate-break
 tests), 7 in `test_hitm_sprite_draw_data_multi_fighter.cpp` (Rocket/
-Static real draw-data + secondary-motion proofs, described above).
-**831/831 total** (was 765 before this module, 656 before Track H).
+Static real draw-data + secondary-motion proofs, described above), 6 in
+`test_hitm_fighter_runtime.cpp` (the `state_frame` closure, described
+above). **837/837 total** (was 831 before this closure, 765 before this
+module, 656 before Track H).
 
 ## Verification
 
 1. Clean Release build (`rm -rf build`): zero errors, zero warnings.
-2. Full suite: **831/831 passed**, exit 0.
+2. Full suite: **837/837 passed**, exit 0.
 3. Clean Debug+AddressSanitizer+UndefinedBehaviorSanitizer build: zero
-   errors, zero warnings. Full suite under it: **831/831 passed**, zero
-   sanitizer findings (checked via precise diagnostic-marker greps, not
-   a naive substring match).
+   errors, zero warnings. Full suite under it: **837/837 passed** across
+   2 separate runs, zero sanitizer findings (checked via precise
+   diagnostic-marker greps, not a naive substring match).
 4. Live `dominus-cli hitm-sprite-draw-data` run against real Brooklyn
    data, reproduced above -- real clip selection, real exact elapsed-
    frame values at every attack sub-state boundary, real per-part pose
@@ -329,17 +382,19 @@ exact real data that caught it, not patched around.
 
 - **PROVEN CPU**: asset discovery, identity validation, fighter/asset
   association, atlas metadata representation, frame/cutout
-  representation, runtime-driven animation/frame selection, deterministic
-  draw-data generation, source-metadata preservation, real per-bone
-  secondary motion (spring/follow system), deliberate-break coverage --
-  see "PROVEN CPU" and "Track A gap #1 closed" above.
+  representation, runtime-driven animation/frame selection (now correct
+  for states that start mid-match, per "Track A gap #3 closed" above),
+  deterministic draw-data generation, source-metadata preservation, real
+  per-bone secondary motion (spring/follow system), deliberate-break
+  coverage -- see "PROVEN CPU", "Track A gap #1 closed", and "Track A
+  gap #3 closed" above.
 - **IMPLEMENTED BUT GPU-UNVERIFIABLE**: nothing attempted -- deliberately.
   This module wrote zero GPU/rendering/display code.
 - **NOT IMPLEMENTED**: full bone-hierarchy FK (blocked on a real upstream
-  data gap, documented), `land`/`walkBack` clips, per-state elapsed-frame
-  tracking for continuous states, and everything beyond this module's own
-  scope (audio, input, stage, a second fighter) -- see "NOT IMPLEMENTED"
-  above.
+  data gap, documented -- still blocked, not touched by the gap #3
+  closure), `land`/`walkBack` clips, and everything beyond this module's
+  own scope (audio, input, stage, a second fighter) -- see "NOT
+  IMPLEMENTED" above.
 
 Module 5B Phase 1 is complete on its own terms: the simulation Module 5A
 proved can now select the actual real HITM visual content that should be

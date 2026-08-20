@@ -382,6 +382,150 @@ DOMINUS_TEST(HitmFighterRuntime_DivergentInputSequencesProduceDivergentStates) {
     DOMINUS_EXPECT(!(runtimeA.Snapshot() == runtimeB.Snapshot()));
 }
 
+// --- 10. state_frame (Track A gap #3 closure) -------------------------------
+// A deliberately scoped extension reopened onto Module 5A after its formal
+// closure -- see HitmFighterRuntime.h's own "A DELIBERATELY SCOPED
+// EXTENSION" header comment for exactly what it adds and doesn't. Every
+// test above this section already covers `frame`, `state`, and
+// `state_frames_remaining`; these are the first DIRECT tests of
+// `state_frame` itself in the module that owns it (it was previously only
+// exercised indirectly, through HitmSpriteDrawData's downstream tests).
+
+DOMINUS_TEST(HitmFighterRuntime_StateFrame_StartsAtZero) {
+    auto runtime = MakeBrooklynRuntime();
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_StateFrame_ResetsOnTransitionThenIncrementsWithinState) {
+    auto runtime = MakeBrooklynRuntime();
+    runtime.AdvanceFrame(HitmInputCommand::kRight);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kWalking);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);  // just transitioned idle -> walking
+
+    for (int i = 1; i <= 5; ++i) {
+        runtime.AdvanceFrame(HitmInputCommand::kRight);
+        DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kWalking);
+        DOMINUS_EXPECT(runtime.Snapshot().state_frame == i);
+    }
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 6);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_StateFrame_ResetsAgainOnSecondTransition) {
+    auto runtime = MakeBrooklynRuntime();
+    for (int i = 0; i < 5; ++i) runtime.AdvanceFrame(HitmInputCommand::kRight);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kWalking);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 4);
+    // frame (the match-wide counter) has kept counting the whole time --
+    // state_frame is about to diverge from it for the first time in this
+    // test, which is exactly the real gap this extension closes (see
+    // HitmSpriteDrawData.h's header comment on `frameFor()`'s default
+    // branch).
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 5);
+
+    runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kIdle);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);  // reset again, on the walking -> idle transition
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 6);         // frame itself never resets
+
+    runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kIdle);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 1);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_StateFrame_FrozenDuringHitstop) {
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;
+    auto rules = RealRules();
+    int hitstopFrames = static_cast<int>(rules.Combat().hitstop_heavy);  // real: 7
+
+    auto runtime = MakeBrooklynRuntime();
+    runtime.TakeHit(incoming, false);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);
+
+    for (int i = 0; i < hitstopFrames; ++i) {
+        runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+        // Hitstop frozen: state_frame must not move while hitstop is
+        // active, the same real discipline state_frames_remaining already
+        // proves in HitmFighterRuntime_HitstopFreezesEverythingExceptItself
+        // above -- RunOneFrame's whole state_frame update sits after the
+        // hitstop early-return, so it genuinely doesn't run this frame,
+        // not merely computed-then-discarded.
+        DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);
+    }
+    DOMINUS_EXPECT(runtime.Snapshot().hitstop_frames_remaining == 0);
+
+    // Hitstop is over -- the next frame genuinely advances state_frame,
+    // since the fighter is still in kHitstun (no transition happened).
+    runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kHitstun);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 1);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_StateFrame_ResetsOnTakeHitEvenMidHitstun) {
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;
+    auto rules = RealRules();
+    int hitstopFrames = static_cast<int>(rules.Combat().hitstop_heavy);  // real: 7
+
+    auto runtime = MakeBrooklynRuntime();
+    runtime.TakeHit(incoming, false);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kHitstun);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);
+
+    // Clear the real hitstop window, then let a few real frames of
+    // hitstun genuinely elapse, so state_frame has a real nonzero value to
+    // prove gets thrown away by the second hit below.
+    for (int i = 0; i < hitstopFrames; ++i) runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    for (int i = 0; i < 5; ++i) runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kHitstun);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 5);
+
+    // A second real hit lands on a fighter already in kHitstun -- the enum
+    // value doesn't change (kHitstun -> kHitstun), but this is still a
+    // brand-new hurt reaction and must reset to its own frame 0, exactly
+    // as TakeHit's own real comment states (HitmFighterRuntime.cpp) and
+    // exactly how a real fighting game's hit reaction always restarts,
+    // even mid-hitstun.
+    runtime.TakeHit(incoming, false);
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kHitstun);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_StateFrame_ResetsThroughEachAttackSubState) {
+    auto identity = RealIdentity("brooklyn");
+    auto specialMove = HitmMoveInstance::Extract(identity, "special");
+    DOMINUS_EXPECT(specialMove.ok);
+    int startup = specialMove.value->move_def.frames.startup;    // real: 14
+    int active = specialMove.value->move_def.frames.active;      // real: 4
+    int recovery = specialMove.value->move_def.frames.recovery;  // real: 18
+
+    auto runtime = MakeBrooklynRuntime();
+    runtime.AdvanceFrame(HitmInputCommand::kSpecial);
+    HitmFighterState prevState = runtime.Snapshot().state;
+    DOMINUS_EXPECT(prevState == HitmFighterState::kAttackStartup);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);
+    int expected = 0;
+
+    // Drives the whole real attack (startup -> active -> recovery -> idle,
+    // using this fighter's own real authored frame counts, exactly as
+    // HitmFighterRuntime_AttackTransitionsThroughRealFrameCounts above
+    // does) while independently re-deriving the reset-on-transition/
+    // increment-otherwise invariant against what the runtime actually
+    // reports at each step -- not hardcoding which frame each of the
+    // (up to) three sub-state boundaries falls on, which
+    // AttackTransitionsThroughRealFrameCounts already pins down
+    // separately.
+    int totalFramesInAttack = startup + active + recovery;
+    for (int i = 1; i < totalFramesInAttack; ++i) {
+        runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+        auto snap = runtime.Snapshot();
+        expected = (snap.state != prevState) ? 0 : expected + 1;
+        DOMINUS_EXPECT(snap.state_frame == expected);
+        prevState = snap.state;
+    }
+    DOMINUS_EXPECT(runtime.Snapshot().state == HitmFighterState::kIdle);
+}
+
 // --- 6/7. Lifetime safety: construction -> move/return -> frame execution
 // -> destruction. See HitmFighterRuntime.h's top comment for the real bug
 // these tests guard against: a WorldTick-registered closure capturing

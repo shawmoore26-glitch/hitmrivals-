@@ -6226,13 +6226,41 @@ DNA-derived pair — corrected in `HitmSpriteDrawData.h` rather than left
 standing.
 
 7 new tests, all green under a clean AddressSanitizer+
-UndefinedBehaviorSanitizer build, zero findings. **831/831 total** (was
-656 before Track H).
+UndefinedBehaviorSanitizer build, zero findings. 831/831 at this
+closure's own count (was 656 before Track H) — since raised to
+**837/837** by gap #3 below.
 
-Remaining real Track A gaps: full bone-hierarchy forward kinematics
-(blocked on real, missing upstream `parts.json` bind-pose data — cannot
-be closed without inventing data, stays documented, not attempted);
-`land`/`walkBack` clip selection and per-state elapsed-frame tracking
-(both require a small, real extension to `HitmFighterRuntime::
-FrameState` — genuinely Module 5A's territory, not Track A's, still
-deliberately not attempted without explicit direction to reopen it).
+### Track A gap #3 closed: `state_frame` (per-state elapsed-frame tracking)
+
+The user gave explicit, scoped authorization to reopen Module 5A for
+exactly this gap: *"the FrameState extension should be a deliberately
+scoped change, not an excuse to reopen the entire module ... Don't
+manufacture the missing 5%. Protect the 95% you've now proven."*
+`HitmFighterRuntime` gained one new field — `state_frame`, public on
+`HitmFighterSnapshot` — counting frames elapsed since `state` last
+changed: 0 on a transition frame, incrementing every real frame after,
+frozen during hitstop, reset unconditionally by `TakeHit()` even
+mid-hitstun (a fresh hit is always a new reaction). Nothing else about
+`HitmFighterRuntime`'s public surface or existing gameplay numbers
+changed, and the still-blocked bind-pose/FK gap (below) was not touched.
+`ComputeRawFrame()`'s default branch in `HitmSpriteDrawData.cpp` now
+reads `snap.state_frame` instead of the match-wide `snap.frame`,
+fixing the real gap: a state that starts mid-match now samples its
+animation clip from its own real frame 0, not an arbitrary nonzero
+frame. Full details in `HITM_FIGHTER_RUNTIME_REPORT.md`'s "A
+deliberately scoped reopening" section and `HITM_SPRITE_ASSET_REPORT.md`'s
+own "Track A gap #3 closed" section.
+
+6 new tests, direct coverage added to `test_hitm_fighter_runtime.cpp`
+(Module 5A's own test file, not just Module 5B's indirect coverage),
+plus 3 existing `HitmSpriteDrawData` tests updated (fixed, not
+weakened) for the corrected values. All green under a clean
+Debug+AddressSanitizer+UndefinedBehaviorSanitizer build (2 runs), zero
+findings. **837/837 total** (was 656 before Track H).
+
+Remaining real Track A gap: full bone-hierarchy forward kinematics,
+blocked on real, missing upstream `parts.json` bind-pose data — cannot
+be closed without inventing data, stays documented, not attempted.
+`land`/`walkBack` clip selection remains out of scope (no landing-
+recovery timer, no facing/opponent concept in Module 5A's single-fighter
+vertical slice) — a real gap, not manufactured around.

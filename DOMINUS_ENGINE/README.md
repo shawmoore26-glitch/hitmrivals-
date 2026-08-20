@@ -1293,8 +1293,20 @@ is now proven against Rocket's and Static's own real assets too (not
 just Brooklyn's) — real clip selection, real atlas data, and real
 secondary motion using each fighter's own genuinely different real
 spring constants, all confirmed via the same exact-arithmetic
-differential proof method. Full accounting in `HITM_SPRITE_ASSET_REPORT.md`.
+differential proof method. A third gap was then closed with explicit,
+scoped authorization to reopen Module 5A: `HitmFighterRuntime` gained
+one new field, `state_frame` — frames elapsed since the fighter's
+`state` last changed, mirroring the real engine's own `animT` reset-on-
+transition convention — so a walk, idle, or jump that starts mid-match
+now samples its animation clip from its own real frame 0 instead of an
+arbitrary nonzero one. Nothing else about the module's public surface or
+existing gameplay numbers changed, and the still-blocked bind-pose/FK
+gap below was not touched to get there. Full accounting in
+`HITM_SPRITE_ASSET_REPORT.md` and `HITM_FIGHTER_RUNTIME_REPORT.md`.
 Still nothing is rendered — no pixel is ever decoded or drawn, no sound
-plays, and no second real player exists yet. See each module's own
-"explicitly not done" note in `ROADMAP.md` for the honest boundary.
-**831/831 tests passing (was 656 before this track).**
+plays, and no second real player exists yet. The one remaining real
+Track A gap — full bone-hierarchy forward kinematics — stays blocked on
+missing upstream `parts.json` bind-pose data, not attempted without it.
+See each module's own "explicitly not done" note in `ROADMAP.md` for the
+honest boundary.
+**837/837 tests passing (was 656 before this track).**

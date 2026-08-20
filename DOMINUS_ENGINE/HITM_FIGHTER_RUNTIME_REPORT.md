@@ -498,24 +498,30 @@ module was scoped against:
 
 ## Test count
 
-765/765 (was 722 before this module, 656 before Track H). 43 new tests:
-5 in `test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`,
-28 in `test_hitm_fighter_runtime.cpp` (17 covering the vertical slice's
-gameplay behavior, 11 `LifetimeSafety_*` tests added across two
-continuations covering every relocation path requested), and 3 in
-`test_physics_system.cpp` (`PhysicsSystem_AsWorldSystem_*`, added in the
-fourth continuation to close the dormant lifetime hazard). Full clean
-rebuilds + repeat runs across all four continuations (Release: 15+
-repeats; ASan+UBSan: 4 repeats of the full suite plus the live CLI demo,
-run twice — once for the `HitmFighterRuntime` fix, once for the
-`PhysicsSystem` fix), all green — no flakes observed anywhere. (The one
-segfault encountered in the first lifetime continuation was
-deterministic — it reproduced on every run before the fix, and has not
-recurred once, under any build configuration, since — so it is reported
-as a found-and-fixed bug, not logged as flakiness. The `PhysicsSystem`
-hazard never actually crashed in this codebase, since no call site
-exploited it — it was found by audit and closed pre-emptively, not by
-chasing an observed failure.)
+765/765 as of this module's own formal closure (was 722 before this
+module, 656 before Track H); 837/837 as of the fifth continuation's
+`state_frame` closure above (see that section, and
+`HITM_SPRITE_ASSET_REPORT.md`, for everything added by Module 5B and the
+Track A gap closures in between). 43 new tests at this module's own
+closure: 5 in `test_hitm_move_instance.cpp`, 7 in
+`test_hitm_read_engine_state.cpp`, 28 in `test_hitm_fighter_runtime.cpp`
+(17 covering the vertical slice's gameplay behavior, 11
+`LifetimeSafety_*` tests added across two continuations covering every
+relocation path requested), and 3 in `test_physics_system.cpp`
+(`PhysicsSystem_AsWorldSystem_*`, added in the fourth continuation to
+close the dormant lifetime hazard); plus 6 more in
+`test_hitm_fighter_runtime.cpp` in the fifth continuation
+(`state_frame`, see above) — 34 in that file total. Full clean rebuilds
++ repeat runs across all five continuations (Release: 15+ repeats;
+ASan+UBSan: 4 repeats of the full suite plus the live CLI demo for the
+first four continuations, run once more for the fifth), all green — no
+flakes observed anywhere. (The one segfault encountered in the first
+lifetime continuation was deterministic — it reproduced on every run
+before the fix, and has not recurred once, under any build
+configuration, since — so it is reported as a found-and-fixed bug, not
+logged as flakiness. The `PhysicsSystem` hazard never actually crashed
+in this codebase, since no call site exploited it — it was found by
+audit and closed pre-emptively, not by chasing an observed failure.)
 
 ## Final Module 5A status
 
@@ -563,3 +569,77 @@ elsewhere in the engine (`PhysicsSystem::AsWorldSystem()`) has been fixed
 and verified rather than carried forward into the next integration layer.
 No known callback lifetime hazard remains open in the systems this module
 touched.
+
+## A deliberately scoped reopening (fifth continuation): `state_frame`
+
+Module 5B's own "NOT IMPLEMENTED" accounting (see
+`HITM_SPRITE_ASSET_REPORT.md`) later identified a real, specific gap
+this module's own public surface left open: `HitmFighterSnapshot` only
+exposed the match-wide monotonic `frame` counter, with no way for a
+downstream consumer to know how many real frames had elapsed since
+`state` itself last changed — the real engine's own `animT`/`stateT`
+reset-on-transition convention, which Module 5B's animation-frame
+selection needed and did not yet have. At that time this report
+explicitly declined to add it, per the standing instruction not to
+reopen this module without a genuine defect forcing it.
+
+The user later gave explicit, specific authorization to close exactly
+this gap: *"When you're ready to reopen 5A, the FrameState extension
+should be a deliberately scoped change, not an excuse to reopen the
+entire module ... Don't manufacture the missing 5%. Protect the 95%
+you've now proven."* This section is that closure, held to that
+standard.
+
+**What changed** (see `HitmFighterRuntime.h`'s own "A DELIBERATELY
+SCOPED EXTENSION" header comment for the complete account): one new
+field, `state_frame` (public on `HitmFighterSnapshot`, private as
+`FrameState::stateFrame`). It counts frames elapsed since `state` last
+changed — 0 on the frame a transition happens (input-driven switch,
+ground-clamp landing, or a countdown-driven sub-state advance, captured
+via a single before/after comparison of `state` across the whole frame,
+not a reset planted at each individual transition site), incrementing
+every real frame after that, frozen — neither reset nor incremented —
+during hitstop (the code that updates it sits after `RunOneFrame`'s
+existing hitstop early-return, so it genuinely does not run that frame,
+the same discipline `state_frames_remaining` already uses), and reset
+unconditionally by `TakeHit()` even when the fighter is already in
+`kHitstun` — a fresh hit is always a new hurt reaction, restarting from
+its own frame 0, even mid-hitstun, exactly as a real fighting game's hit
+reaction always does.
+
+**What did NOT change**, by design: `Create()`, `AdvanceFrame()`,
+`TakeHit()`, `GainRead()`/`LoseRead()`,
+`ResolveOutgoingDamage()`/`ResolveOutgoingHitLanded()`, and every other
+public signature — unchanged. No existing gameplay number, transition
+rule, or timing value was touched. No landing-recovery timer, no
+facing/opponent concept, and — critically — no bind-pose/forward-
+kinematics data was manufactured to close the *other* gap this module's
+own real-data audit found (`bones[].at`/`.part` missing from real
+`parts.json`). That gap remains exactly as blocked as it has always
+been: real upstream authoring data does not exist for it, so it stays
+undone, not approximated.
+
+**Verification**: 6 new, direct tests added to
+`test_hitm_fighter_runtime.cpp` (this module's own test file, not just
+the indirect coverage `HitmSpriteDrawData`'s downstream tests already
+provided) — starts-at-zero, resets-on-transition-then-increments,
+resets-again-on-a-second-transition, frozen-during-hitstop, resets-on-
+`TakeHit()`-even-mid-hitstun, and an independently-re-derived reset/
+increment invariant checked at every frame across a real attack's full
+startup/active/recovery sub-state sequence. Full suite green with zero
+regressions before any downstream code was even touched (837/837 minus
+these 6 = 831/831 unchanged), confirming the addition is purely
+additive. Three existing `HitmSpriteDrawData` tests needed updating for
+the new, correct values this produces (documented in
+`HITM_SPRITE_ASSET_REPORT.md`'s own "Track A gap #3 closed" section) —
+fixed, not weakened. Clean under a second Debug+AddressSanitizer+
+UndefinedBehaviorSanitizer build (2 full-suite runs, zero sanitizer
+findings, checked via precise diagnostic-marker greps), and both live
+`dominus-cli` demos (`hitm-fighter-runtime`, `hitm-sprite-draw-data`)
+reproduce identical real gameplay numbers with the corrected, per-state
+`raw_frame` values downstream. Fresh-clone verification performed before
+push, per this session's standing discipline.
+
+This reopening does not reopen Module 5A's formal closure above — it is
+the one, explicitly-authorized, additive exception to it, and the module
+remains closed to everything else.

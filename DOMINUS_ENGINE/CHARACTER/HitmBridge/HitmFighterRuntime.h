@@ -86,6 +86,24 @@
 // meter/hitstop numbers directly, with COMBAT::ReactionSystem deciding
 // only the reaction TYPE (stagger/knockback/launch/knockdown/block), which
 // needs no pose/collision geometry.
+//
+// A DELIBERATELY SCOPED EXTENSION (Track H, Track A gap closeout): Track
+// H Module 5B's own report (HITM_SPRITE_ASSET_REPORT.md) identified one
+// real, specific gap this class's public snapshot left open: hitm-engine's
+// own real `AnimationSystem.js` samples idle/walk/jump clips at `f.animT`,
+// a counter that RESETS to 0 on every state transition; this class only
+// ever exposed the match-wide monotonic `frame` counter, so Module 5B
+// could not reproduce that reset behavior. `HitmFighterSnapshot::
+// state_frame` below closes exactly that one gap -- frames elapsed since
+// `state` last changed -- and nothing else. It does not add a landing-
+// recovery timer, a facing/opponent concept, or touch any existing
+// gameplay number (position, velocity, damage, meter, hitstop, or the
+// existing `frame`/`state_frames_remaining` fields are computed exactly
+// as before). Frozen (neither reset nor incremented) during hitstop,
+// matching the existing "nothing else in the simulation advances" hitstop
+// convention -- the real, intended effect: the displayed animation frame
+// holds during a hitstop freeze, the same way a real fighting game's
+// hit-freeze visually holds the current pose.
 #pragma once
 
 #include <cstdint>
@@ -147,6 +165,12 @@ struct HitmFighterSnapshot {
     int read_engine_reads = 0;
     int hitstop_frames_remaining = 0;
     int state_frames_remaining = 0;
+    // Frames elapsed since `state` last changed -- 0 on the frame a
+    // transition happens, incrementing every real frame after that,
+    // frozen during hitstop. See this header's top comment ("A
+    // DELIBERATELY SCOPED EXTENSION") for exactly what this does and
+    // does not add.
+    int state_frame = 0;
 
     bool operator==(const HitmFighterSnapshot&) const = default;
 };
@@ -249,6 +273,7 @@ private:
 
         HitmFighterState state = HitmFighterState::kIdle;
         int stateFramesRemaining = 0;
+        int stateFrame = 0;  // see header comment "A DELIBERATELY SCOPED EXTENSION"
         int hitstopFramesRemaining = 0;
         double meter = 0.0;
         bool grounded = true;

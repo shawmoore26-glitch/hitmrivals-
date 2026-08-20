@@ -35,22 +35,18 @@
 //     recovery timer. This module always selects 'idle'.
 //   - `frameFor()`'s default branch (idle/walk/jump) returns the real
 //     engine's `f.animT`, a counter that RESETS to 0 every time the
-//     fighter's state changes. Module 5A's public `HitmFighterSnapshot`
-//     only exposes `frame`, the match-wide monotonic frame counter (state
-//     transitions for kIdle/kWalking/kJumping are not currently timed --
-//     Module 5A only needed frame-accurate countdowns for combat/reaction
-//     states, so that's all it built). This module uses `snap.frame`
-//     directly. It is a real, deterministic, real-data-only mapping, but
-//     it will not visually match what the real engine would show right
-//     after a state transition (a walk that starts mid-cycle rather than
-//     at frame 0). THE SMALLEST CORRECT EXTENSION: add a
-//     `state_entry_frame` (or equivalent per-state elapsed counter) to
-//     `HitmFighterRuntime::FrameState`, mirroring the real engine's
-//     `animT`/`stateT` reset-on-transition convention -- a small, real,
-//     specific Module 5A change, deliberately NOT made in this module per
-//     the explicit instruction not to reopen Module 5A without a genuine
-//     defect forcing it. This is a known limitation, not a defect this
-//     module's own scope requires fixing.
+//     fighter's state changes. CLOSED (Track A gap #3): Module 5A's
+//     public `HitmFighterSnapshot` now exposes `state_frame`, a
+//     deliberately scoped extension (see `HitmFighterRuntime.h`'s own
+//     "A DELIBERATELY SCOPED EXTENSION" header comment for exactly what
+//     it does and does not add) that mirrors the real engine's `animT`/
+//     `stateT` reset-on-transition convention precisely -- 0 on the
+//     frame a transition happens, incrementing every real frame after
+//     that, frozen during hitstop. This function reads `snap.state_frame`
+//     directly, not `snap.frame` (the match-wide monotonic counter this
+//     used before the extension existed, which produced a real,
+//     documented gap: a walk that started mid-cycle rather than at its
+//     own frame 0). Fixed at the source, not routed around here.
 //   - kAttackStartup/Active/Recovery and kHitstun/kBlockstun face no such
 //     gap: Module 5A's real `state_frames_remaining` countdown, combined
 //     with the currently-executing move's real

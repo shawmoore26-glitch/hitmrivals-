@@ -147,11 +147,31 @@ DOMINUS_TEST(HitmSpriteDrawData_Walking_SelectsRealWalkClip) {
     auto bundle = MakeBrooklynBundle();
     runtime.AdvanceFrame(HitmInputCommand::kRight);
     DOMINUS_EXPECT(runtime.State() == HitmFighterState::kWalking);
+    // The idle->walk transition happens on this same real frame -- real
+    // state_frame resets to 0 the instant a transition lands (Module 5A's
+    // deliberately scoped extension, see HitmFighterRuntime.h), even
+    // though the match-wide frame counter is already 1.
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 1);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 0);
 
-    auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle);
-    DOMINUS_EXPECT(result.ok);
-    DOMINUS_EXPECT(result.value->clip_name == "walk");
-    DOMINUS_EXPECT(result.value->raw_frame == 1.0);  // == snap.frame, real documented gap, see header
+    {
+        auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle);
+        DOMINUS_EXPECT(result.ok);
+        DOMINUS_EXPECT(result.value->clip_name == "walk");
+        DOMINUS_EXPECT(result.value->raw_frame == 0.0);  // real fix: walk's own frame 0, not the match-wide frame
+    }
+
+    // Real per-state elapsed count continues correctly across further
+    // real frames spent in the same state.
+    runtime.AdvanceFrame(HitmInputCommand::kRight);
+    runtime.AdvanceFrame(HitmInputCommand::kRight);
+    DOMINUS_EXPECT(runtime.Snapshot().frame == 3);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == 2);
+    {
+        auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle);
+        DOMINUS_EXPECT(result.ok);
+        DOMINUS_EXPECT(result.value->raw_frame == 2.0);
+    }
 }
 
 // --- 3. Jumping: real vy-sign-driven clip selection, matching the real ----
