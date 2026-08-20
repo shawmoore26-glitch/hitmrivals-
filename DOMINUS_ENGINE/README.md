@@ -1248,7 +1248,13 @@ neighbor's destruction, then re-verified the full suite under two
 independent clean rebuilds — a normal Release build and a separate
 AddressSanitizer+UndefinedBehaviorSanitizer build — both green, zero
 sanitizer findings across 4 ASan runs, and the live CLI demo's output
-byte-for-byte identical between builds. Nothing is rendered,
-no sound plays, and no second real player exists yet. See each module's
-own "explicitly not done" note in `ROADMAP.md` for the honest boundary.
-**762/762 tests passing (was 656 before this track).**
+byte-for-byte identical between builds. A fourth continuation then closed
+the one dormant hazard that was left: `PhysicsSystem::AsWorldSystem()`'s
+identically-shaped `this`-capture, fixed (not just documented) by
+capturing its one piece of state by value instead, with 3 new regression
+tests and its own clean AddressSanitizer+UndefinedBehaviorSanitizer run
+— **Module 5A is now formally closed with no known callback-lifetime
+hazard left open** in anything it touched. Nothing is rendered, no sound
+plays, and no second real player exists yet. See each module's own
+"explicitly not done" note in `ROADMAP.md` for the honest boundary.
+**765/765 tests passing (was 656 before this track).**

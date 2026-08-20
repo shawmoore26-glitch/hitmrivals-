@@ -5973,17 +5973,26 @@ entirely; a follow-up continuation fixed the actual cause instead: every
 mutable field now lives in a private `FrameState` allocated once via
 `std::unique_ptr` and never relocated, so the registered closure captures
 a stable `FrameState*` rather than the wrapper's own `this` — restoring
-genuine `WorldTick` integration with zero move-safety trade-off. 6 new
-lifetime-safety tests (move-construct, move-assign, a 4-hop move chain,
-move-out-of-a-function-with-the-original-destroyed, `std::vector`
-reallocation, a long run after heavy relocation) plus a full-suite run
-clean under AddressSanitizer + UndefinedBehaviorSanitizer (4 repeats,
-zero findings) — see `HITM_FIGHTER_RUNTIME_REPORT.md` for the exact
-commands and the additional finding this audit surfaced: the identical
-`this`-capturing pattern already exists, dormant and unexploited, in
-`PHYSICS/PhysicsSystem::AsWorldSystem()` (Phase 4.1) — not fixed here
-(out of this continuation's scope, no failing test triggers it), flagged
-as a real follow-up.
+genuine `WorldTick` integration with zero move-safety trade-off. 11
+lifetime-safety tests across two continuations (move-construct,
+move-assign, a 4-hop move chain, move-out-of-a-function-with-the-
+original-destroyed, `std::vector` reallocation, a long run after heavy
+relocation, the explicit construct→move→execute→destroy and
+construct→move→move-again→execute→destroy sequences, sibling-runtime
+survival across a neighbor's destruction, and a 25-cycle construct/
+destroy stress loop) plus full-suite runs clean under AddressSanitizer +
+UndefinedBehaviorSanitizer (4 repeats, zero findings) — see
+`HITM_FIGHTER_RUNTIME_REPORT.md` for the exact commands. That audit also
+surfaced an identically-shaped `this`-capturing hazard, dormant and
+unexploited, in `PHYSICS/PhysicsSystem::AsWorldSystem()` (Phase 4.1) —
+flagged, then, before closing this module, actually audited and fixed:
+`AsWorldSystem()` now captures its one piece of state (`gravityY_`) BY
+VALUE instead of `this`, closing the hazard by construction rather than
+by convention, with 3 more regression tests and its own clean
+AddressSanitizer + UndefinedBehaviorSanitizer run (also zero findings).
+`CollisionSystem::AsWorldSystem()` was re-checked in the same pass and
+confirmed to carry no equivalent risk (it is `static` and captures
+nothing).
 
 **A real, evidenced move-schema finding**: building `HitmMoveInstance`
 against all three real fighters (not just Brooklyn) found that real
@@ -5993,20 +6002,23 @@ is a rush-type move with no `blockstun`/`range`/`height`; Static's has
 refuses both rather than silently defaulting, live-confirmed via
 `dominus-cli hitm-fighter-runtime`.
 
-**40 new tests, 722 → 762, zero regressions** — full clean rebuild, 15
+**43 new tests, 722 → 765, zero regressions** — full clean rebuild, 15
 repeat runs across the first continuation, a from-scratch `git clone`
-build+test cycle, and a third continuation's exhaustive lifetime-safety
-pass (5 more tests targeting the exact construct→move→move-again→
-execute→destroy and sibling-runtime-survives-destruction sequences the
-architecture must support) verified under two independent clean rebuilds
-— a normal Release build and a separate AddressSanitizer+
-UndefinedBehaviorSanitizer build — with the full 762-test suite green on
-both, all 11 lifetime tests individually confirmed passing under ASan,
-zero sanitizer findings (no leaks, no use-after-free, no use-after-move,
-no stack-use-after-return) across 4 total ASan runs, and the live
-`dominus-cli hitm-fighter-runtime` demo's output byte-for-byte identical
-between the normal and ASan builds — proving the lifetime fix changed
-nothing about real Brooklyn gameplay behavior.
+build+test cycle, a third continuation's exhaustive `HitmFighterRuntime`
+lifetime-safety pass (5 more tests targeting the exact construct→move→
+move-again→execute→destroy and sibling-runtime-survives-destruction
+sequences the architecture must support), and a fourth continuation
+closing the dormant `PhysicsSystem::AsWorldSystem()` hazard (3 more
+tests) — every pass verified under two independent clean rebuilds each
+time, a normal Release build and a separate AddressSanitizer+
+UndefinedBehaviorSanitizer build, with the full suite green on both (762
+then 765), all lifetime tests (11, then 14) individually confirmed
+passing under ASan, zero sanitizer findings (no leaks, no use-after-free,
+no use-after-move, no stack-use-after-return) across every ASan run, and
+the live `dominus-cli hitm-fighter-runtime`/`dominus-cli physics` demos'
+output byte-for-byte identical between the normal and ASan builds each
+time — proving neither lifetime fix changed anything about real Brooklyn
+gameplay behavior.
 
 **Explicitly NOT done, per this module's own scope**: no second
 fighter/opponent (the read-engine's real gain/lose trigger CONDITIONS —
@@ -6017,11 +6029,18 @@ damage scaling (`scaleMin`/`scaleStep`, imported but unapplied); no
 basic normals (not authored anywhere in real HITM data); no
 `CombatController`/`MotionGraphEvaluator` integration (would require
 inventing keyframe pose data no real HITM source has — see
-`HitmFighterRuntime.h`'s top comment for the full reasoning); the
-dormant `PhysicsSystem::AsWorldSystem()` lifetime hazard noted above is
-reported, not fixed.
+`HitmFighterRuntime.h`'s top comment for the full reasoning). The dormant
+`PhysicsSystem::AsWorldSystem()` lifetime hazard noted above has since
+been fixed and verified (see above) — it is no longer an open item
+carried into Module 5B.
 
-**Current Track H total: 762/762 tests passing (was 656 before this track).**
+**Current Track H total: 765/765 tests passing (was 656 before this track).**
+
+**Module 5A formally closed.** Both known callback-lifetime hazards this
+track's own audit surfaced — `HitmFighterRuntime`'s `WorldTick`
+registration and `PhysicsSystem::AsWorldSystem()` — are fixed and
+verified under AddressSanitizer + UndefinedBehaviorSanitizer, not merely
+documented. No known lifetime hazard is carried forward into Module 5B.
 
 ### Module 5B+ — sprite/texture assets, GPU rendering, audio, input, stage (planned)
 
@@ -6050,3 +6069,18 @@ RasterDevice.h` already does, and explicitly flagged NOT
 device-verified until run somewhere with a real GPU. The same honesty
 boundary applies to 5D (no audio device) and, for anything beyond
 programmatic input injection, 5E.
+
+**Module 5B's actual shape, going in**: real HITM assets → DOMINUS asset
+representation → the already-proven Brooklyn runtime → animation/frame
+selection → sprite rendering. It connects real sprite/texture content to
+the CPU runtime Module 5A just proved, it does not re-open or extend
+Module 5A's own scope. Same discipline as 5A: the CPU-verifiable
+portions (asset loading, atlas/frame lookup, animation/frame-selection
+logic driven by real runtime state) get proven with real tests against
+real HITM art, exactly like every prior module; the GPU-dependent portion
+(the actual pixels on screen) gets implemented and tested everywhere
+possible around it, then explicitly labeled as requiring a real GPU
+environment to verify the final display result — never quietly implied
+by a passing test suite. This is the same "tests passing" vs. "HITM
+Rivals actually works" boundary this track has enforced since Module 0,
+now applied at the rendering seam specifically.

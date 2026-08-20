@@ -1,7 +1,8 @@
 # Track H Module 5A — CPU-Observable HITM Runtime Vertical Slice
 
 Date: 2026-08-19 (continued session; lifetime-safety fix added in a
-further continuation the same day)
+further continuation, then the dormant `PhysicsSystem::AsWorldSystem()`
+hazard audited and fixed in a fourth continuation, all the same day)
 Scope: does real, authored HITM Rivals fighter data actually DRIVE
 DOMINUS simulation behavior — not just load and validate — and, where it
 doesn't yet, exactly what stops it?
@@ -20,7 +21,7 @@ walks, jumps under real gravity, executes his real "special" move
 through real startup/active/recovery frame counts, takes a hit with real
 damage/hitstun/meter/hitstop numbers, and transitions his real five-tier
 read-engine mechanic — all deterministically, all CPU-only, all verified
-by 40 new tests (762/762 total) and a live `dominus-cli
+by 43 new tests (765/765 total) and a live `dominus-cli
 hitm-fighter-runtime` run reproduced below. The `WorldTick`-registration
 lifetime bug the first pass introduced has been fixed properly (stable
 heap-allocated state, genuine `WorldTick` integration restored, not
@@ -29,7 +30,12 @@ kind of move/relocation, and destruction — including 4 clean runs under
 AddressSanitizer + UndefinedBehaviorSanitizer with leak and stack-use-
 after-return detection enabled, not just repeated runs that happened not
 to crash. See "Exhaustive lifetime-safety verification" below for the
-full, separately-reported results.
+full, separately-reported results. A fourth continuation then closed out
+the one architectural follow-up that verification surfaced: the dormant,
+identically-shaped `this`-capture hazard in
+`PHYSICS::PhysicsSystem::AsWorldSystem()` has been audited and fixed —
+not merely documented — with its own regression tests and its own ASan
+run. See "`PhysicsSystem::AsWorldSystem()` lifetime audit and fix" below.
 
 **He cannot be seen, heard, or actually fought against another player.**
 No pixel has been drawn, no sound has played, no second fighter's
@@ -107,7 +113,7 @@ a design intention.
   genuinely missing (hit_advantage/block_advantage, move `speed`,
   bone-relative hitboxes), the field was left unpopulated and documented
   — never guessed to fill a struct.
-- **The full existing test suite remains green**: 656 → 762 across this
+- **The full existing test suite remains green**: 656 → 765 across this
   entire Track H session, zero regressions, confirmed via full clean
   rebuilds (`rm -rf build`) and repeat runs across every continuation,
   plus (per Module 3's and Module 4's established discipline) a
@@ -213,7 +219,7 @@ continuation**:
 
 See `HitmFighterRuntime.h`'s top comment for the complete account.
 
-### An additional architectural issue this fix uncovered, not yet exploited
+### An additional architectural issue this fix uncovered (later audited and fixed — see below)
 
 Auditing every `RegisterSystem`/`AsWorldSystem` call in the engine (not
 just this module's own code) while diagnosing the bug above found the
@@ -238,16 +244,114 @@ bug has simply never been exercised. `COMBAT/PhysicsCombat`'s sibling,
 `PHYSICS/CollisionSystem::AsWorldSystem()`, is unaffected: it is `static`
 and its lambda captures nothing.
 
-**Not fixed in this session** — it is a different file, in a different,
-already-shipped phase, with no failing test and no current caller that
-triggers it, and fixing it is outside this continuation's explicit scope
-(the `HitmFighterRuntime` lifetime bug). Recorded here as a real,
-specific, actionable follow-up: any future code that constructs a
-`PhysicsSystem`, calls `AsWorldSystem()` on it, and then moves or
-relocates that `PhysicsSystem` (returns it by value, stores it in a
-`std::vector` that reallocates, etc.) will hit the identical dangling-
-`this` bug this module already found and fixed once. The same stable
-pImpl-block fix would apply if/when a real caller needs it.
+**Not fixed at the time this was written** — it was a different file, in
+a different, already-shipped phase, with no failing test and no current
+caller that triggered it, and fixing it was outside that continuation's
+explicit scope (the `HitmFighterRuntime` lifetime bug). Recorded as a
+real, specific, actionable follow-up. **It has since been audited and
+fixed** in a fourth continuation, explicitly requested rather than left
+for whenever a caller happened to trip it — see the next section.
+
+## `PhysicsSystem::AsWorldSystem()` lifetime audit and fix (fourth continuation)
+
+Requested explicitly, before closing Module 5A: determine whether the
+dormant hazard above can actually outlive or outmove its owning
+`PhysicsSystem`, and either prove it's inherently safe or fix it with the
+same ownership discipline used for `HitmFighterRuntime` — not leave a
+known callback lifetime hazard sitting in the engine going into the next
+integration layer.
+
+**Verdict: not provably safe as it stood.** "No current caller exploits
+it" was re-confirmed (still true — `dominus_cli.cpp` and both physics
+test files keep every `PhysicsSystem` as a stable, unmoved local for the
+registration's whole lifetime), but that is a fact about today's callers,
+not a property of the type. `PhysicsSystem` is a general-purpose,
+publicly reusable class — restricting how *future* callers are allowed
+to use it (the fix that was explicitly rejected for `HitmFighterRuntime`)
+is equally unacceptable here. The hazard is real: construct a
+`PhysicsSystem`, register `AsWorldSystem()`, then move/reassign/destroy
+that `PhysicsSystem` before or between `World::Tick()` calls, and the
+closure reads through a dangling `PhysicsSystem*`.
+
+**Fix, and why it's a different shape than `HitmFighterRuntime`'s:**
+`HitmFighterRuntime::FrameState` is a large, multi-field, self-referential
+block, so the correct fix was a heap-allocated, never-relocated pImpl
+block. `PhysicsSystem`'s *entire* runtime state is one `float`
+(`gravityY_`) — there is nothing to justify heap allocation. Instead,
+`AsWorldSystem()` now captures `gravityY_` **by value** and calls a new
+`static IntegrateWithGravity(registry, dt, gravityY)` helper (the same
+logic `Integrate()` itself now delegates to) instead of capturing `this`
+and calling back through the source object:
+
+```cpp
+world::WorldSystemFn AsWorldSystem() const {
+    float gravity = gravityY_;
+    return [gravity](world::EntityRegistry& registry, float dt) {
+        IntegrateWithGravity(registry, dt, gravity);
+    };
+}
+```
+
+The returned closure owns a private copy of the only state it needs. It
+has **zero** pointer/reference dependency on the `PhysicsSystem` instance
+that produced it — there is nothing left for a move, reassignment, or
+destruction of that instance to invalidate. This is a *stronger*
+guarantee than "provably safe under the current ownership model": it is
+safe under every ownership model, because the hazard's precondition (a
+callback reading through the original object) no longer exists. No
+indirection, no `unique_ptr`, no move-constructor customization was
+needed or added — `PhysicsSystem` keeps its plain, trivially-movable
+value semantics throughout.
+
+**3 new regression tests** in `tests/physics/test_physics_system.cpp`,
+targeting the exact sequences that would have failed under the old
+`[this]`-capturing version:
+
+| Test | What it proves |
+|---|---|
+| `PhysicsSystem_AsWorldSystem_ClosureOutlivesDestroyedSourceObject` | The source `PhysicsSystem` is destroyed *before the world is ever ticked* — real gravity still integrates afterward. |
+| `PhysicsSystem_AsWorldSystem_ClosureUnaffectedByMoveThenReuseOfSourceSlot` | The source is moved away, then its old variable slot is overwritten in place with a different, easily-distinguished gravity value — the registered closure still uses the value captured at `AsWorldSystem()` call time, not whatever now sits at that address. |
+| `PhysicsSystem_AsWorldSystem_EachClosureKeepsItsOwnGravityIndependently` | Two independent `PhysicsSystem`s (different gravity), both destroyed before either `World` ticks — each world's fall matches its own captured gravity, proving no aliasing between the two closures. |
+
+**Verification, run and reported separately, same protocol as the
+`HitmFighterRuntime` lifetime fix:**
+
+1. **Clean normal build** (`rm -rf build`, Release): zero errors, zero
+   warnings.
+2. **Full normal test suite**: **765/765 passed**, exit code 0 (762 +
+   3 new `PhysicsSystem_AsWorldSystem_*` tests). All 3 confirmed passing.
+3. **Clean ASan+UBSan build** (separate `build-asan/` directory, Debug,
+   `-fsanitize=address,undefined -fno-omit-frame-pointer -g`): zero
+   errors, zero warnings.
+4. **Lifetime tests under ASan**: all 3 `PhysicsSystem_AsWorldSystem_*`
+   tests pass, plus all 11 `HitmFighterRuntime_LifetimeSafety_*` tests
+   re-confirmed passing in the same binary.
+5. **Full ASan suite**: **765/765 passed**, exit code 0, across 4
+   separate runs with
+   `ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:check_initialization_order=1:detect_stack_use_after_return=1`.
+   Grepped specifically for sanitizer diagnostic markers (`ERROR:
+   AddressSanitizer`, `ERROR: UndefinedBehaviorSanitizer`, `SUMMARY:`,
+   `runtime error:`, `heap-buffer-overflow`, `use-after-free`,
+   `use-after-move`, `stack-use-after-return`/`-scope`) rather than a
+   naive substring match (test names like `..._IsError` would otherwise
+   false-positive on a bare "error" grep) — **zero matches** across all
+   4 runs.
+
+**Live behavior re-verified unchanged**: `dominus-cli physics
+tests/fixtures/brooklyn_canonical.dominus` and `dominus-cli
+hitm-fighter-runtime` were both run against the normal build and the
+ASan build and `diff`'d — byte-for-byte identical output in both cases.
+`PhysicsSystem::Integrate()`'s math is untouched (the body only moved
+into a `static` helper); this was a lifetime fix, not a behavior change,
+and the live demos confirm it.
+
+`CollisionSystem::AsWorldSystem()` was re-checked in the same pass and
+remains what it always was — `static`, capturing nothing — so it carries
+no equivalent hazard and needed no change.
+
+No test was weakened, no move semantics were disabled or restricted (the
+fix doesn't even touch `PhysicsSystem`'s move/copy members — they stay
+compiler-generated and trivial), and no ASan finding was suppressed.
 
 ## Exhaustive lifetime-safety verification (second continuation)
 
@@ -373,6 +477,11 @@ phases) requires real-device verification for any such claim.
   reasoning (would require inventing keyframe pose data no real HITM
   source has).
 
+(The dormant `PhysicsSystem::AsWorldSystem()` lifetime hazard previously
+listed here has been audited and fixed — see "`PhysicsSystem::
+AsWorldSystem()` lifetime audit and fix" above. It is no longer an open
+item.)
+
 ## Track split for what comes after this module
 
 Classified by what this sandbox can actually verify, per the plan this
@@ -389,18 +498,24 @@ module was scoped against:
 
 ## Test count
 
-762/762 (was 722 before this module, 656 before Track H). 40 new tests:
+765/765 (was 722 before this module, 656 before Track H). 43 new tests:
 5 in `test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`,
 28 in `test_hitm_fighter_runtime.cpp` (17 covering the vertical slice's
 gameplay behavior, 11 `LifetimeSafety_*` tests added across two
-continuations covering every relocation path requested). Full clean
-rebuilds + repeat runs across all three continuations (Release: 15+
-repeats; ASan+UBSan: 4 repeats of the full suite plus the live CLI demo),
-all green — no flakes observed anywhere. (The one segfault encountered in
-the first lifetime continuation was deterministic — it reproduced on
-every run before the fix, and has not recurred once, under any build
-configuration, since — so it is reported as a found-and-fixed bug, not
-logged as flakiness.)
+continuations covering every relocation path requested), and 3 in
+`test_physics_system.cpp` (`PhysicsSystem_AsWorldSystem_*`, added in the
+fourth continuation to close the dormant lifetime hazard). Full clean
+rebuilds + repeat runs across all four continuations (Release: 15+
+repeats; ASan+UBSan: 4 repeats of the full suite plus the live CLI demo,
+run twice — once for the `HitmFighterRuntime` fix, once for the
+`PhysicsSystem` fix), all green — no flakes observed anywhere. (The one
+segfault encountered in the first lifetime continuation was
+deterministic — it reproduced on every run before the fix, and has not
+recurred once, under any build configuration, since — so it is reported
+as a found-and-fixed bug, not logged as flakiness. The `PhysicsSystem`
+hazard never actually crashed in this codebase, since no call site
+exploited it — it was found by audit and closed pre-emptively, not by
+chasing an observed failure.)
 
 ## Final Module 5A status
 
@@ -410,15 +525,23 @@ logged as flakiness.)
   deterministic failure on invalid input/data — all from real Brooklyn
   data, all backed by a passing test or a live CLI run. See "PROVEN"
   above.
-- **PROVEN WITH ASAN** (lifetime/memory safety): construction, `WorldTick`
-  registration, move-construct, move-assign, multi-hop moves, the exact
-  construct→move→execute→destroy and construct→move→move-again→execute→
-  destroy sequences, container storage/reallocation, and destruction
-  alongside a still-live sibling `World` — 11 tests, clean in both a
-  normal build and 4 separate AddressSanitizer+UndefinedBehaviorSanitizer
-  runs with leak and stack-use-after-return detection enabled. Zero
-  findings, zero suppressions, no test weakened, move not disabled. See
-  "PROVEN WITH ASAN" and "Exhaustive lifetime-safety verification" above.
+- **PROVEN WITH ASAN** (lifetime/memory safety): `HitmFighterRuntime`
+  construction, `WorldTick` registration, move-construct, move-assign,
+  multi-hop moves, the exact construct→move→execute→destroy and
+  construct→move→move-again→execute→destroy sequences, container
+  storage/reallocation, and destruction alongside a still-live sibling
+  `World` — 11 tests. Separately, `PhysicsSystem::AsWorldSystem()`'s
+  dormant identical-shaped hazard, audited and fixed (value-capture
+  closure, no `this` dependency at all) rather than left dormant —
+  destruction of the source object before any tick, move-then-slot-reuse,
+  and two independent instances never aliasing each other's state — 3
+  more tests. **14 lifetime tests total**, clean in both a normal build
+  and 4 separate AddressSanitizer+UndefinedBehaviorSanitizer runs (run
+  twice, once per fix) with leak and stack-use-after-return detection
+  enabled. Zero findings, zero suppressions, no test weakened, no move
+  semantics disabled anywhere. See "PROVEN WITH ASAN", "Exhaustive
+  lifetime-safety verification", and "`PhysicsSystem::AsWorldSystem()`
+  lifetime audit and fix" above.
 - **IMPLEMENTED BUT UNVERIFIABLE** (GPU/audio/device behavior): nothing —
   deliberately. This module wrote zero rendering/audio/device code, so
   there is nothing in this category to report other than its continued
@@ -427,11 +550,16 @@ logged as flakiness.)
   and the read-engine's automatic gain/lose trigger detection; sprite/
   texture rendering; audio; real input-device polling; combo damage
   scaling; basic normals (not authored in real HITM data);
-  `CombatController`/`MotionGraphEvaluator` integration; and — reported,
-  not fixed — the dormant identical lifetime hazard in
-  `PHYSICS::PhysicsSystem::AsWorldSystem()`. See "NOT IMPLEMENTED" above
-  for the full list.
+  `CombatController`/`MotionGraphEvaluator` integration. See "NOT
+  IMPLEMENTED" above for the full list. (The dormant `PhysicsSystem`
+  lifetime hazard formerly listed here has been closed — see above — and
+  is not carried forward as an open item into whatever comes next.)
 
-Module 5A is complete on its own terms: real HITM data drives real,
-deterministic DOMINUS simulation, and the mechanism that makes it move-
-and container-safe is now verified, not assumed.
+Module 5A is now formally closed: real HITM data drives real,
+deterministic DOMINUS simulation; the mechanism that makes
+`HitmFighterRuntime` move- and container-safe is verified, not assumed;
+and the one dormant lifetime hazard this module's own audit surfaced
+elsewhere in the engine (`PhysicsSystem::AsWorldSystem()`) has been fixed
+and verified rather than carried forward into the next integration layer.
+No known callback lifetime hazard remains open in the systems this module
+touched.
