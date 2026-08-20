@@ -56,13 +56,49 @@ DOMINUS_TEST(HitmMoveInstance_ExtractsRealBrooklynSpecial) {
     DOMINUS_EXPECT(move.cooldown_frames == 70);
 }
 
-DOMINUS_TEST(HitmMoveInstance_Break_RocketSpecialHasNoBlockstunOrRange_Fails) {
-    // A real, evidenced finding (see HitmMoveInstance.h's top comment):
-    // Rocket's real "special" ("Ghost Dash") is a rush-type move with no
-    // "blockstun" and no flat "range"/"height" at all -- it has a "rush"
-    // sub-object instead. This extractor correctly refuses it rather
-    // than silently defaulting the missing fields.
+DOMINUS_TEST(HitmMoveInstance_ExtractsRealRocketGhostDash_RushSchema) {
+    // PHASE 4 (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md): Rocket's
+    // real "special" ("Ghost Dash") is a rush-type move -- the real
+    // `rush` sub-object (velocityX/friction/hitRangeX/hitRangeY) is now
+    // one of the schemas this extractor recognizes (see
+    // HitmMoveInstance.h's own "A THIRD REAL FINDING"). No real
+    // blockstun/range/height exists for this move, and none is required.
     auto record = ImportOrThrow("rocket");
+    auto result = HitmMoveInstance::Extract(record, "special");
+    DOMINUS_EXPECT(result.ok);
+    auto& move = *result.value;
+
+    DOMINUS_EXPECT(move.move_def.name == "Ghost Dash");
+    DOMINUS_EXPECT(move.input_token == "S");
+    DOMINUS_EXPECT(move.move_def.frames.startup == 5);
+    DOMINUS_EXPECT(move.move_def.frames.active == 18);
+    DOMINUS_EXPECT(move.move_def.frames.recovery == 13);
+    DOMINUS_EXPECT(move.move_def.power == 96.0f);
+    DOMINUS_EXPECT(move.hitstun_frames == 26);
+    DOMINUS_EXPECT(move.blockstun_frames == 0);  // real: no such field on a rush-type move
+    DOMINUS_EXPECT(move.meter_gain == 10);
+    DOMINUS_EXPECT(move.hitstop_category == HitmHitstopCategory::kHeavy);
+    DOMINUS_EXPECT(move.range == 0.0);   // real: rush moves don't use flat range/height
+    DOMINUS_EXPECT(move.height == 0.0);
+    DOMINUS_EXPECT(move.cooldown_frames == 95);
+
+    DOMINUS_EXPECT(move.rush.has_value());
+    DOMINUS_EXPECT(move.rush->velocity_x == 16.0);
+    DOMINUS_EXPECT(move.rush->friction == 0.93);
+    DOMINUS_EXPECT(move.rush->hit_range_x == 80.0);
+    DOMINUS_EXPECT(move.rush->hit_range_y == 110.0);
+}
+
+DOMINUS_TEST(HitmMoveInstance_Break_MeleeTypeMoveStillRequiresBlockstun_RushBranchDidNotWeakenIt) {
+    // Negative control for the new rush-schema branch: a move with no
+    // real "rush" object still enforces the full melee-type required-
+    // field set exactly as before -- the rush branch only ever widens
+    // what this extractor accepts, never narrows what a melee-type move
+    // must have. Real Brooklyn data, one deliberate removal (the same
+    // real-data-plus-one-removal method the read_engine/healthMult
+    // Break_ tests already established).
+    auto record = ImportOrThrow("brooklyn");
+    record.signature["moves"]["special"].AsObject().erase("blockstun");
     auto result = HitmMoveInstance::Extract(record, "special");
     DOMINUS_EXPECT(!result.ok);
     DOMINUS_EXPECT(result.error.find("blockstun") != std::string::npos);
@@ -76,6 +112,16 @@ DOMINUS_TEST(HitmMoveInstance_Break_StaticSpecialHasNoBlockstunOrHitstop_Fails) 
     auto result = HitmMoveInstance::Extract(record, "special");
     DOMINUS_EXPECT(!result.ok);
     DOMINUS_EXPECT(result.error.find("blockstun") != std::string::npos);
+}
+
+DOMINUS_TEST(HitmMoveInstance_Break_RushMoveMissingFrictionField_Fails) {
+    // Deliberate-break coverage for the new rush-schema branch itself --
+    // real Rocket data, one real rush field removed.
+    auto record = ImportOrThrow("rocket");
+    record.signature["moves"]["special"]["rush"].AsObject().erase("friction");
+    auto result = HitmMoveInstance::Extract(record, "special");
+    DOMINUS_EXPECT(!result.ok);
+    DOMINUS_EXPECT(result.error.find("friction") != std::string::npos);
 }
 
 DOMINUS_TEST(HitmMoveInstance_Break_UnknownMoveKey_Fails) {

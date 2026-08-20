@@ -261,6 +261,47 @@
 //      wrong (resetting meter/reads every round) would have been a real,
 //      silent fidelity bug -- caught by reading the real function in
 //      full rather than assuming "reset" means "reset everything."
+//
+// PHASE 4 -- ROCKET'S REAL "GHOST DASH" (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md,
+// authorized as its own checkpoint after Phase 3's). Rocket's real
+// special is a structurally different move TYPE from Brooklyn's/
+// Static's (a "rush" -- a dash with its own velocity/friction and a
+// facing-independent, absolute-position hit box, resolved by the real
+// engine's own `_applyRush()`, not `_melee()`) -- so, deliberately,
+// NOTHING about this class's own attack-substate machinery changed for
+// it. `HitmMoveInstance::Extract` now recognizes Rocket's real `rush`
+// schema (see that file's own "A THIRD REAL FINDING"); the real
+// startup/active/recovery timing this class already tracks turns out to
+// be exactly the right shape for a rush move too (Rocket's own real
+// data authors all three). The one new thing this class needed is
+// `SetPosition()` above: real rush movement needs a caller (a match
+// driver, via the new standalone `CHARACTER/HitmBridge/HitmRushAttack.h`)
+// to apply the real dash displacement itself, every real frame, because
+// this class's own `RunOneFrame` correctly zeroes real horizontal
+// velocity during every attack sub-state for every OTHER real move type
+// -- exactly the same "explicit seam, not guessed" reasoning
+// `SetFacing()` already established for facing.
+//
+// A REAL, DOCUMENTED GAP, not silently wrong: blocking is not resolved
+// against a real rush-type hit in this phase. Found while working out
+// how to drive `TakeHit()`'s existing, unmodified, already-closed
+// signature from a rush hit: the real engine's own `applyHit()` doesn't
+// actually lock the defender's `state` on a blocked hit AT ALL (a
+// blocked hit only nudges `d.vx` and applies chip damage -- confirmed by
+// reading `applyHit`'s real blocked branch in full) -- a genuine
+// divergence from how THIS class's own, already-closed `TakeHit()` has
+// modeled blocking since Module 5A's original closure (a real
+// `kBlockstun` state with a real countdown). That divergence predates
+// this phase and is not this phase's to resolve; but it means no real,
+// authored `blockstun` value exists for a rush-type move to plug into
+// `TakeHit()`'s existing design in the first place (real rush move data
+// has no `blockstun` field, consistent with the real engine's own
+// disuse of one) -- inventing one would be exactly the kind of
+// fabrication this track refuses. `HitmRushAttack.h`'s own
+// `TickRushAttack()` therefore always resolves a landed rush hit as
+// unblocked. Rocket's Ghost Dash currently deals full damage whether or
+// not Brooklyn is holding block -- a real, found, documented limitation,
+// not an oversight.
 #pragma once
 
 #include <cstdint>
@@ -455,6 +496,20 @@ public:
     // after every round reset; this single-fighter runtime has no
     // round/match concept of its own to trigger it internally.
     void ResetForNewRound(float x, float y, int facing);
+
+    // Sets this fighter's real world position directly, live during an
+    // ongoing simulation frame -- unlike ResetForNewRound (a full
+    // round-boundary reset), this touches ONLY x/y, nothing else. See
+    // this header's top comment ("PHASE 4") for the real reason a caller
+    // needs this: RunOneFrame always zeroes real horizontal velocity
+    // during any attack sub-state (the correct behavior for every real
+    // melee-type special), so a caller driving a real rush-type move's
+    // own velocity/friction simulation externally (`HitmRushAttack.h`)
+    // must reapply the real resulting position itself, every real frame
+    // -- the same explicit-seam discipline SetFacing()/
+    // ResetForNewRound() already use for real state this single-fighter
+    // runtime cannot compute on its own.
+    void SetPosition(float x, float y);
 
     // Pure calculation, no state mutation: this fighter's own move power
     // multiplied by the real, current read-engine tier's damage_mult --

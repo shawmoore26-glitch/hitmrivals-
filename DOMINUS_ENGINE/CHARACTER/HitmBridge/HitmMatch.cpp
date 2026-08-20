@@ -89,7 +89,12 @@ void HitmMatch::EndRound() {
     ResetRound();
 }
 
-void HitmMatch::ResolveAttack(HitmFighterRuntime& attacker, HitmFighterRuntime& defender) {
+namespace {
+
+// The original, still-unmodified melee resolution -- moved into its own
+// function so ResolveAttack() below can dispatch to it or to the real
+// rush path (HitmRushAttack.h) depending on the real move type.
+void ResolveMeleeAttack(HitmFighterRuntime& attacker, HitmFighterRuntime& defender, const HitmMoveInstance& move) {
     // Real hit resolution happens exactly once per real attack
     // activation, on the real first active frame -- a direct match for
     // hitm-engine's own real `hitFrame` convention
@@ -105,18 +110,12 @@ void HitmMatch::ResolveAttack(HitmFighterRuntime& attacker, HitmFighterRuntime& 
     auto attackerSnap = attacker.Snapshot();
     if (attackerSnap.state_frame != 0) return;
 
-    // Real no-op for a fighter with no working special (Rocket, until
-    // the audit's still-unauthorized Phase 4) -- see
-    // HitmFighterRuntime.h's own "PHASE 3" comment.
-    const HitmMoveInstance* move = attacker.SpecialMove();
-    if (!move) return;
-
     auto defenderSnap = defender.Snapshot();
-    if (!MeleeHitConnects(attackerSnap, *move, defenderSnap)) return;
+    if (!MeleeHitConnects(attackerSnap, move, defenderSnap)) return;
 
     // Real: CombatSystem.js:410, `d.state===STATE.BLOCK && d.y>=ground`.
     bool defenderBlocking = defenderSnap.state == HitmFighterState::kBlockingStance && defenderSnap.grounded;
-    defender.TakeHit(*move, defenderBlocking);
+    defender.TakeHit(move, defenderBlocking);
 
     if (!defenderBlocking) {
         // Real: the attacker gets meter on ANY landed hit, blocked or
@@ -129,8 +128,31 @@ void HitmMatch::ResolveAttack(HitmFighterRuntime& attacker, HitmFighterRuntime& 
         // instead: a real, documented gap (the attacker gets zero meter
         // for landing a blocked hit, not the real, smaller onBlockGive
         // amount), not a wrong number presented as correct.
-        attacker.ResolveOutgoingHitLanded(*move);
+        attacker.ResolveOutgoingHitLanded(move);
     }
+}
+
+}  // namespace
+
+void HitmMatch::ResolveAttack(HitmFighterRuntime& attacker, HitmFighterRuntime& defender,
+                               HitmRushAttackState& rushState) {
+    // Real no-op for a fighter with no working special -- see
+    // HitmFighterRuntime.h's own "PHASE 3" comment.
+    const HitmMoveInstance* move = attacker.SpecialMove();
+    if (!move) return;
+
+    // PHASE 4: which real move type this is determines which real
+    // resolution formula applies -- see HitmRushAttack.h's own header
+    // comment for why a rush-type move (Rocket's real "Ghost Dash")
+    // needs its own, structurally different real algorithm (a
+    // facing-independent absolute-position hit box checked every real
+    // tick of the whole move, not a facing-relative one checked once on
+    // the real first active frame the way ResolveMeleeAttack works).
+    if (move->rush) {
+        TickRushAttack(attacker, defender, *move, rushState);
+        return;
+    }
+    ResolveMeleeAttack(attacker, defender, *move);
 }
 
 void HitmMatch::AdvanceFrame(HitmInputCommand inputA, HitmInputCommand inputB) {
@@ -167,8 +189,8 @@ void HitmMatch::AdvanceFrame(HitmInputCommand inputA, HitmInputCommand inputB) {
             // Real per-frame tick order (CombatSystem.js's own
             // `s.fighters.forEach`): fighter A's own action resolved
             // before fighter B's.
-            ResolveAttack(fighterA_, fighterB_);
-            ResolveAttack(fighterB_, fighterA_);
+            ResolveAttack(fighterA_, fighterB_, rushStateA_);
+            ResolveAttack(fighterB_, fighterA_, rushStateB_);
 
             // Real KO check and tie-break (CombatSystem.js:455,466):
             // fighter A's state is checked FIRST -- if A is KO'd, B is

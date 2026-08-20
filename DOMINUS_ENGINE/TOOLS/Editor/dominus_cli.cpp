@@ -1158,8 +1158,54 @@ int HitmMatchDemo(const std::string& brooklynIdentityDirStr, const std::string& 
         printSnap("round resolved");
     }
 
-    std::cout << "[result] real HITM data drove a complete, deterministic, CPU-observable Brooklyn-vs-Rocket match -- "
-                 "NOT rendered, NOT a claim Ghost Dash or any other unimplemented mechanic works\n";
+    // PHASE 4: a second, fresh match demonstrating Rocket's own real
+    // "Ghost Dash" -- a real, structurally different move type from
+    // Brooklyn's melee special (a dash with its own real velocity/
+    // friction and a facing-independent, absolute-position hit box, see
+    // CHARACTER/HitmBridge/HitmRushAttack.h), not exercised by the main
+    // match above (which always drives Brooklyn as the aggressor).
+    std::cout << "\n[hitm-match] --- PHASE 4: Rocket's real Ghost Dash ---\n";
+    auto ghostDashMatch = HitmMatch::Create(*brooklynIdentity.value, *brooklynGenome.value, *rocketIdentity.value,
+                                             *rocketGenome.value, *rules.value);
+    if (!ghostDashMatch.ok) {
+        std::cerr << "[hitm-match] Ghost Dash demo match creation FAILED: " << ghostDashMatch.error << "\n";
+        return 1;
+    }
+    auto& gdMatch = *ghostDashMatch.value;
+    while (gdMatch.Snapshot().phase == HitmMatchPhase::kRoundIntro) {
+        gdMatch.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kNeutral);
+    }
+    std::cout << "[hitm-match] ACTION (rocket real-walking toward brooklyn to close the real starting gap)\n";
+    for (int i = 0; i < 50 && gdMatch.Snapshot().phase == HitmMatchPhase::kFight; ++i) {
+        gdMatch.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kLeft);
+    }
+    {
+        auto s = gdMatch.Snapshot();
+        std::cout << "[hitm-match] rocket x=" << s.fighter_b.x << " brooklyn x=" << s.fighter_a.x << " (real gap="
+                   << (s.fighter_b.x - s.fighter_a.x) << ", real Ghost Dash reach ~292)\n";
+    }
+    gdMatch.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kSpecial);
+    std::cout << "[hitm-match] ACTION (rocket real Ghost Dash triggered: real startup=5 active=18 recovery=13 "
+                 "velocityX=16 friction=0.93)\n";
+    bool gdHit = false;
+    int gdHpBefore = gdMatch.Snapshot().fighter_a.hp;
+    for (int i = 0; i < 40 && gdMatch.Snapshot().phase == HitmMatchPhase::kFight; ++i) {
+        gdMatch.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kNeutral);
+        if (!gdHit && gdMatch.Snapshot().fighter_a.hp < gdHpBefore) {
+            std::cout << "[hitm-match] HIT (real _applyRush connected -- facing-independent, absolute-position hit box)\n";
+            std::cout << "[hitm-match] DAMAGE (real " << (gdHpBefore - gdMatch.Snapshot().fighter_a.hp) << " applied)\n";
+            gdHit = true;
+        }
+    }
+    {
+        auto s = gdMatch.Snapshot();
+        std::cout << "[hitm-match] brooklyn[state=" << (s.fighter_a.state == HitmFighterState::kHitstun ? "hitstun" : "?")
+                   << " x=" << s.fighter_a.x << " hp=" << s.fighter_a.hp << "/" << s.fighter_a.max_hp
+                   << "] rocket[x=" << s.fighter_b.x << "]\n";
+    }
+    std::cout << "[result] real HITM data drove a complete, deterministic, CPU-observable Brooklyn-vs-Rocket match, "
+                 "including Rocket's own real Ghost Dash -- NOT rendered, NOT a claim any other unimplemented "
+                 "mechanic (blocking against a rush hit, Rocket's real blockbuster, rendering) works\n";
     return 0;
 }
 

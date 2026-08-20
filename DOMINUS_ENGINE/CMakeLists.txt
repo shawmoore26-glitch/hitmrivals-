@@ -125,6 +125,7 @@ add_library(dominus_hitm_runtime STATIC
   CHARACTER/HitmBridge/HitmAssetImporter.cpp
   CHARACTER/HitmBridge/HitmSpriteDrawData.cpp
   CHARACTER/HitmBridge/HitmMeleeHitCheck.cpp
+  CHARACTER/HitmBridge/HitmRushAttack.cpp
   CHARACTER/HitmBridge/HitmMatch.cpp
 )
 target_link_libraries(dominus_hitm_runtime PUBLIC dominus_combat dominus_world dominus_physics)

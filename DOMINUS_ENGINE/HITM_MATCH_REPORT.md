@@ -123,7 +123,7 @@ fighter A always at real `x=300` facing right, fighter B always at real
 authored data, same category as `HitmFighterRuntime.cpp`'s own `kBaseHp`
 and `HitmMeleeHitCheck.h`'s own `kMeleeFighterWidth`.
 
-## Rocket exists as a real fighter — his own special still does not (Phase 4, still unauthorized)
+## Rocket exists as a real fighter — his own special still does not (as of Phase 3; closed by Phase 4 below)
 
 `HitmFighterRuntime::Create()`'s second, independent blocker (found by
 the original audit, alongside Phase 1's read-engine relaxation) is now
@@ -214,3 +214,121 @@ No data invented. No existing behavior changed for any fighter or module
 that already worked. Phase 4 (Rocket's own real Ghost Dash) remains
 explicitly unimplemented, per this session's phase-by-phase
 authorization discipline.
+
+## Phase 4 — Rocket's real "Ghost Dash" now connects
+
+Authorized as its own checkpoint after this phase's own review. Rocket's
+real special is a structurally different move TYPE from Brooklyn's/
+Static's real melee specials — a dash with its own real velocity/
+friction and a facing-independent, absolute-position hit box, resolved
+by the real engine's own `_applyRush()`
+(`engine/combat/CombatSystem.js:283-296`), never `_melee()`.
+
+**`HitmMoveInstance` now recognizes Rocket's real `rush` schema.** A
+real `rush` sub-object on a move (`velocityX`/`friction`/`hitRangeX`/
+`hitRangeY`) switches `Extract()` to the real rush-type required-field
+set instead of the melee-type one — `blockstun`/`range`/`height` are
+correctly not required for a rush move, because the real schema
+genuinely does not have them. Every field check for the fields both
+schemas share runs in the exact same order as before this branch
+existed — a melee-type move's real behavior/error messages are
+byte-for-byte unchanged (verified by a dedicated negative-control test).
+Rocket's real "Ghost Dash" now extracts successfully: startup=5,
+active=18, recovery=13, damage=96, hitstun=26, meterGain=10,
+hitstop=heavy, cooldown=95, `rush`{velocityX=16, friction=0.93,
+hitRangeX=80, hitRangeY=110} — all real, all authored, all confirmed by
+a dedicated extraction test.
+
+**New: `CHARACTER/HitmBridge/HitmRushAttack` (`RushHitConnects()`/
+`TickRushAttack()`).** A direct, line-by-line port of `_applyRush()`.
+Deliberately NOT folded into `HitmFighterRuntime`'s own attack-substate
+machinery — that machinery turned out to need no changes at all:
+Rocket's real startup/active/recovery timing is exactly the shape this
+class already tracked. The one new thing `HitmFighterRuntime` needed was
+`SetPosition()` — real rush movement needs an external caller to apply
+the real dash displacement itself, every real frame, because
+`RunOneFrame` correctly zeroes real horizontal velocity during every
+attack sub-state for every other real move type. `TickRushAttack()`
+mirrors the real function precisely: the real dash-velocity kick on the
+real first tick of the move, real friction decay every tick for the
+WHOLE move (not just the active window — Rocket keeps sliding through
+his own recovery, exactly like the real engine), and a real,
+facing-independent hit-box check every tick once real startup has
+elapsed, until it connects.
+
+**A real, documented gap, found while implementing this, not
+papered over: blocking is not resolved against a rush-type hit.**
+Tracing how to feed a rush-type hit into `TakeHit()`'s existing,
+unmodified, already-closed signature surfaced a genuine divergence in
+the real engine itself: `applyHit()`'s real blocked-hit branch does not
+lock the defender's `state` at all — it only nudges velocity and applies
+chip damage (confirmed by reading that branch in full). That predates
+this phase (Module 5A's own `TakeHit()` has modeled blocking as a hard
+`kBlockstun` lockout since its original closure) and is not this phase's
+to fix — but it also means no real, authored `blockstun` value exists
+anywhere in Rocket's own rush-type move data to drive that existing
+design in the first place. Inventing one would be exactly the
+fabrication this track refuses, so `TickRushAttack()` always resolves a
+landed rush hit as unblocked. Rocket's Ghost Dash currently deals full
+damage whether or not Brooklyn is holding block — documented in three
+places (`HitmFighterRuntime.h`'s "PHASE 4" comment, `HitmRushAttack.h`'s
+own header comment, and here), not silently wrong.
+
+**Live proof** (`dominus-cli hitm-match`, appended after the main
+Brooklyn-vs-Rocket match): a second, fresh match drives Rocket to real-
+walk 50 frames toward Brooklyn, closing the real 460px starting gap to
+a real ~240px, then triggers Ghost Dash — which connects and deals
+exactly the real 96 damage:
+
+```
+[hitm-match] --- PHASE 4: Rocket's real Ghost Dash ---
+[hitm-match] ACTION (rocket real-walking toward brooklyn to close the real starting gap)
+[hitm-match] rocket x=539.999 brooklyn x=300 (real gap=239.999, real Ghost Dash reach ~292)
+[hitm-match] ACTION (rocket real Ghost Dash triggered: real startup=5 active=18 recovery=13 velocityX=16 friction=0.93)
+[hitm-match] HIT (real _applyRush connected -- facing-independent, absolute-position hit box)
+[hitm-match] DAMAGE (real 96 applied)
+[hitm-match] brooklyn[state=hitstun x=300 hp=844/940] rocket[x=329.454]
+```
+
+`940 - 96 = 844`, exactly. A negative-control test
+(`HitmMatch_Fight_RocketGhostDash_TooFarAwayDoesNotConnect`) confirms
+the real, finite reach: from the real, unmodified starting gap, Ghost
+Dash genuinely cannot reach Brooklyn at all — the dash has a real,
+bounded range (a geometric-decay closure of roughly 212px), not
+unlimited.
+
+**Tests**: 11 new — 5 in the new `test_hitm_rush_attack.cpp`
+(boundary-exact `RushHitConnects` coverage: horizontal reach both sides,
+non-rush-move guard, vertical gate, both real zero-fallback quirks), 1
+in `test_hitm_move_instance.cpp` (real Ghost Dash extraction) plus 2
+more there (a negative control proving the rush branch didn't weaken the
+melee schema, and rush-schema deliberate-break coverage) — 3 new in that
+file total, 1 test rewritten in place (the old
+`Break_RocketSpecialHasNoBlockstunOrRange_Fails`, whose premise this
+phase deliberately reverses), 1 rewritten on `HitmFighterRuntime`
+(`Rocket_CreateSucceedsWithRealRushSpecial`, replacing the now-obsolete
+"no working special" premise), 2 in `test_hitm_match.cpp` (Ghost Dash
+connects and deals real damage; the too-far negative control, replacing
+the now-obsolete "real no-op" test).
+
+## Verification (Phase 4)
+
+1. Clean Release build (`rm -rf build`): zero errors, zero warnings.
+2. Full suite: **878/878 passed** (was 869/869 before this phase).
+3. Clean Debug+AddressSanitizer+UndefinedBehaviorSanitizer build: zero
+   errors, zero warnings. Full suite under it: **878/878 passed** across
+   2 separate runs, zero sanitizer findings.
+4. All three live `dominus-cli` demos run under ASan too — the first two
+   byte-identical to every prior phase; `hitm-match` reproduces the full
+   transcript above, including the new Ghost Dash section.
+5. Fresh-clone verification performed before push.
+
+No data invented. No existing behavior changed for any fighter or move
+that already worked (melee-type extraction, blocking against a melee
+hit, and every prior test all byte-for-byte unaffected). The one real,
+found gap (blocking not yet resolved against a rush hit) is documented
+in three places, not silently wrong. This closes the audit's full
+4-phase sequence for a Brooklyn-vs-Rocket vertical slice: both fighters
+now have real, working specials, a real match driver, and real round/
+match resolution — still nothing rendered, still no third fighter, still
+no bind-pose FK, exactly as scoped throughout.

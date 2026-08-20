@@ -154,16 +154,17 @@ DOMINUS_TEST(HitmFighterRuntime_NoReadEngine_CreateSucceedsWithRealNoOpDefaults)
     DOMINUS_EXPECT(runtime.ResolveOutgoingDamage(*specialMove.value) == specialMove.value->move_def.power);
 }
 
-DOMINUS_TEST(HitmFighterRuntime_Rocket_CreateSucceedsWithNoWorkingSpecial) {
-    // PHASE 3 (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md): the second,
-    // independent Create() blocker this track's own audit found is now
-    // also resolved -- not by making Rocket's real "Ghost Dash" work
-    // (that's the audit's still-unauthorized Phase 4), but by no longer
-    // treating "this fighter's special doesn't extract" as a reason to
-    // refuse constructing the fighter at all. Rocket genuinely has
-    // neither a real read_engine (Phase 1) nor a real special that fits
-    // today's schema -- both are real, verified facts about him, and
-    // Create() now tolerates both.
+DOMINUS_TEST(HitmFighterRuntime_Rocket_CreateSucceedsWithRealRushSpecial) {
+    // PHASE 3+4 (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md): the
+    // second, independent Create() blocker this track's own audit found
+    // is resolved two ways now, not one -- Phase 3 made Create()
+    // tolerate a fighter whose special doesn't extract at all; Phase 4
+    // then made Rocket's real "Ghost Dash" itself extract successfully
+    // (a real rush-type schema, see HitmMoveInstance.h's own "A THIRD
+    // REAL FINDING"), so Rocket now constructs WITH a real, working
+    // special, not despite having none. Rocket genuinely has no real
+    // read_engine (Phase 1, still true, unrelated to this) -- Create()
+    // tolerates that independently.
     auto identity = RealIdentity("rocket");
     auto genome = RealGenome(identity);
     DOMINUS_EXPECT(!genome.HasReadEngine());  // real: Rocket genuinely has none
@@ -173,19 +174,22 @@ DOMINUS_TEST(HitmFighterRuntime_Rocket_CreateSucceedsWithNoWorkingSpecial) {
     DOMINUS_EXPECT(result.ok);
 
     auto& runtime = *result.value;
-    DOMINUS_EXPECT(!runtime.HasSpecialMove());
-    DOMINUS_EXPECT(runtime.SpecialMove() == nullptr);
+    DOMINUS_EXPECT(runtime.HasSpecialMove());
+    const HitmMoveInstance* move = runtime.SpecialMove();
+    DOMINUS_EXPECT(move != nullptr);
+    DOMINUS_EXPECT(move->move_def.name == "Ghost Dash");
+    DOMINUS_EXPECT(move->rush.has_value());  // real rush-type move, not melee-type
 
-    // Real, documented no-op: kSpecial does nothing for a fighter with
-    // no working special -- falls through to the same "no input
-    // recognized" path kNeutral already uses.
+    // kSpecial now genuinely triggers the real attack state machine --
+    // this class's existing, unmodified startup/active/recovery
+    // countdown (real: startup=5,active=18,recovery=13) already fits a
+    // rush move's real timing, exactly as HitmFighterRuntime.h's own
+    // "PHASE 4" comment documents.
     runtime.AdvanceFrame(HitmInputCommand::kSpecial);
-    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kIdle);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kAttackStartup);
 
     // Everything else about this real fighter still works normally --
-    // walking, real HP, real facing.
-    runtime.AdvanceFrame(HitmInputCommand::kRight);
-    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kWalking);
+    // real HP, real facing.
     DOMINUS_EXPECT(runtime.Snapshot().hp == runtime.Snapshot().max_hp);
     DOMINUS_EXPECT(runtime.Snapshot().max_hp > 0);
 }

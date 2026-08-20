@@ -1329,12 +1329,23 @@ per-fighter concept — a finding Phase 3 then acted on directly.
 Combat resolution, never folded into `HitmFighterRuntime`) drives two
 real fighters through a real phase machine — round intro, live fight,
 KO settle, round reset, match win — all real, hardcoded engine constants
-and formulas cited to `CombatSystem.js`. `dominus-cli hitm-match` now
-runs a complete, deterministic Brooklyn-vs-Rocket match end to end:
+and formulas cited to `CombatSystem.js`. `dominus-cli hitm-match` runs a
+complete, deterministic Brooklyn-vs-Rocket match end to end:
 ROUND START → ACTION → HIT → DAMAGE → HITSTUN → KO → ROUND WIN → RESET →
-MATCH WIN, every number real. Full account in `HITM_MATCH_REPORT.md`.
-Rocket's own real Ghost Dash still doesn't execute — his `kSpecial`
-input is an honest no-op — that's Phase 4, deliberately not started. See
-each module's own "explicitly not done" note in `ROADMAP.md` for the
-honest boundary.
-**869/869 tests passing (was 656 before this track).**
+MATCH WIN, every number real. **Phase 4 then closed the loop**: Rocket's
+real "Ghost Dash" now connects too — a structurally different real move
+type (a dash with its own velocity/friction and a facing-independent hit
+box, `CHARACTER/HitmBridge/HitmRushAttack`, a direct port of the real
+engine's own `_applyRush()`) that needed zero changes to
+`HitmFighterRuntime`'s own attack timing, only a new `SetPosition()`
+seam for applying the real dash displacement externally. Tracing it
+surfaced one more real, documented gap: the real engine doesn't lock a
+defender's state on a blocked hit at all, and no real `blockstun` value
+exists anywhere in Rocket's own rush data — so blocking against Ghost
+Dash isn't resolved yet, rather than fabricated. Full account in
+`HITM_MATCH_REPORT.md`. Both fighters now have real, working specials in
+a real match — the first actual DOMINUS-powered HITM Rivals combat
+vertical slice. See each module's own "explicitly not done" note in
+`ROADMAP.md` for the honest boundary (rendering, a third fighter,
+bind-pose FK, and blocking-vs-rush all remain out).
+**878/878 tests passing (was 656 before this track).**

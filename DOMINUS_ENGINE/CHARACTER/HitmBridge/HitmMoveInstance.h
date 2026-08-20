@@ -30,12 +30,26 @@
 // `blockstun` and no `hitstop`. This extractor's required-field set is
 // therefore only evidenced for Brooklyn-shaped kick/strike specials, not
 // a general contract every fighter's "special" satisfies -- it correctly
-// refuses Rocket's and Static's real specials (see
+// refuses Static's real special (see
 // tests/character/test_hitm_move_instance.cpp's Break_ tests) rather
-// than silently defaulting their missing fields. A real move importer
-// covering every fighter would need per-move-TYPE schemas (kick/rush/
-// projectile/...), which is real, separately-scoped future work, not
-// attempted here.
+// than silently defaulting its missing fields.
+//
+// A THIRD REAL FINDING (Track H, Phase 4 of
+// HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md): Rocket's real "rush"
+// schema, above, IS now one of the schemas this extractor recognizes --
+// closing exactly the "per-move-TYPE schemas" gap this comment used to
+// name as separately-scoped future work. A real `rush` sub-object on
+// the move switches this extractor to the real rush-type required-field
+// set (`startup`/`active`/`recovery`/`damage`/`hitstun`/`meterGain`/
+// `hitstop`/`cooldown`, `rush.velocityX`/`friction`/`hitRangeX`/
+// `hitRangeY`) instead of the melee-type one -- `blockstun`/`range`/
+// `height` are correctly NOT required for a rush move, because the real
+// schema genuinely does not have them (not because this extractor
+// stopped checking). Static's real "special" still has neither a real
+// `rush` object nor a complete melee-type schema -- still correctly
+// refused, unchanged by this addition. See
+// `CHARACTER/HitmBridge/HitmRushAttack.h` for how the real rush data
+// this extracts is actually resolved into a real hit.
 //
 // FIELDS MoveDef HAS THAT THIS EXTRACTOR DOES NOT POPULATE, documented
 // rather than silently defaulted: `motion_trigger` (real HITM has no
@@ -46,9 +60,16 @@
 // (moveDef's own concept, no real HITM equivalent found), `frames.
 // hit_advantage`/`frames.block_advantage` (computable from hitstun/
 // recovery by a real formula, but the exact convention isn't itself
-// authored data -- deferred rather than guessed).
+// authored data -- deferred rather than guessed). Real rush-only fields
+// not captured either: `knockdown`/`pushback` (real, authored, but not
+// yet driven by anything -- `HitmFighterRuntime::TakeHit` has no
+// knockdown-vs-hitstun distinction and applies no pushback velocity for
+// ANY move, melee or rush, a pre-existing Module 5A gap this phase does
+// not reopen) and `leaveGhost` (real, purely cosmetic trail VFX -- this
+// vertical slice renders nothing).
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "CHARACTER/HitmBridge/HitmIdentityRecord.h"
@@ -59,23 +80,48 @@ namespace dominus::character::hitm {
 
 enum class HitmHitstopCategory { kLight, kHeavy, kCounter };
 
+// Real, per-move rush data (Rocket's real "Ghost Dash" -- see this
+// file's own "A THIRD REAL FINDING" above). A direct field-for-field
+// capture of the real signature.json `rush` sub-object.
+struct HitmRushData {
+    double velocity_x = 0.0;
+    double friction = 0.0;
+    double hit_range_x = 0.0;
+    double hit_range_y = 0.0;
+};
+
 struct HitmMoveInstance {
     std::string move_key;      // the real key under signature.json's "moves", e.g. "special"
     combat::MoveDef move_def;  // real: name, frames.{startup,active,recovery}, power (== authored "damage")
     std::string input_token;   // real "input" field, e.g. "S"
     int hitstun_frames = 0;
+    // Real melee-type field -- unset (default 0) for a rush-type move,
+    // which has no real blockstun value at all (see "A THIRD REAL
+    // FINDING"). Callers must check `rush.has_value()` before reading
+    // this the way they'd check any other real-data-conditional field.
     int blockstun_frames = 0;
     int meter_gain = 0;
     HitmHitstopCategory hitstop_category = HitmHitstopCategory::kLight;
+    // Real melee-type fields -- both 0 for a rush-type move, which uses
+    // `rush.hit_range_x`/`hit_range_y` instead (a fundamentally
+    // different, facing-independent real reach convention -- see
+    // `HitmRushAttack.h`).
     double range = 0;
     double height = 0;
     int cooldown_frames = 0;
+    // Real rush-type data -- nullopt for a melee-type move (Brooklyn's
+    // real "special", Static's real "special"). Exactly one of
+    // (`rush` set) / (`range`/`height` real and meaningful) is ever true
+    // for a real, successfully-extracted move.
+    std::optional<HitmRushData> rush;
 
     // Reads real-fighting-game/data/identity/<fighter>/signature.json's
     // moves.<moveKey> from an already-imported, already-validated
     // HitmIdentityRecord (Module 1). Fails (Result::Fail) on a missing
     // move key or any required field missing/wrong-typed -- never a
-    // partial or defaulted MoveDef.
+    // partial or defaulted MoveDef. Which fields are required depends on
+    // whether the real move has a real `rush` sub-object -- see "A THIRD
+    // REAL FINDING" above.
     static core::Result<HitmMoveInstance> Extract(const HitmIdentityRecord& record, const std::string& moveKey);
 };
 

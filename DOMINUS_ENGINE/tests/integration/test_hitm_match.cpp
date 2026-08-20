@@ -313,17 +313,69 @@ DOMINUS_TEST(HitmMatch_MatchWin_AfterRealRoundsToWin) {
 
 // --- 7. Rocket's real "no working special" stays honest at match level ---
 
-DOMINUS_TEST(HitmMatch_Fight_RocketSpecialInputIsRealNoOp_GhostDashNotImplemented) {
-    // Real, documented no-op (HitmFighterRuntime.h's own "PHASE 3"
-    // comment): Rocket has no working special today -- his real
-    // "Ghost Dash" is the audit's still-unauthorized Phase 4. Proven
-    // here at MATCH level, not just on the isolated runtime.
+DOMINUS_TEST(HitmMatch_Fight_RocketGhostDashConnectsAndDealsRealDamage) {
+    // PHASE 4 (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md): Rocket's
+    // real "Ghost Dash" now actually connects and deals real damage --
+    // a real, structurally different move type from Brooklyn's melee
+    // special, resolved via the real _applyRush port
+    // (CHARACTER/HitmBridge/HitmRushAttack.h), not MeleeHitConnects.
     auto match = MakeBrooklynVsRocketMatch();
     SkipRoundIntro(match);
-    for (int i = 0; i < 75; ++i) match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kLeft);
+
+    // Real: close enough of the real 460px starting gap that Rocket's
+    // real Ghost Dash (velocityX=16, friction=0.93 -- a real geometric-
+    // decay closure of roughly 212px more over its own real 36-frame
+    // duration) can reach Brooklyn. 50 real frames of Rocket's own real
+    // walkSpeed (4.4/frame) leaves a real ~240px gap, comfortably inside
+    // reach (real hitRangeX=80, boundary-proven exactly in
+    // test_hitm_rush_attack.cpp).
+    for (int i = 0; i < 50; ++i) {
+        match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kLeft);
+    }
+    auto beforeDash = match.Snapshot();
+    DOMINUS_EXPECT(beforeDash.fighter_b.state == HitmFighterState::kWalking);
+    DOMINUS_EXPECT(beforeDash.fighter_a.hp == beforeDash.fighter_a.max_hp);  // untouched so far
+
     match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kSpecial);
-    DOMINUS_EXPECT(match.Snapshot().fighter_b.state == HitmFighterState::kIdle);
-    DOMINUS_EXPECT(match.Snapshot().fighter_a.hp == match.Snapshot().fighter_a.max_hp);
+    DOMINUS_EXPECT(match.Snapshot().fighter_b.state == HitmFighterState::kAttackStartup);
+
+    int hpBefore = match.Snapshot().fighter_a.hp;
+    bool connected = false;
+    // Real: the whole move is startup(5)+active(18)+recovery(13)=36
+    // frames -- run through it (plus a small safety margin) and confirm
+    // the real dash hit lands somewhere in there.
+    for (int i = 0; i < 40 && !connected; ++i) {
+        match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kNeutral);
+        if (match.Snapshot().fighter_a.hp < hpBefore) connected = true;
+    }
+    DOMINUS_EXPECT(connected);
+    DOMINUS_EXPECT(match.Snapshot().fighter_a.hp == hpBefore - 96);  // real Ghost Dash damage
+    DOMINUS_EXPECT(match.Snapshot().fighter_a.state == HitmFighterState::kHitstun);
+
+    // Real: resolves exactly once -- Brooklyn's hp must not drop again
+    // for the rest of the real move.
+    int hpAfterHit = match.Snapshot().fighter_a.hp;
+    for (int i = 0; i < 30 && match.Snapshot().fighter_b.state != HitmFighterState::kIdle; ++i) {
+        match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kNeutral);
+        DOMINUS_EXPECT(match.Snapshot().fighter_a.hp == hpAfterHit);
+    }
+}
+
+DOMINUS_TEST(HitmMatch_Fight_RocketGhostDash_TooFarAwayDoesNotConnect) {
+    // Negative control: Rocket's real dash has a real, finite reach
+    // (velocityX=16 decaying by real friction=0.93 every frame) -- from
+    // the real, unmodified starting gap (460px) it cannot reach Brooklyn
+    // at all. A real, evidenced boundary, not an assumption.
+    auto match = MakeBrooklynVsRocketMatch();
+    SkipRoundIntro(match);
+
+    match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kSpecial);
+    DOMINUS_EXPECT(match.Snapshot().fighter_b.state == HitmFighterState::kAttackStartup);
+    int hpBefore = match.Snapshot().fighter_a.hp;
+    for (int i = 1; i < 40; ++i) match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kNeutral);
+
+    DOMINUS_EXPECT(match.Snapshot().fighter_a.hp == hpBefore);  // never connected
+    DOMINUS_EXPECT(match.Snapshot().fighter_b.state == HitmFighterState::kIdle);  // real move ran its course
 }
 
 // --- 8. Determinism ----------------------------------------------------------

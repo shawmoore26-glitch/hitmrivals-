@@ -6342,7 +6342,37 @@ new tests (9 in the new `test_hitm_match.cpp`, 4 on
 AddressSanitizer+UndefinedBehaviorSanitizer (2 runs), and all three live
 CLI demos (including under ASan). Fresh-clone verified before push.
 
-Phase 4 (Rocket's own real "Ghost Dash", a structurally different move
-type requiring its own `_zoneHit`+travel port) remains explicitly
-unimplemented, per the audit's own proposed ordering and the user's own
-explicit instruction to stop for another checkpoint before touching it.
+**Phase 4 closed: Rocket's real "Ghost Dash" now connects.** Authorized
+as its own checkpoint after Phase 3's review, exactly as scoped.
+`HitmMoveInstance` now recognizes Rocket's real `rush` schema
+(`velocityX`/`friction`/`hitRangeX`/`hitRangeY`), extracting his real
+special without weakening the melee-type schema Brooklyn/Static already
+use. A new `CHARACTER/HitmBridge/HitmRushAttack` is a direct port of the
+real engine's own `_applyRush()` — a facing-independent, absolute-
+position hit box checked every real tick of the whole move (not once, on
+one frame, the way `_melee` resolves), needing no changes to
+`HitmFighterRuntime`'s own attack-substate timing at all (Rocket's real
+startup/active/recovery already fit); the one new thing that class
+needed was `SetPosition()`, since real rush movement has to be applied
+externally, every frame, the same "explicit seam" discipline established
+throughout this whole sequence. A real, found, documented gap: tracing
+this surfaced that the real engine's own `applyHit()` doesn't lock a
+defender's state on a blocked hit AT ALL (a divergence from Module 5A's
+own, already-closed `TakeHit()` design that predates this phase) — and
+no real `blockstun` value exists anywhere in Rocket's rush-type data
+regardless, so blocking against Ghost Dash is deliberately not resolved
+here rather than fabricated. `dominus-cli hitm-match` now closes with a
+live Ghost Dash demonstration: Rocket real-walks 460px down to a real
+~240px gap, dashes, and connects for exactly the real 96 damage
+(940→844). Full account in `HITM_MATCH_REPORT.md`. 11 new tests
+(2 rewritten in place for reversed premises), **878/878** total, clean
+under Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs), and
+all three live CLI demos (including under ASan). Fresh-clone verified
+before push.
+
+This closes the audit's full 4-phase sequence: both Brooklyn and Rocket
+now have real, working specials, driven by a real match, with real
+round/timer/KO/round-win/match-win resolution — the first actual
+DOMINUS-powered HITM Rivals combat vertical slice. Still nothing
+rendered, still no third fighter, still no bind-pose FK, exactly as
+scoped throughout.

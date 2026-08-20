@@ -435,6 +435,13 @@ void HitmFighterRuntime::ResetForNewRound(float x, float y, int facing) {
     state_->facing = facing;
 }
 
+void HitmFighterRuntime::SetPosition(float x, float y) {
+    auto* entity = state_->world.Entities().Find(state_->entityId);
+    auto* spatial = entity->GetComponent<world::SpatialComponent>();
+    spatial->x = x;
+    spatial->y = y;
+}
+
 double HitmFighterRuntime::ClampMeter(const FrameState& state, double value) {
     double maxMeter = state.rules.Meter().max;
     if (value < 0.0) return 0.0;

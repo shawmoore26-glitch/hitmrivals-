@@ -56,12 +56,36 @@ Result<HitmMoveInstance> HitmMoveInstance::Extract(const HitmIdentityRecord& rec
         instance.move_def.power = static_cast<float>(ReqNumber(move, "damage", context));
 
         instance.hitstun_frames = static_cast<int>(ReqNumber(move, "hitstun", context));
-        instance.blockstun_frames = static_cast<int>(ReqNumber(move, "blockstun", context));
+
+        // A real `rush` sub-object (Rocket's real "Ghost Dash") switches
+        // the required-field set -- see this file's own top comment,
+        // "A THIRD REAL FINDING". Every field check below runs in
+        // EXACTLY the same relative order as before this branch existed,
+        // for every field both schemas share -- a melee-type move's
+        // real error messages/behavior are byte-for-byte unchanged.
+        const Value* rushVal = move.Get("rush");
+        bool isRush = rushVal != nullptr && rushVal->IsObject();
+
+        if (!isRush) {
+            instance.blockstun_frames = static_cast<int>(ReqNumber(move, "blockstun", context));
+        }
         instance.meter_gain = static_cast<int>(ReqNumber(move, "meterGain", context));
         instance.hitstop_category = ParseHitstopCategory(ReqString(move, "hitstop", context), context);
-        instance.range = ReqNumber(move, "range", context);
-        instance.height = ReqNumber(move, "height", context);
+        if (!isRush) {
+            instance.range = ReqNumber(move, "range", context);
+            instance.height = ReqNumber(move, "height", context);
+        }
         instance.cooldown_frames = static_cast<int>(ReqNumber(move, "cooldown", context));
+
+        if (isRush) {
+            std::string rushContext = context + ".rush";
+            HitmRushData rush;
+            rush.velocity_x = ReqNumber(*rushVal, "velocityX", rushContext);
+            rush.friction = ReqNumber(*rushVal, "friction", rushContext);
+            rush.hit_range_x = ReqNumber(*rushVal, "hitRangeX", rushContext);
+            rush.hit_range_y = ReqNumber(*rushVal, "hitRangeY", rushContext);
+            instance.rush = rush;
+        }
     } catch (const std::exception& e) {
         return Result<HitmMoveInstance>::Fail(e.what());
     }

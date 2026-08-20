@@ -18,7 +18,7 @@
 // together one real frame at a time; it never reaches into either
 // fighter's own private state, only their already-public seams
 // (`AdvanceFrame`, `TakeHit`, `ResolveOutgoingHitLanded`, `SetFacing`,
-// `ResetForNewRound`, `Snapshot`, `State`, `SpecialMove`).
+// `ResetForNewRound`, `SetPosition`, `Snapshot`, `State`, `SpecialMove`).
 //
 // REAL PHASE MACHINE (a direct port of `CombatSystem.js`'s own
 // `state.phase`: `'roundIntro' | 'fight' | 'ko' | 'matchOver'`):
@@ -65,16 +65,23 @@
 // same real winner the real engine would, without requiring
 // `HitmFighterRuntime` to expose a mutator nothing else needs.
 //
-// EXPLICITLY OUT OF SCOPE FOR THIS PHASE (per this session's own
-// checkpoint discipline): Rocket's own real "Ghost Dash" special (a
-// structurally different move type, `_zoneHit` + travel scheduling --
-// Rocket's `SpecialMove()` is `nullptr` today, so his `kSpecial` input
-// is a real, honest no-op in every match this class drives; making his
-// special work is the audit's own Phase 4). Also out of scope, per the
-// same discipline: rendering, full bone-hierarchy FK, new asset
-// authoring, `character.json`'s generated values, real combo damage
-// scaling, the attacker's own read-engine damage multiplier, networking,
-// menus/UI, and any fighter beyond these two.
+// PHASE 4 (own checkpoint, after Phase 3's): Rocket's real "Ghost Dash"
+// now actually connects and deals real damage. `ResolveAttack()` below
+// dispatches per-fighter to either the real melee formula
+// (`HitmMeleeHitCheck.h`, unchanged) or the real rush formula
+// (`HitmRushAttack.h`, new) depending on which real move type
+// `attacker.SpecialMove()` actually is -- this class still never needs
+// to know anything about hit detection itself, matching the exact same
+// "pure/stateful helper lives outside the runtime" shape Phase 2/3
+// already established. See `HitmRushAttack.h`'s own header comment for
+// the one real, documented gap this closure carries (blocking is not
+// yet resolved against a rush-type hit).
+//
+// Still explicitly out of scope, per the same checkpoint discipline:
+// rendering, full bone-hierarchy FK, new asset authoring,
+// `character.json`'s generated values, real combo damage scaling, the
+// attacker's own read-engine damage multiplier, networking, menus/UI,
+// and any fighter beyond these two.
 #pragma once
 
 #include <optional>
@@ -83,6 +90,7 @@
 #include "CHARACTER/HitmBridge/HitmFighterRuntime.h"
 #include "CHARACTER/HitmBridge/HitmGameRules.h"
 #include "CHARACTER/HitmBridge/HitmIdentityRecord.h"
+#include "CHARACTER/HitmBridge/HitmRushAttack.h"  // for HitmRushAttackState
 #include "CORE/Serialization/DominusSerializer.h"  // for core::Result<T>
 
 namespace dominus::character::hitm {
@@ -152,12 +160,24 @@ private:
     void EndRound();    // real _endRound()
 
     // Real position-based hit resolution for one attacker/defender pair
-    // -- see the .cpp for the full real-formula citation.
-    static void ResolveAttack(HitmFighterRuntime& attacker, HitmFighterRuntime& defender);
+    // -- dispatches to the real melee formula (HitmMeleeHitCheck.h) or
+    // the real rush formula (HitmRushAttack.h) depending on which real
+    // move type `attacker`'s own SpecialMove() actually is; see the .cpp
+    // for the full real-formula citations. `rushState` is this
+    // attacker's own real, persistent, cross-frame rush bookkeeping (see
+    // HitmRushAttack.h) -- unused, and left untouched, for a melee-type
+    // attacker.
+    static void ResolveAttack(HitmFighterRuntime& attacker, HitmFighterRuntime& defender,
+                               HitmRushAttackState& rushState);
 
     HitmGameRules rules_;
     HitmFighterRuntime fighterA_;
     HitmFighterRuntime fighterB_;
+    // Real, per-fighter rush-attack bookkeeping (Phase 4) -- see
+    // HitmRushAttack.h. Inert ({0.0, false}) for a fighter whose current
+    // special isn't a rush-type move.
+    HitmRushAttackState rushStateA_;
+    HitmRushAttackState rushStateB_;
 
     HitmMatchPhase phase_ = HitmMatchPhase::kRoundIntro;
     int round_ = 1;
