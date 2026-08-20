@@ -503,25 +503,30 @@ module, 656 before Track H); 837/837 as of the fifth continuation's
 `state_frame` closure (see that section, and `HITM_SPRITE_ASSET_REPORT.md`,
 for everything added by Module 5B and the Track A gap closures in
 between); 842/842 as of the sixth continuation's Phase 1 runtime
-foundation closure; **857/857** as of the seventh continuation's Phase 2
-real-combat closure above. 43 new tests at this module's own closure: 5 in
-`test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`, 28
-in `test_hitm_fighter_runtime.cpp` (17 covering the vertical slice's
-gameplay behavior, 11 `LifetimeSafety_*` tests added across two
-continuations covering every relocation path requested), and 3 in
-`test_physics_system.cpp` (`PhysicsSystem_AsWorldSystem_*`, added in the
-fourth continuation to close the dormant lifetime hazard); plus 6 more in
+foundation closure; 857/857 as of the seventh continuation's Phase 2
+real-combat closure; **869/869** as of the eighth continuation's Phase 3
+touch points above (see `HITM_MATCH_REPORT.md` for everything Phase 3
+itself added on top of this class). 43 new tests at this module's own
+closure: 5 in `test_hitm_move_instance.cpp`, 7 in
+`test_hitm_read_engine_state.cpp`, 28 in `test_hitm_fighter_runtime.cpp`
+(17 covering the vertical slice's gameplay behavior, 11
+`LifetimeSafety_*` tests added across two continuations covering every
+relocation path requested), and 3 in `test_physics_system.cpp`
+(`PhysicsSystem_AsWorldSystem_*`, added in the fourth continuation to
+close the dormant lifetime hazard); plus 6 more in
 `test_hitm_fighter_runtime.cpp` in the fifth continuation (`state_frame`,
 see above); plus 5 net new in the sixth continuation (Phase 1 — one
 existing test rewritten in place, five added, see above); plus 6 more in
 `test_hitm_fighter_runtime.cpp`, 8 in the new `test_hitm_melee_hit_check.cpp`,
 and 1 in `test_hitm_sprite_draw_data.cpp` in the seventh continuation
-(Phase 2, see above) — 45 in `test_hitm_fighter_runtime.cpp` total. Full
-clean rebuilds + repeat runs across all seven continuations (Release: 15+
-repeats; ASan+UBSan: 4 repeats of the full suite plus the live CLI demo
-for the first four continuations, run once more for the fifth, sixth,
-and seventh), all green — no flakes observed anywhere. (The one segfault
-encountered in the first lifetime
+(Phase 2, see above); plus 4 more in `test_hitm_fighter_runtime.cpp` in
+the eighth continuation (Phase 3's two touch points, see above) — 49 in
+`test_hitm_fighter_runtime.cpp` total. Full clean rebuilds + repeat runs
+across all eight continuations (Release: 15+ repeats; ASan+UBSan: 4
+repeats of the full suite plus the live CLI demo for the first four
+continuations, run once more for the fifth, sixth, seventh, and eighth),
+all green — no flakes observed anywhere. (The one segfault encountered
+in the first lifetime
 continuation was deterministic — it reproduced on every run before the
 fix, and has not recurred once, under any build configuration, since —
 so it is reported as a found-and-fixed bug, not logged as flakiness. The
@@ -860,3 +865,39 @@ explicitly unimplemented, per this session's phase-by-phase
 authorization discipline — see
 `HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md` for the full proposed
 sequence.
+
+## A fourth scoped reopening (eighth continuation): Phase 3's two touch points on this class
+
+Phase 3 (the actual two-fighter match driver, `CHARACTER/HitmBridge/HitmMatch.h` —
+full account in `HITM_MATCH_REPORT.md`) needed exactly two small,
+additive changes on this class, both already documented in its own
+header comment ("PHASE 3") and summarized here for this report's own
+continuity:
+
+1. **`Create()` no longer hard-fails when a fighter's real special
+   doesn't extract.** Was blocking Rocket from existing as a runtime
+   fighter at all, for a reason unrelated to his real "Ghost Dash" itself
+   (see the "PHASE 3" comment for the full reasoning). `FrameState::
+   specialMove` is now `std::optional<HitmMoveInstance>`; new
+   `SpecialMove()`/`HasSpecialMove()` let a caller query it.
+2. **A new `ResetForNewRound(x, y, facing)`** — a direct port of the real
+   engine's own `resetRound()`, deliberately preserving the real,
+   evidenced fact that `meter` and read-engine reads persist across
+   rounds (neither field appears in the real function's own body).
+
+**Tests**: 4 new — a positive/negative pair for
+`SpecialMove()`/`HasSpecialMove()` (Rocket now constructs with none;
+Brooklyn's is unaffected), and a pair for `ResetForNewRound()` (restores
+real hp/state/position/every countdown; explicitly proves meter/reads
+survive the call unchanged).
+
+**Verification**: full suite **860/860** at this class's own closure
+(before Phase 3's own new `HitmMatch`/`HitmMeleeHitCheck` test files
+added their own coverage on top — **869/869** overall, see
+`HITM_MATCH_REPORT.md` for the complete Phase 3 verification account);
+clean Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs), all
+three live `dominus-cli` demos (including the new `hitm-match`) under
+ASan too. Fresh-clone verified before push.
+
+This is a fourth, separate, additive exception to Module 5A's formal
+closure — same discipline as every prior one.

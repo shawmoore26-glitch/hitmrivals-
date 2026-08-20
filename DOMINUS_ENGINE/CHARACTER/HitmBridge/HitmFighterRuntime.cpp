@@ -52,9 +52,16 @@ Result<HitmFighterRuntime> HitmFighterRuntime::Create(const HitmIdentityRecord& 
                                                   ") does not match genome fighter_id (" + genome.FighterId() + ")");
     }
 
+    // Real data: not every fighter's real special extracts with today's
+    // schema (Rocket's real "Ghost Dash" -- see HitmMoveInstance.h's own
+    // top comment). No longer a Create()-blocking failure -- see this
+    // header's top comment ("PHASE 3"). SpecialMove()/HasSpecialMove()
+    // let a caller ask; kSpecial input is a real, documented no-op for a
+    // fighter with none.
     auto moveResult = HitmMoveInstance::Extract(record, "special");
-    if (!moveResult.ok) {
-        return Result<HitmFighterRuntime>::Fail("HitmFighterRuntime::Create: " + moveResult.error);
+    std::optional<HitmMoveInstance> specialMove;
+    if (moveResult.ok) {
+        specialMove = std::move(*moveResult.value);
     }
 
     // Real data: not every fighter has a read engine -- Rocket and Static
@@ -87,7 +94,7 @@ Result<HitmFighterRuntime> HitmFighterRuntime::Create(const HitmIdentityRecord& 
     // FrameState's life -- see this class's header comment for why that
     // is the actual fix for the move-safety bug this module found.
     auto state = std::make_unique<HitmFighterRuntime::FrameState>(
-        rules, std::move(readEngineState), *moveResult.value, *genome.Defense().block_preference, maxHp,
+        rules, std::move(readEngineState), std::move(specialMove), *genome.Defense().block_preference, maxHp,
         record.fighter_id);
 
     // Real integration with WORLD's real entity/component substrate (WORLD
@@ -179,11 +186,17 @@ void HitmFighterRuntime::RunOneFrame(FrameState& state, HitmInputCommand input) 
                 body->velocity_y = static_cast<float>(phys.jump_vel);
                 state.grounded = false;
                 state.state = HitmFighterState::kJumping;
-            } else if (input == HitmInputCommand::kSpecial) {
+            } else if (input == HitmInputCommand::kSpecial && state.specialMove.has_value()) {
                 body->velocity_x = 0.0f;
                 state.state = HitmFighterState::kAttackStartup;
-                state.stateFramesRemaining = state.specialMove.move_def.frames.startup;
+                state.stateFramesRemaining = state.specialMove->move_def.frames.startup;
             } else {
+                // Real, documented no-op for kSpecial on a fighter with
+                // no working special (see header "PHASE 3") -- falls
+                // through to the same "no input recognized" path as
+                // kNeutral, exactly as real signature.json data
+                // describes no buffered-input fallback for an
+                // unavailable move.
                 body->velocity_x = 0.0f;
                 state.state = HitmFighterState::kIdle;
             }
@@ -248,12 +261,16 @@ void HitmFighterRuntime::RunOneFrame(FrameState& state, HitmInputCommand input) 
         if (state.stateFramesRemaining == 0) {
             switch (state.state) {
                 case HitmFighterState::kAttackStartup:
+                    // Safe to dereference unchecked: only reachable via
+                    // the kSpecial branch above, which already requires
+                    // state.specialMove.has_value() to enter
+                    // kAttackStartup in the first place.
                     state.state = HitmFighterState::kAttackActive;
-                    state.stateFramesRemaining = state.specialMove.move_def.frames.active;
+                    state.stateFramesRemaining = state.specialMove->move_def.frames.active;
                     break;
                 case HitmFighterState::kAttackActive:
                     state.state = HitmFighterState::kAttackRecovery;
-                    state.stateFramesRemaining = state.specialMove.move_def.frames.recovery;
+                    state.stateFramesRemaining = state.specialMove->move_def.frames.recovery;
                     break;
                 case HitmFighterState::kAttackRecovery:
                 case HitmFighterState::kHitstun:
@@ -382,6 +399,39 @@ void HitmFighterRuntime::SetFacing(int facing) {
         state_->state == HitmFighterState::kAttackRecovery) {
         return;
     }
+    state_->facing = facing;
+}
+
+const HitmMoveInstance* HitmFighterRuntime::SpecialMove() const {
+    return state_->specialMove ? &(*state_->specialMove) : nullptr;
+}
+bool HitmFighterRuntime::HasSpecialMove() const { return state_->specialMove.has_value(); }
+
+void HitmFighterRuntime::ResetForNewRound(float x, float y, int facing) {
+    auto* entity = state_->world.Entities().Find(state_->entityId);
+    auto* spatial = entity->GetComponent<world::SpatialComponent>();
+    auto* body = entity->GetComponent<physics::RigidBody>();
+
+    spatial->x = x;
+    spatial->y = y;
+    body->velocity_x = 0.0f;
+    body->velocity_y = 0.0f;
+
+    // Real: hp back to max_hp, state back to idle, every countdown
+    // cleared -- a direct port of the real engine's own resetRound()
+    // (see this header's top comment "PHASE 3"). Deliberately does NOT
+    // touch meter or the read engine's reads -- both genuinely persist
+    // across real rounds within a real match (confirmed by direct read
+    // of the real resetRound() body: neither field appears in it).
+    state_->hp = state_->maxHp;
+    state_->state = HitmFighterState::kIdle;
+    state_->stateFramesRemaining = 0;
+    // Mutates `state` synchronously, outside RunOneFrame's own
+    // before/after transition tracking -- reset explicitly, same
+    // discipline TakeHit() already uses for the identical reason.
+    state_->stateFrame = 0;
+    state_->hitstopFramesRemaining = 0;
+    state_->grounded = true;
     state_->facing = facing;
 }
 

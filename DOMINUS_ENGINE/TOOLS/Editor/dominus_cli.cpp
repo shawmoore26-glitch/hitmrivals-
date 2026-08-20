@@ -22,6 +22,7 @@
 #include "CHARACTER/HitmBridge/HitmIdentityImporter.h"
 #include "CHARACTER/HitmBridge/HitmFighterRuntime.h"
 #include "CHARACTER/HitmBridge/HitmGameRules.h"
+#include "CHARACTER/HitmBridge/HitmMatch.h"
 #include "CHARACTER/HitmBridge/HitmMoveInstance.h"
 #include "CHARACTER/HitmBridge/HitmPartsRig.h"
 #include "CHARACTER/HitmBridge/HitmRigPlacement.h"
@@ -1019,6 +1020,146 @@ int HitmSpriteDrawDataDemo(const std::string& identityDirStr, const std::string&
 
     std::cout << "[result] real HITM sprite/atlas/animation data produced deterministic draw data for "
                << fighter.Snapshot().frame << " real frames -- NOT rendered, NOT a claim any pixel exists on screen\n";
+    return 0;
+}
+
+// ROADMAP.md Track H, Phase 3 of HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md.
+// The first real, complete, CPU-observable Brooklyn-vs-Rocket match:
+// real starting positions/facing, a real round-intro window, real
+// walking to close the real starting gap, a real attack resolving
+// through real position-based hit detection, real damage/hitstun/
+// hitstop, a real KO, a real round reset (position/hp restored, meter
+// persisted), and a real match win once HitmGameRules' own real
+// rounds.toWin is reached -- printing every stage of
+// ROUND START -> ACTION -> HIT -> DAMAGE -> HITSTUN -> KO -> ROUND WIN
+// -> RESET -> MATCH WIN as it actually happens, not narrated after the
+// fact. See HitmMatch.h's own header comment for every real citation.
+int HitmMatchDemo(const std::string& brooklynIdentityDirStr, const std::string& rocketIdentityDirStr,
+                   const std::string& gameJsonPathStr) {
+    using dominus::character::hitm::HitmCombatGenome;
+    using dominus::character::hitm::HitmFighterState;
+    using dominus::character::hitm::HitmGameRules;
+    using dominus::character::hitm::HitmIdentityImporter;
+    using dominus::character::hitm::HitmInputCommand;
+    using dominus::character::hitm::HitmMatch;
+    using dominus::character::hitm::HitmMatchPhase;
+
+    auto brooklynIdentity = HitmIdentityImporter::Import(brooklynIdentityDirStr);
+    if (!brooklynIdentity.ok) {
+        std::cerr << "[hitm-match] brooklyn identity import FAILED: " << brooklynIdentity.error << "\n";
+        return 1;
+    }
+    auto rocketIdentity = HitmIdentityImporter::Import(rocketIdentityDirStr);
+    if (!rocketIdentity.ok) {
+        std::cerr << "[hitm-match] rocket identity import FAILED: " << rocketIdentity.error << "\n";
+        return 1;
+    }
+    auto brooklynGenome = HitmCombatGenome::FromRecord(*brooklynIdentity.value);
+    if (!brooklynGenome.ok) {
+        std::cerr << "[hitm-match] brooklyn genome mapping FAILED: " << brooklynGenome.error << "\n";
+        return 1;
+    }
+    auto rocketGenome = HitmCombatGenome::FromRecord(*rocketIdentity.value);
+    if (!rocketGenome.ok) {
+        std::cerr << "[hitm-match] rocket genome mapping FAILED: " << rocketGenome.error << "\n";
+        return 1;
+    }
+    auto rules = HitmGameRules::Import(gameJsonPathStr);
+    if (!rules.ok) {
+        std::cerr << "[hitm-match] game rules import FAILED: " << rules.error << "\n";
+        return 1;
+    }
+    auto matchResult = HitmMatch::Create(*brooklynIdentity.value, *brooklynGenome.value, *rocketIdentity.value,
+                                          *rocketGenome.value, *rules.value);
+    if (!matchResult.ok) {
+        std::cerr << "[hitm-match] match creation FAILED: " << matchResult.error << "\n";
+        return 1;
+    }
+    auto& match = *matchResult.value;
+
+    auto printSnap = [&](const char* label) {
+        auto s = match.Snapshot();
+        auto stateName = [](HitmFighterState st) {
+            switch (st) {
+                case HitmFighterState::kIdle: return "idle";
+                case HitmFighterState::kWalking: return "walking";
+                case HitmFighterState::kJumping: return "jumping";
+                case HitmFighterState::kBlockingStance: return "blocking_stance";
+                case HitmFighterState::kAttackStartup: return "attack_startup";
+                case HitmFighterState::kAttackActive: return "attack_active";
+                case HitmFighterState::kAttackRecovery: return "attack_recovery";
+                case HitmFighterState::kHitstun: return "hitstun";
+                case HitmFighterState::kBlockstun: return "blockstun";
+                case HitmFighterState::kKO: return "ko";
+            }
+            return "?";
+        };
+        std::cout << "[hitm-match] round=" << s.round << " (" << label << ") brooklyn[state=" << stateName(s.fighter_a.state)
+                   << " x=" << s.fighter_a.x << " hp=" << s.fighter_a.hp << "/" << s.fighter_a.max_hp
+                   << " meter=" << s.fighter_a.meter << "] rocket[state=" << stateName(s.fighter_b.state)
+                   << " x=" << s.fighter_b.x << " hp=" << s.fighter_b.hp << "/" << s.fighter_b.max_hp << "] roundsWon="
+                   << s.fighter_a_rounds_won << "-" << s.fighter_b_rounds_won << "\n";
+    };
+
+    std::cout << "[hitm-match] fighter_a=brooklyn (real x=300 facing=+1) fighter_b=rocket (real x=760 facing=-1) "
+               << "real rounds.toWin=" << rules.value->Rounds().to_win << "\n";
+
+    int roundsToWin = static_cast<int>(rules.value->Rounds().to_win);
+    int roundsPlayed = 0;
+    const int kMaxRounds = roundsToWin + 1;  // safety bound, never expected to bind
+    while (match.Snapshot().phase != HitmMatchPhase::kMatchOver && roundsPlayed < kMaxRounds) {
+        std::cout << "[hitm-match] ROUND START (round " << match.Snapshot().round << ", real 120-frame intro)\n";
+        while (match.Snapshot().phase == HitmMatchPhase::kRoundIntro) {
+            match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kNeutral);
+        }
+        printSnap("fight begins");
+
+        std::cout << "[hitm-match] ACTION (real walkSpeed closing the real starting gap)\n";
+        while (match.Snapshot().fighter_a.x < 620.0f && match.Snapshot().phase == HitmMatchPhase::kFight) {
+            match.AdvanceFrame(HitmInputCommand::kRight, HitmInputCommand::kNeutral);
+        }
+        printSnap("in real range");
+
+        bool hitLogged = false, hitstunLogged = false, koLogged = false;
+        while (match.Snapshot().phase == HitmMatchPhase::kFight) {
+            int hpBefore = match.Snapshot().fighter_b.hp;
+            match.AdvanceFrame(match.Snapshot().fighter_a.state == HitmFighterState::kIdle ? HitmInputCommand::kSpecial
+                                                                                              : HitmInputCommand::kNeutral,
+                                HitmInputCommand::kNeutral);
+            if (!hitLogged && match.Snapshot().fighter_b.hp < hpBefore) {
+                std::cout << "[hitm-match] HIT (real _melee connected)\n";
+                std::cout << "[hitm-match] DAMAGE (real " << (hpBefore - match.Snapshot().fighter_b.hp) << " applied)\n";
+                hitLogged = true;
+            }
+            if (!hitstunLogged && match.Snapshot().fighter_b.state == HitmFighterState::kHitstun) {
+                std::cout << "[hitm-match] HITSTUN (real hitstop=" << match.Snapshot().fighter_b.hitstop_frames_remaining
+                           << " frames, then real hitstun countdown)\n";
+                hitstunLogged = true;
+            }
+            if (!koLogged && match.Snapshot().phase == HitmMatchPhase::kKO) {
+                std::cout << "[hitm-match] KO (rocket hp=0, real 150-frame settle window begins)\n";
+                koLogged = true;
+            }
+        }
+        printSnap("post-KO");
+
+        while (match.Snapshot().phase == HitmMatchPhase::kKO) {
+            match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kNeutral);
+        }
+        ++roundsPlayed;
+        if (match.Snapshot().phase == HitmMatchPhase::kMatchOver) {
+            std::cout << "[hitm-match] MATCH WIN (real rounds.toWin=" << roundsToWin << " reached, winner="
+                       << (match.Snapshot().match_winner_index == 0 ? "brooklyn" : "rocket") << ")\n";
+        } else {
+            std::cout << "[hitm-match] ROUND WIN + RESET (roundsWon=" << match.Snapshot().fighter_a_rounds_won << "-"
+                       << match.Snapshot().fighter_b_rounds_won << ", both fighters real-reset to the real per-match start, "
+                       << "meter/reads persisted)\n";
+        }
+        printSnap("round resolved");
+    }
+
+    std::cout << "[result] real HITM data drove a complete, deterministic, CPU-observable Brooklyn-vs-Rocket match -- "
+                 "NOT rendered, NOT a claim Ghost Dash or any other unimplemented mechanic works\n";
     return 0;
 }
 
@@ -2600,7 +2741,8 @@ int main(int argc, char** argv) {
                    << "  dominus-cli hitm-parts-rig <character_dir>\n"
                    << "  dominus-cli hitm-game-rules <game.json>\n"
                    << "  dominus-cli hitm-fighter-runtime <identity_dir> <game.json>\n"
-                   << "  dominus-cli hitm-sprite-draw-data <identity_dir> <game.json> <hitm_engine_root>\n";
+                   << "  dominus-cli hitm-sprite-draw-data <identity_dir> <game.json> <hitm_engine_root>\n"
+                   << "  dominus-cli hitm-match <brooklyn_identity_dir> <rocket_identity_dir> <game.json>\n";
         return 2;
     }
     std::string command = argv[1];
@@ -2805,6 +2947,13 @@ int main(int argc, char** argv) {
             return 2;
         }
         return HitmSpriteDrawDataDemo(path, argv[3], argv[4]);
+    }
+    if (command == "hitm-match") {
+        if (argc < 5) {
+            std::cerr << "usage: dominus-cli hitm-match <brooklyn_identity_dir> <rocket_identity_dir> <game.json>\n";
+            return 2;
+        }
+        return HitmMatchDemo(path, argv[3], argv[4]);
     }
 
     std::cerr << "unknown command: " << command << "\n";

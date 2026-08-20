@@ -6318,9 +6318,31 @@ continuation)" section. 15 new tests, **857/857** total, clean under
 Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs), and both
 live CLI demos (including under ASan). Fresh-clone verified before push.
 
-Phase 3 (the actual two-fighter match driver, now able to lean on
-`MeleeHitConnects()` + real HP/KO) and Phase 4 (Rocket's own real "Ghost
-Dash", a structurally different move type requiring its own
-`_zoneHit`+travel port) remain explicitly unimplemented, per the audit's
-own proposed ordering and the user's phase-by-phase authorization
-discipline.
+**Phase 3 closed: the first real, complete, CPU-observable Brooklyn-vs-Rocket
+match.** A new class, `CHARACTER/HitmBridge/HitmMatch`, deliberately
+match-level (Match -> Round -> Timer -> Fighter A / Fighter B -> Combat
+resolution, matching the real architecture the audit itself found) — a
+real phase machine (`kRoundIntro`/`kFight`/`kKO`/`kMatchOver`, a direct
+port of `CombatSystem.js`'s own `state.phase`, including its real,
+hardcoded 120-frame intro and 150-frame KO windows), real position-based
+hit detection resolving exactly once per real attack activation (for
+free, from Module 5A's own already-existing `state_frame`), real round
+resolution (including the real engine's own double-KO tie-break, ported
+via explicit match-level bookkeeping rather than adding a mutator
+`HitmFighterRuntime` doesn't otherwise need), and a real per-round reset
+(`HitmFighterRuntime::ResetForNewRound()`) that correctly, per a direct
+read of the real function, leaves meter and read-engine reads untouched
+— both genuinely persist across rounds. Rocket now exists as a real
+match participant (his second, independent `Create()` blocker resolved
+the same way Phase 1 resolved his first) with an honest, real no-op
+where his own Ghost Dash would be. Full account, including the complete
+live `dominus-cli hitm-match` transcript, in `HITM_MATCH_REPORT.md`. 13
+new tests (9 in the new `test_hitm_match.cpp`, 4 on
+`HitmFighterRuntime`), **869/869** total, clean under Release,
+AddressSanitizer+UndefinedBehaviorSanitizer (2 runs), and all three live
+CLI demos (including under ASan). Fresh-clone verified before push.
+
+Phase 4 (Rocket's own real "Ghost Dash", a structurally different move
+type requiring its own `_zoneHit`+travel port) remains explicitly
+unimplemented, per the audit's own proposed ordering and the user's own
+explicit instruction to stop for another checkpoint before touching it.

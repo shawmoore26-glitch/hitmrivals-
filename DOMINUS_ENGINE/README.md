@@ -1323,7 +1323,18 @@ the real engine's `atk.power` lives only in a *generated* file this
 track has refused to import since its first module) were found and
 deliberately excluded, documented rather than guessed. Rounds/timer
 turned out to be genuinely match-level state in the real engine, not a
-per-fighter concept — nothing was added for it here, that belongs to
-Phase 3's still-unauthorized match driver. See each module's own
-"explicitly not done" note in `ROADMAP.md` for the honest boundary.
-**857/857 tests passing (was 656 before this track).**
+per-fighter concept — a finding Phase 3 then acted on directly.
+**Phase 3 built the actual match**: a new, deliberately match-level
+`HitmMatch` class (Match -> Round -> Timer -> Fighter A / Fighter B ->
+Combat resolution, never folded into `HitmFighterRuntime`) drives two
+real fighters through a real phase machine — round intro, live fight,
+KO settle, round reset, match win — all real, hardcoded engine constants
+and formulas cited to `CombatSystem.js`. `dominus-cli hitm-match` now
+runs a complete, deterministic Brooklyn-vs-Rocket match end to end:
+ROUND START → ACTION → HIT → DAMAGE → HITSTUN → KO → ROUND WIN → RESET →
+MATCH WIN, every number real. Full account in `HITM_MATCH_REPORT.md`.
+Rocket's own real Ghost Dash still doesn't execute — his `kSpecial`
+input is an honest no-op — that's Phase 4, deliberately not started. See
+each module's own "explicitly not done" note in `ROADMAP.md` for the
+honest boundary.
+**869/869 tests passing (was 656 before this track).**

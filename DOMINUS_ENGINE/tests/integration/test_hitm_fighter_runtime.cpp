@@ -154,22 +154,105 @@ DOMINUS_TEST(HitmFighterRuntime_NoReadEngine_CreateSucceedsWithRealNoOpDefaults)
     DOMINUS_EXPECT(runtime.ResolveOutgoingDamage(*specialMove.value) == specialMove.value->move_def.power);
 }
 
-DOMINUS_TEST(HitmFighterRuntime_Break_Rocket_StillBlockedByMoveSchemaNotReadEngine) {
-    // Proves PHASE 1's read-engine relaxation is exactly as scoped as
-    // claimed: Rocket's real Create() call still fails today (his real
-    // "Ghost Dash" special doesn't fit HitmMoveInstance::Extract's
-    // required-field set -- a separate, still-open gap, see
-    // HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md's Step 2) -- but the
-    // failure reason must now name the move schema, never read_engine.
+DOMINUS_TEST(HitmFighterRuntime_Rocket_CreateSucceedsWithNoWorkingSpecial) {
+    // PHASE 3 (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md): the second,
+    // independent Create() blocker this track's own audit found is now
+    // also resolved -- not by making Rocket's real "Ghost Dash" work
+    // (that's the audit's still-unauthorized Phase 4), but by no longer
+    // treating "this fighter's special doesn't extract" as a reason to
+    // refuse constructing the fighter at all. Rocket genuinely has
+    // neither a real read_engine (Phase 1) nor a real special that fits
+    // today's schema -- both are real, verified facts about him, and
+    // Create() now tolerates both.
     auto identity = RealIdentity("rocket");
     auto genome = RealGenome(identity);
     DOMINUS_EXPECT(!genome.HasReadEngine());  // real: Rocket genuinely has none
 
     auto rules = RealRules();
     auto result = HitmFighterRuntime::Create(identity, genome, rules);
-    DOMINUS_EXPECT(!result.ok);
-    DOMINUS_EXPECT(result.error.find("read_engine") == std::string::npos);
-    DOMINUS_EXPECT(result.error.find("blockstun") != std::string::npos);  // real: Rocket's real special has none
+    DOMINUS_EXPECT(result.ok);
+
+    auto& runtime = *result.value;
+    DOMINUS_EXPECT(!runtime.HasSpecialMove());
+    DOMINUS_EXPECT(runtime.SpecialMove() == nullptr);
+
+    // Real, documented no-op: kSpecial does nothing for a fighter with
+    // no working special -- falls through to the same "no input
+    // recognized" path kNeutral already uses.
+    runtime.AdvanceFrame(HitmInputCommand::kSpecial);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kIdle);
+
+    // Everything else about this real fighter still works normally --
+    // walking, real HP, real facing.
+    runtime.AdvanceFrame(HitmInputCommand::kRight);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kWalking);
+    DOMINUS_EXPECT(runtime.Snapshot().hp == runtime.Snapshot().max_hp);
+    DOMINUS_EXPECT(runtime.Snapshot().max_hp > 0);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_Brooklyn_HasSpecialMove_RealDataUnaffected) {
+    // The negative control for the Rocket test above -- a fighter WITH a
+    // real, extractable special reports it correctly, unaffected by the
+    // relaxation that let Rocket construct without one.
+    auto runtime = MakeBrooklynRuntime();
+    DOMINUS_EXPECT(runtime.HasSpecialMove());
+    const HitmMoveInstance* move = runtime.SpecialMove();
+    DOMINUS_EXPECT(move != nullptr);
+    DOMINUS_EXPECT(move->move_def.name == "DRUNKEN LAUNCHER KICK");  // real authored name
+}
+
+// --- ResetForNewRound (PHASE 3, HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md) ---
+
+DOMINUS_TEST(HitmFighterRuntime_ResetForNewRound_RestoresRealHpStateAndPosition) {
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;
+    auto runtime = MakeBrooklynRuntime();
+
+    // Damage the fighter and drive it into a real, non-idle, non-default
+    // state first, so the reset below has something real to prove it
+    // actually restores.
+    runtime.TakeHit(incoming, /*blocking=*/false);
+    runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kHitstun);
+    DOMINUS_EXPECT(runtime.Snapshot().hp < runtime.Snapshot().max_hp);
+    DOMINUS_EXPECT(runtime.Snapshot().state_frames_remaining > 0);
+
+    runtime.ResetForNewRound(300.0f, 538.0f, /*facing=*/1);  // real per-match start (CombatSystem.js)
+
+    auto snap = runtime.Snapshot();
+    DOMINUS_EXPECT(snap.state == HitmFighterState::kIdle);
+    DOMINUS_EXPECT(snap.hp == snap.max_hp);
+    DOMINUS_EXPECT(snap.state_frames_remaining == 0);
+    DOMINUS_EXPECT(snap.state_frame == 0);
+    DOMINUS_EXPECT(snap.hitstop_frames_remaining == 0);
+    DOMINUS_EXPECT(snap.grounded);
+    DOMINUS_EXPECT(snap.x == 300.0f);
+    DOMINUS_EXPECT(snap.y == 538.0f);
+    DOMINUS_EXPECT(snap.velocity_x == 0.0f);
+    DOMINUS_EXPECT(snap.velocity_y == 0.0f);
+    DOMINUS_EXPECT(snap.facing == 1);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_ResetForNewRound_PreservesMeterAndReadsAcrossRounds) {
+    // Real, evidenced fidelity: hitm-engine's own resetRound() does NOT
+    // reset f.meter or f.reads -- both genuinely persist across rounds
+    // within a real match (see this class's header comment "PHASE 3").
+    auto identity = RealIdentity("brooklyn");
+    auto move = *HitmMoveInstance::Extract(identity, "special").value;
+    auto runtime = MakeBrooklynRuntime();
+
+    runtime.GainRead();
+    runtime.GainRead();
+    runtime.ResolveOutgoingHitLanded(move);  // real meter gain
+    double meterBefore = runtime.Snapshot().meter;
+    int readsBefore = runtime.Snapshot().read_engine_reads;
+    DOMINUS_EXPECT(meterBefore > 0.0);
+    DOMINUS_EXPECT(readsBefore == 2);
+
+    runtime.ResetForNewRound(300.0f, 538.0f, 1);
+
+    DOMINUS_EXPECT(runtime.Snapshot().meter == meterBefore);
+    DOMINUS_EXPECT(runtime.Snapshot().read_engine_reads == readsBefore);
 }
 
 DOMINUS_TEST(HitmFighterRuntime_Break_MissingHealthMult_Fails) {

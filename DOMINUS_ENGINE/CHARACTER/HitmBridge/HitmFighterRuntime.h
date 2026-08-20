@@ -219,6 +219,48 @@
 //     mistake as fabricating missing authored data. This is real,
 //     match-level state that belongs in the audit's own Phase 3 (the
 //     two-fighter match driver), not here.
+//
+// PHASE 3 -- THE MATCH DRIVER'S OWN TWO REQUIREMENTS OF THIS CLASS
+// (`CHARACTER/HitmBridge/HitmMatch.h`, the real Match -> Round -> Timer
+// -> Fighter A / Fighter B -> Combat resolution structure the audit's
+// Phase 3 called for). Two small, additive changes, both driven by a
+// real need the match driver has that a single fighter cannot supply
+// itself -- nothing here adds round/timer/match state to this class,
+// which stays exactly the boundary the "Step 7" paragraph above draws:
+//   1. `Create()` no longer hard-fails a fighter whose real "special"
+//      move doesn't extract with today's schema (Rocket's real
+//      "Ghost Dash" -- see `HitmMoveInstance.h`'s own top comment for
+//      why). That was blocking Rocket from existing as a runtime fighter
+//      AT ALL, for a reason unrelated to Ghost Dash itself: a fighter
+//      with no working special can still genuinely walk, block, take
+//      real damage, and get KO'd -- not having a working special is
+//      real, honestly-representable information about this vertical
+//      slice's current coverage, not a reason to refuse to construct the
+//      fighter. `FrameState::specialMove` is now
+//      `std::optional<HitmMoveInstance>`; `kSpecial` input is a real,
+//      documented no-op for a fighter with none (falls through to the
+//      same "no input recognized" path idle/walking already uses); the
+//      new `SpecialMove()`/`HasSpecialMove()` let a caller (the match
+//      driver) query which real move, if any, to hand
+//      `HitmMeleeHitCheck.h`'s `MeleeHitConnects()` once this fighter
+//      reaches `kAttackActive`. This is NOT Ghost Dash -- Rocket's own
+//      real rush-type special still does not execute (his `kSpecial`
+//      input is simply inert); making it real is the audit's own,
+//      still-unauthorized Phase 4.
+//   2. A new `ResetForNewRound(x, y, facing)` -- a direct port of the
+//      real engine's own `resetRound()` (`CombatSystem.js:38-47`):
+//      real `hp` back to `max_hp`, `state` back to `kIdle`, every
+//      countdown (`state_frames_remaining`, `state_frame`,
+//      `hitstop_frames_remaining`) cleared, position/velocity/facing set
+//      to the given real values, `grounded` back to true. Deliberately
+//      does NOT touch `meter` or the read-engine's reads -- the real
+//      engine's own `resetRound()` doesn't reset `f.meter` or `f.reads`
+//      either (confirmed by direct read of its real body: every field it
+//      touches is listed above; meter/reads are absent), meaning both
+//      genuinely persist across rounds within a real match. Getting this
+//      wrong (resetting meter/reads every round) would have been a real,
+//      silent fidelity bug -- caught by reading the real function in
+//      full rather than assuming "reset" means "reset everything."
 #pragma once
 
 #include <cstdint>
@@ -321,9 +363,13 @@ public:
     // data (Modules 1/2/4). Fails (Result::Fail) on:
     //  - record/genome fighter_id mismatch (same fail-closed pattern as
     //    every prior module's directory/id cross-check)
-    //  - HitmMoveInstance::Extract("special") failing (missing/malformed
-    //    real move data)
-    // Never fabricates a fighter from partial data.
+    //  - no real defense_profile.blockPreference in the genome
+    //  - missing/malformed real character_dna.frames.healthMult
+    // Does NOT fail when HitmMoveInstance::Extract("special") fails
+    // (Rocket's real "Ghost Dash", for one) -- see this header's top
+    // comment ("PHASE 3") for why that fighter still gets constructed,
+    // just with no working special (SpecialMove() returns nullptr).
+    // Never fabricates a fighter from partial data otherwise.
     static core::Result<HitmFighterRuntime> Create(const HitmIdentityRecord& record, const HitmCombatGenome& genome,
                                                      const HitmGameRules& rules);
 
@@ -389,6 +435,27 @@ public:
     // sub-state) this method DOES enforce itself.
     void SetFacing(int facing);
 
+    // The real move this fighter would execute on a real kSpecial input,
+    // if any -- nullptr for a fighter whose real special doesn't extract
+    // with today's schema (see this header's top comment, "PHASE 3").
+    // Exposed so a caller (a match driver) can retrieve the real
+    // range/height/damage data `HitmMeleeHitCheck.h`'s
+    // `MeleeHitConnects()` needs once this fighter reaches
+    // `kAttackActive`, without this class knowing anything about hit
+    // detection itself.
+    const HitmMoveInstance* SpecialMove() const;
+    bool HasSpecialMove() const;
+
+    // A direct port of the real engine's own `resetRound()` -- see this
+    // header's top comment ("PHASE 3") for exactly which real fields
+    // this touches (hp, state, every countdown, position/velocity/
+    // facing) and which it deliberately does not (meter, read-engine
+    // reads -- both genuinely persist across rounds in the real engine).
+    // The real caller is a match driver, at the start of a match and
+    // after every round reset; this single-fighter runtime has no
+    // round/match concept of its own to trigger it internally.
+    void ResetForNewRound(float x, float y, int facing);
+
     // Pure calculation, no state mutation: this fighter's own move power
     // multiplied by the real, current read-engine tier's damage_mult --
     // "the read engine multiplies OUTPUT, never the table" (the real
@@ -439,7 +506,11 @@ private:
         // every member function that touches this checks first, rather
         // than assuming it is always present the way earlier modules did.
         std::optional<HitmReadEngineState> readEngine;
-        HitmMoveInstance specialMove;
+        // Optional: real data -- a fighter whose real special doesn't
+        // extract with today's schema (Rocket's "Ghost Dash") still gets
+        // constructed, just with no working special. See header top
+        // comment "PHASE 3".
+        std::optional<HitmMoveInstance> specialMove;
         double defenseBlockPreference;
         // See header top comment "PHASE 1". hp starts at maxHp; nothing
         // in Phase 1 reduces it.
@@ -458,7 +529,7 @@ private:
         HitmInputCommand pendingInput = HitmInputCommand::kNeutral;
 
         FrameState(HitmGameRules rulesIn, std::optional<HitmReadEngineState> readEngineIn,
-                   HitmMoveInstance specialMoveIn, double defenseBlockPreferenceIn, int maxHpIn,
+                   std::optional<HitmMoveInstance> specialMoveIn, double defenseBlockPreferenceIn, int maxHpIn,
                    std::string fighterIdIn)
             : physics(static_cast<float>(rulesIn.Physics().gravity)),
               entityId(fighterIdIn),
