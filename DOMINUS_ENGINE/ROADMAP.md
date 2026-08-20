@@ -6133,3 +6133,39 @@ frame counter for these states — the smallest correct extension, a
 implemented, per the explicit instruction not to reopen Module 5A
 without a genuine defect forcing it); and, unchanged, everything Module
 5A itself does not implement.
+
+### A real asset-coverage audit, and an explicit track split going forward
+
+Rocket's and Static's real character-reference sheets (turnarounds,
+expression grids, hand-pose grids) were audited against the real,
+committed atlas/parts/rig/anim/design data. Full per-fighter coverage
+matrix (source art, authored metadata, runtime representation, animation
+availability, expression variants, hand-pose variants, props, missing
+authoring, runtime-proven status) in `HITM_ASSET_COVERAGE_REPORT.md`.
+Headline finding: all three fighters have exactly one fixed head texture
+and two fixed hand textures each — no expression or hand-pose variant
+exists anywhere in the real authored/generated data (not even
+`design.json`, the authored source). The reference sheets' richer
+expression/pose art is real design intent that was never authored into
+the game-data schema — **explicitly marked DESIGN INTENT, NOT RUNTIME
+AUTHORED**, and not used as a source for any code, asset, or data change
+in this repository.
+
+This produced an explicit, permanent split for everything after this
+point:
+
+- **Track A — DOMINUS Asset Pipeline** (Module 5B, and everything Track H
+  continues with): consume and execute what actually, really exists —
+  `atlas → parts → rig → animation → runtime → draw data` — zero
+  invention, strictly downstream of HITM's own authors/generators.
+- **Track B — HITM Asset Authoring** (explicitly out of scope for
+  DOMINUS/Track H): new content creation in hitm-engine's own pipeline
+  (`reference sheet → author new parts.json entries → re-slice the atlas
+  → update design.json → rig/animation integration → validate`) — only
+  if and when someone wants the reference sheets' expressions/poses
+  actually in-game. DOMINUS never performs this; it only ever consumes
+  the result once Track B produces it.
+
+These are deliberately never mixed. DOMINUS's job is to faithfully
+consume and execute authored HITM content, not to become responsible for
+producing HITM content that doesn't exist yet.
