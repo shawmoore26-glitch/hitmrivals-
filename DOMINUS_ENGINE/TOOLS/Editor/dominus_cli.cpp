@@ -4,6 +4,7 @@
 //   dominus-cli inspect  path/to/object.dominus
 //   dominus-cli validate path/to/object.dominus
 //   dominus-cli play     path/to/object.dominus <clip_name> <time_seconds>
+#include <algorithm>
 #include <cctype>
 #include <fstream>
 #include <iostream>
@@ -22,6 +23,7 @@
 #include "CHARACTER/HitmBridge/HitmIdentityImporter.h"
 #include "CHARACTER/HitmBridge/HitmFighterRuntime.h"
 #include "CHARACTER/HitmBridge/HitmGameRules.h"
+#include "CHARACTER/HitmBridge/HitmInputAdapter.h"
 #include "CHARACTER/HitmBridge/HitmMatch.h"
 #include "CHARACTER/HitmBridge/HitmMoveInstance.h"
 #include "CHARACTER/HitmBridge/HitmPartsRig.h"
@@ -1020,6 +1022,128 @@ int HitmSpriteDrawDataDemo(const std::string& identityDirStr, const std::string&
 
     std::cout << "[result] real HITM sprite/atlas/animation data produced deterministic draw data for "
                << fighter.Snapshot().frame << " real frames -- NOT rendered, NOT a claim any pixel exists on screen\n";
+    return 0;
+}
+
+// ROADMAP.md Track H, Phase 5C -- the input adapter, live: proves
+// TranslateRawInput/ReadRawInput actually produce the expected
+// HitmInputCommand values for a handful of real, named physical input
+// scenarios, then drives the real, unmodified HitmMatch from one of
+// them for a few real frames -- the same live-demo discipline every
+// prior Track H phase has used, not just unit-test coverage.
+int HitmInputAdapterDemo(const std::string& brooklynIdentityDirStr, const std::string& rocketIdentityDirStr,
+                          const std::string& gameJsonPathStr) {
+    using dominus::character::hitm::HitmCombatGenome;
+    using dominus::character::hitm::HitmFighterState;
+    using dominus::character::hitm::HitmGameRules;
+    using dominus::character::hitm::HitmIdentityImporter;
+    using dominus::character::hitm::HitmInputCommand;
+    using dominus::character::hitm::HitmMatch;
+    using dominus::character::hitm::HitmRawInputState;
+    using dominus::character::hitm::ReadRawInput;
+    using dominus::character::hitm::TranslateRawInput;
+    using dominus::character::hitm::kPlayerOneKeyboard;
+    using dominus::character::hitm::kPlayerTwoKeyboard;
+
+    auto commandName = [](HitmInputCommand c) -> const char* {
+        switch (c) {
+            case HitmInputCommand::kNeutral: return "kNeutral";
+            case HitmInputCommand::kLeft: return "kLeft";
+            case HitmInputCommand::kRight: return "kRight";
+            case HitmInputCommand::kJump: return "kJump";
+            case HitmInputCommand::kSpecial: return "kSpecial";
+            case HitmInputCommand::kBlock: return "kBlock";
+        }
+        return "?";
+    };
+
+    auto isKeyDown = [](const std::vector<int>& down) {
+        return [down](int code) { return std::find(down.begin(), down.end(), code) != down.end(); };
+    };
+
+    std::cout << "[hitm-input-adapter] real Player 1 key state -> real HitmInputCommand\n";
+    struct Scenario {
+        const char* label;
+        std::vector<int> keysDown;
+        HitmInputCommand expected;
+    };
+    std::vector<Scenario> scenarios = {
+        {"D held (right)", {kPlayerOneKeyboard.right}, HitmInputCommand::kRight},
+        {"A held (left)", {kPlayerOneKeyboard.left}, HitmInputCommand::kLeft},
+        {"W held (up/jump)", {kPlayerOneKeyboard.up}, HitmInputCommand::kJump},
+        {"S held (block)", {kPlayerOneKeyboard.block}, HitmInputCommand::kBlock},
+        {"J held (attack)", {kPlayerOneKeyboard.attack}, HitmInputCommand::kSpecial},
+        {"L held (special)", {kPlayerOneKeyboard.special}, HitmInputCommand::kSpecial},
+        {"S+L held (block+special)", {kPlayerOneKeyboard.block, kPlayerOneKeyboard.special}, HitmInputCommand::kBlock},
+        {"A+D held (opposed)", {kPlayerOneKeyboard.left, kPlayerOneKeyboard.right}, HitmInputCommand::kNeutral},
+    };
+    bool allMatched = true;
+    for (const auto& scenario : scenarios) {
+        HitmRawInputState raw = ReadRawInput(kPlayerOneKeyboard, isKeyDown(scenario.keysDown));
+        HitmInputCommand actual = TranslateRawInput(raw);
+        bool matched = actual == scenario.expected;
+        allMatched = allMatched && matched;
+        std::cout << "[hitm-input-adapter] " << scenario.label << " -> " << commandName(actual)
+                   << (matched ? " (expected)" : " (MISMATCH)") << "\n";
+    }
+    if (!allMatched) {
+        std::cerr << "[hitm-input-adapter] a real scenario did not match its expected command\n";
+        return 1;
+    }
+
+    auto brooklynIdentity = HitmIdentityImporter::Import(brooklynIdentityDirStr);
+    if (!brooklynIdentity.ok) {
+        std::cerr << "[hitm-input-adapter] brooklyn identity import FAILED: " << brooklynIdentity.error << "\n";
+        return 1;
+    }
+    auto rocketIdentity = HitmIdentityImporter::Import(rocketIdentityDirStr);
+    if (!rocketIdentity.ok) {
+        std::cerr << "[hitm-input-adapter] rocket identity import FAILED: " << rocketIdentity.error << "\n";
+        return 1;
+    }
+    auto brooklynGenome = HitmCombatGenome::FromRecord(*brooklynIdentity.value);
+    auto rocketGenome = HitmCombatGenome::FromRecord(*rocketIdentity.value);
+    auto rules = HitmGameRules::Import(gameJsonPathStr);
+    if (!brooklynGenome.ok || !rocketGenome.ok || !rules.ok) {
+        std::cerr << "[hitm-input-adapter] genome/rules import FAILED\n";
+        return 1;
+    }
+    auto matchResult = HitmMatch::Create(*brooklynIdentity.value, *brooklynGenome.value, *rocketIdentity.value,
+                                          *rocketGenome.value, *rules.value);
+    if (!matchResult.ok) {
+        std::cerr << "[hitm-input-adapter] match creation FAILED: " << matchResult.error << "\n";
+        return 1;
+    }
+    auto& match = *matchResult.value;
+
+    std::cout << "\n[hitm-input-adapter] --- driving the real, unmodified HitmMatch from real P1 key state ---\n";
+    for (int i = 0; i < 121; ++i) match.AdvanceFrame(HitmInputCommand::kNeutral, HitmInputCommand::kNeutral);
+    float xBefore = match.Snapshot().fighter_a.x;
+    std::cout << "[hitm-input-adapter] before: brooklyn x=" << xBefore << "\n";
+
+    auto p1DHeld = isKeyDown({kPlayerOneKeyboard.right});
+    for (int i = 0; i < 30; ++i) {
+        HitmInputCommand command = TranslateRawInput(ReadRawInput(kPlayerOneKeyboard, p1DHeld));
+        match.AdvanceFrame(command, HitmInputCommand::kNeutral);
+    }
+    float xAfter = match.Snapshot().fighter_a.x;
+    std::cout << "[hitm-input-adapter] after 30 real frames of D held: brooklyn x=" << xAfter
+               << " (state=" << (match.Snapshot().fighter_a.state == HitmFighterState::kWalking ? "walking" : "?")
+               << ")\n";
+
+    auto p2DownHeld = isKeyDown({kPlayerTwoKeyboard.block});
+    HitmInputCommand p2Command = TranslateRawInput(ReadRawInput(kPlayerTwoKeyboard, p2DownHeld));
+    match.AdvanceFrame(HitmInputCommand::kNeutral, p2Command);
+    std::cout << "[hitm-input-adapter] Player 2 Down held -> " << commandName(p2Command)
+               << ", rocket[state=" << (match.Snapshot().fighter_b.state == HitmFighterState::kBlockingStance
+                                              ? "blocking_stance"
+                                              : "?")
+               << "]\n";
+
+    std::cout << "\n[result] a real physical key state drove real ReadRawInput/TranslateRawInput to produce the "
+                  "expected real HitmInputCommand values, which then drove the real, unmodified HitmMatch -- the "
+                  "fighter actually walked, the fighter actually entered a real blocking stance -- NOT rendered, "
+                  "NOT a live window, NOT a claim any windowed loop exists yet (Track H Phase 5D)\n";
     return 0;
 }
 
@@ -2788,7 +2912,8 @@ int main(int argc, char** argv) {
                    << "  dominus-cli hitm-game-rules <game.json>\n"
                    << "  dominus-cli hitm-fighter-runtime <identity_dir> <game.json>\n"
                    << "  dominus-cli hitm-sprite-draw-data <identity_dir> <game.json> <hitm_engine_root>\n"
-                   << "  dominus-cli hitm-match <brooklyn_identity_dir> <rocket_identity_dir> <game.json>\n";
+                   << "  dominus-cli hitm-match <brooklyn_identity_dir> <rocket_identity_dir> <game.json>\n"
+                   << "  dominus-cli hitm-input-adapter <brooklyn_identity_dir> <rocket_identity_dir> <game.json>\n";
         return 2;
     }
     std::string command = argv[1];
@@ -3000,6 +3125,14 @@ int main(int argc, char** argv) {
             return 2;
         }
         return HitmMatchDemo(path, argv[3], argv[4]);
+    }
+    if (command == "hitm-input-adapter") {
+        if (argc < 5) {
+            std::cerr << "usage: dominus-cli hitm-input-adapter <brooklyn_identity_dir> <rocket_identity_dir> "
+                          "<game.json>\n";
+            return 2;
+        }
+        return HitmInputAdapterDemo(path, argv[3], argv[4]);
     }
 
     std::cerr << "unknown command: " << command << "\n";

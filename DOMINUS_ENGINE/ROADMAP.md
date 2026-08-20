@@ -6456,3 +6456,46 @@ untouched, per the explicit scope of this checkpoint. 6 new tests,
 **905/905** total, clean under Release, AddressSanitizer+
 UndefinedBehaviorSanitizer (2 runs). Fresh-clone verified before push.
 Full account in `HITM_SPRITE_BRIDGE_REPORT.md`.
+
+**Phase 5C closed: the input adapter.** New, pure
+`CHARACTER::hitm::TranslateRawInput`/`ReadRawInput`
+(`CHARACTER/HitmBridge/HitmInputAdapter.h/.cpp`) close the "Input" gap
+the audit named — six independent, simultaneously-representable real
+buttons (`left`/`right`/`up`/`attack`/`block`/`special`, exactly what
+the phase brief asked for) collapse into the one `HitmInputCommand`
+`HitmMatch::AdvanceFrame()` can take, via a real, disclosed priority
+order (`block` > `special`/`attack` > `up` > `left` XOR `right` >
+`neutral`) grounded directly in hitm-engine's own real
+`CombatSystem.js::_move()`/`_tryStart()` precedence — not invented from
+scratch. `HitmInputCommand` and `HitmMatch::AdvanceFrame()` are both
+completely untouched: per the explicit instruction, the enum's real
+inability to represent simultaneous inputs (already named by the audit)
+is not redesigned here — the real, evidenced walk-while-blocking gap
+this leaves is documented as the next, separately-scoped extension, not
+smuggled into this phase. "Attack" and "special" both currently resolve
+to the same real `kSpecial` command (DOMINUS's only real attack-type
+command today) — two real, distinct, collision-free key bindings kept
+separate specifically so a second real move type, if ever imported,
+needs zero adapter redesign to become genuinely distinct. Real key/
+button tables for Player 1 (WASD + J/L, the SAME keys hitm-engine's own
+`InputSystem.js` already binds to light/special), Player 2 (arrows +
+numpad), and a gamepad binding (D-pad + face buttons) all feed the same
+generic `ReadRawInput` — proving `HitmMatch`'s already-two-fighter
+`AdvanceFrame(inputA, inputB)` seam (Phase 3) needed zero changes to
+support a second real player. `ReadRawInput` takes a generic
+`std::function<bool(int)>`, not a `GLFWwindow*`, so the whole adapter
+stays free of any GLFW/Vulkan dependency and fully testable without a
+real window — the real `glfwGetKey`/`glfwGetGamepadState` glue is
+deliberately left for Phase 5D, where the real window/game loop will
+actually live. 21 new tests — priority-order coverage for every named
+interaction, a cross-player no-shared-key-code regression test, and two
+full-chain tests that drive the real, unmodified `HitmMatch` from a
+simulated key state through to an actual walking fighter and an actual
+blocking stance — plus a new live CLI demo (`hitm-input-adapter`)
+printing every real scenario's actual `HitmInputCommand` against its
+expected value before driving the real match the same way — **926/926**
+total, clean under Release, AddressSanitizer+UndefinedBehaviorSanitizer
+(2 runs), both live CLI demos re-verified clean under ASan. Fresh-clone
+verified before push. Vulkan, `FillTriangle`, FK, the combat runtime,
+Ghost Dash, camera, and the application loop are all untouched. Full
+account in `HITM_INPUT_ADAPTER_REPORT.md`.

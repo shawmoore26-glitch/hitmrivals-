@@ -1382,4 +1382,21 @@ which real atlas pixel specific rendered screen pixels should sample
 from, decodes the real committed `brooklyn_atlas.png` fixture directly,
 and asserts byte-for-byte RGBA equality against what `RasterDevice`
 actually drew. Full account in `HITM_SPRITE_BRIDGE_REPORT.md`.
-**905/905 tests passing (was 656 before this track).**
+**Phase 5C built the input adapter**: `CHARACTER::hitm::TranslateRawInput`
+turns six independent, simultaneously-representable buttons (left,
+right, up, attack, block, special) into the one `HitmInputCommand`
+`HitmMatch::AdvanceFrame()` can take, via a real, disclosed priority
+order grounded in hitm-engine's own `CombatSystem.js` precedence (block
+preempts everything; special/attack preempts movement; jump preempts
+plain movement; opposed left+right cancel to neutral) — the enum itself
+is deliberately untouched, exactly as instructed, with the real
+walk-while-blocking gap the audit already named left as a named, future,
+separately-scoped extension rather than smuggled in here. Real key/
+button tables for Player 1 (WASD+J/L, reusing hitm-engine's own real
+light/special keys), Player 2 (arrows+numpad), and a gamepad binding all
+feed the same generic `ReadRawInput`, proven never to share a key code
+between players. Two full-chain tests drive the real, unmodified
+`HitmMatch` from a simulated key state through to an actual walking
+fighter and an actual blocking stance. Full account in
+`HITM_INPUT_ADAPTER_REPORT.md`.
+**926/926 tests passing (was 656 before this track).**
