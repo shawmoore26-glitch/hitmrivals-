@@ -20,7 +20,11 @@ add_executable(dominus_core_tests
   character/test_hitm_game_rules.cpp
   character/test_hitm_move_instance.cpp
   character/test_hitm_read_engine_state.cpp
+  character/test_hitm_animation_set.cpp
+  character/test_hitm_rig_placement.cpp
+  character/test_hitm_asset_importer.cpp
   integration/test_hitm_fighter_runtime.cpp
+  integration/test_hitm_sprite_draw_data.cpp
   motion/test_motion_graph.cpp
   motion/test_animation_layers.cpp
   motion/test_ik.cpp

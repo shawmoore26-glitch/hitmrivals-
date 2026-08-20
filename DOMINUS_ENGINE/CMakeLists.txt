@@ -110,9 +110,20 @@ target_link_libraries(dominus_physics INTERFACE dominus_world)
 # libraries, exactly mirroring the "extension outside the core modules'
 # mutual boundaries" pattern tests/world/test_hitm_rivals_as_world_entity.cpp
 # already established.
+#
+# Track H Module 5B (real sprite/texture integration) adds its four files
+# to this SAME library rather than a new one: they depend on
+# HitmFighterRuntime's public HitmFighterSnapshot/HitmFighterState (this
+# library) plus HitmPartsRig/HitmIdentityRecord (dominus_character,
+# already reachable transitively through dominus_combat below) -- no new
+# cross-module dependency, no new library needed.
 add_library(dominus_hitm_runtime STATIC
   CHARACTER/HitmBridge/HitmMoveInstance.cpp
   CHARACTER/HitmBridge/HitmFighterRuntime.cpp
+  CHARACTER/HitmBridge/HitmAnimationSet.cpp
+  CHARACTER/HitmBridge/HitmRigPlacement.cpp
+  CHARACTER/HitmBridge/HitmAssetImporter.cpp
+  CHARACTER/HitmBridge/HitmSpriteDrawData.cpp
 )
 target_link_libraries(dominus_hitm_runtime PUBLIC dominus_combat dominus_world dominus_physics)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

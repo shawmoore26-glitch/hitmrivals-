@@ -1181,7 +1181,7 @@ Thirteen real candidates, in rough priority order:
 
 ---
 
-**TRACK H / HITM RIVALS INTEGRATION — Modules 0–4 + 5A complete:**
+**TRACK H / HITM RIVALS INTEGRATION — Modules 0–4 + 5A + 5B (Phase 1) complete:**
 Opened by a full audit of DOMINUS against the real, existing HITM Rivals
 codebase and its real authored fighter data — full findings in
 `HITM_INTEGRATION_AUDIT.md`, full sequenced plan in `ROADMAP.md`'s
@@ -1254,7 +1254,27 @@ identically-shaped `this`-capture, fixed (not just documented) by
 capturing its one piece of state by value instead, with 3 new regression
 tests and its own clean AddressSanitizer+UndefinedBehaviorSanitizer run
 — **Module 5A is now formally closed with no known callback-lifetime
-hazard left open** in anything it touched. Nothing is rendered, no sound
+hazard left open** in anything it touched. Module 5B Phase 1
+(`CHARACTER/HitmBridge/HitmAssetImporter`/`HitmAnimationSet`/
+`HitmRigPlacement`/`HitmSpriteDrawData`) connects Module 5A's proven
+runtime to HITM's real sprite atlases and skeletal animation clips: given
+Brooklyn's real runtime state at any frame, it deterministically selects
+the real hitm-engine animation clip and frame that should be showing and
+computes every one of his 22 real parts' real atlas rect, placement, and
+per-clip pose — all CPU-only, all traced to real HITM data or a verified
+port of hitm-engine's own `AnimationSystem.js`/`SkeletonSystem.js`
+algorithms, live-proven via `dominus-cli hitm-sprite-draw-data` with
+exact real elapsed-frame values reproduced at every attack sub-state
+boundary. Two real findings along the way: hitm-engine's own real bone-
+hierarchy renderer code cannot actually run against the real checked-in
+`parts.json` data (a real upstream gap this module works around using
+hitm-engine's own real, working `rig_render.py` placement convention
+instead), and a real bug in this module's own first validation pass — an
+assumed "strictly increasing keyframes" invariant that immediately
+failed to import Brooklyn's own real `anim.json` — found under
+AddressSanitizer and fixed by removing the incorrect assumption, not
+working around it. Full accounting in `HITM_SPRITE_ASSET_REPORT.md`.
+Still nothing is rendered — no pixel is ever decoded or drawn, no sound
 plays, and no second real player exists yet. See each module's own
 "explicitly not done" note in `ROADMAP.md` for the honest boundary.
-**765/765 tests passing (was 656 before this track).**
+**817/817 tests passing (was 656 before this track).**

@@ -1,0 +1,457 @@
+{
+  "_generated": "rig_compiler.py \u2014 derived from character_dna + design + combat_genome",
+  "_bone_count": 26,
+  "_derivation": [
+    "core: 19 bones (kinetic chain)",
+    "design: 7 granted ['antenna', 'wireFar', 'wireNear', 'coatStripFar', 'coatStripNear', 'handFar', 'handNear']"
+  ],
+  "parts": {
+    "torso": {
+      "rect": [
+        0.3,
+        0.39,
+        0.72,
+        0.76
+      ],
+      "pivot": [
+        0.5,
+        0.08
+      ]
+    },
+    "head": {
+      "rect": [
+        0.26,
+        0.0,
+        0.72,
+        0.43
+      ],
+      "pivot": [
+        0.5,
+        0.95
+      ]
+    },
+    "armFarU": {
+      "rect": [
+        0.12,
+        0.4,
+        0.36,
+        0.56
+      ],
+      "pivot": [
+        0.78,
+        0.2
+      ]
+    },
+    "armFarL": {
+      "rect": [
+        0.0,
+        0.30000000000000004,
+        0.3,
+        0.61
+      ],
+      "pivot": [
+        0.82,
+        0.72
+      ]
+    },
+    "armNearU": {
+      "rect": [
+        0.66,
+        0.43,
+        0.88,
+        0.62
+      ],
+      "pivot": [
+        0.22,
+        0.14
+      ]
+    },
+    "armNearL": {
+      "rect": [
+        0.72,
+        0.53,
+        1.0,
+        0.8400000000000001
+      ],
+      "pivot": [
+        0.2,
+        0.1
+      ]
+    },
+    "legFarU": {
+      "rect": [
+        0.3,
+        0.6649999999999999,
+        0.52,
+        0.9
+      ],
+      "pivot": [
+        0.5,
+        0.08
+      ]
+    },
+    "legFarL": {
+      "rect": [
+        0.26,
+        0.815,
+        0.52,
+        1
+      ],
+      "pivot": [
+        0.5,
+        0.06
+      ]
+    },
+    "footFar": {
+      "rect": [
+        0.22,
+        0.9099999999999999,
+        0.52,
+        1
+      ],
+      "pivot": [
+        0.414,
+        0.114
+      ]
+    },
+    "legNearU": {
+      "rect": [
+        0.5,
+        0.6649999999999999,
+        0.72,
+        0.9
+      ],
+      "pivot": [
+        0.5,
+        0.08
+      ]
+    },
+    "legNearL": {
+      "rect": [
+        0.5,
+        0.815,
+        0.76,
+        1
+      ],
+      "pivot": [
+        0.5,
+        0.06
+      ]
+    },
+    "footNear": {
+      "rect": [
+        0.5,
+        0.9099999999999999,
+        0.8,
+        1
+      ],
+      "pivot": [
+        0.55,
+        0.3
+      ]
+    },
+    "antenna": {
+      "rect": [
+        0.34,
+        0.0,
+        0.64,
+        0.12
+      ],
+      "pivot": [
+        0.67,
+        0.737
+      ]
+    },
+    "wireFar": {
+      "rect": [
+        0.16,
+        0.4,
+        0.34,
+        0.74
+      ],
+      "pivot": [
+        0.62,
+        0.06
+      ]
+    },
+    "wireNear": {
+      "rect": [
+        0.68,
+        0.4,
+        0.86,
+        0.74
+      ],
+      "pivot": [
+        0.38,
+        0.06
+      ]
+    },
+    "coatStripFar": {
+      "rect": [
+        0.2,
+        0.6,
+        0.4,
+        0.92
+      ],
+      "pivot": [
+        0.62,
+        0.04
+      ]
+    },
+    "coatStripNear": {
+      "rect": [
+        0.62,
+        0.6,
+        0.82,
+        0.92
+      ],
+      "pivot": [
+        0.38,
+        0.04
+      ]
+    },
+    "handFar": {
+      "rect": [
+        0.0,
+        0.52,
+        0.18,
+        0.66
+      ],
+      "pivot": [
+        0.7,
+        0.14
+      ]
+    },
+    "handNear": {
+      "rect": [
+        0.82,
+        0.74,
+        1.0,
+        0.88
+      ],
+      "pivot": [
+        0.3,
+        0.14
+      ]
+    }
+  },
+  "bones": [
+    {
+      "name": "root",
+      "parent": null,
+      "_why": "origin"
+    },
+    {
+      "name": "hip",
+      "parent": "root",
+      "_why": "kinetic chain: where ground force enters the body"
+    },
+    {
+      "name": "torso",
+      "parent": "hip",
+      "_why": "kinetic chain: spine compression and counter-rotation",
+      "len": 0.1
+    },
+    {
+      "name": "neck",
+      "parent": "torso",
+      "_why": "lets the head lag behind the chest"
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "_why": "kinetic chain terminus, and the readable one",
+      "len": 0.1
+    },
+    {
+      "name": "shoulderFar",
+      "parent": "torso",
+      "_why": "shoulder compression before the arm moves"
+    },
+    {
+      "name": "shoulderNear",
+      "parent": "torso",
+      "_why": "shoulder compression before the arm moves"
+    },
+    {
+      "name": "armFarU",
+      "parent": "shoulderFar",
+      "_why": "kinetic chain",
+      "len": 0.1
+    },
+    {
+      "name": "armFarL",
+      "parent": "armFarU",
+      "_why": "kinetic chain",
+      "len": 0.1
+    },
+    {
+      "name": "handFar",
+      "parent": "armFarL",
+      "_why": "wrist \u2014 a punch may not originate here, but it must finish here"
+    },
+    {
+      "name": "armNearU",
+      "parent": "shoulderNear",
+      "_why": "kinetic chain",
+      "len": 0.1
+    },
+    {
+      "name": "armNearL",
+      "parent": "armNearU",
+      "_why": "kinetic chain",
+      "len": 0.1
+    },
+    {
+      "name": "handNear",
+      "parent": "armNearL",
+      "_why": "wrist"
+    },
+    {
+      "name": "legFarU",
+      "parent": "hip",
+      "_why": "kinetic chain",
+      "len": 0.1
+    },
+    {
+      "name": "legFarL",
+      "parent": "legFarU",
+      "_why": "kinetic chain",
+      "len": 0.1
+    },
+    {
+      "name": "footFar",
+      "parent": "legFarL",
+      "_why": "foot roll \u2014 power begins at the ground",
+      "len": 0.1
+    },
+    {
+      "name": "legNearU",
+      "parent": "hip",
+      "_why": "kinetic chain",
+      "len": 0.1
+    },
+    {
+      "name": "legNearL",
+      "parent": "legNearU",
+      "_why": "kinetic chain",
+      "len": 0.1
+    },
+    {
+      "name": "footNear",
+      "parent": "legNearL",
+      "_why": "foot roll \u2014 power begins at the ground",
+      "len": 0.1
+    },
+    {
+      "name": "antenna",
+      "parent": "head",
+      "_why": "antenna whip \u2014 the first thing to move and the last to stop",
+      "follow": {
+        "stiffness": 0.184,
+        "damping": 0.652,
+        "lagBeats": 1.8,
+        "maxAngle": 40,
+        "gravity": 0.0
+      }
+    },
+    {
+      "name": "wireFar",
+      "parent": "torso",
+      "_why": "Volume 5: wires whip two beats behind",
+      "follow": {
+        "stiffness": 0.184,
+        "damping": 0.652,
+        "lagBeats": 2.0,
+        "maxAngle": 52,
+        "gravity": 0.4
+      }
+    },
+    {
+      "name": "wireNear",
+      "parent": "torso",
+      "_why": "Volume 5: wires whip two beats behind",
+      "follow": {
+        "stiffness": 0.184,
+        "damping": 0.652,
+        "lagBeats": 1.9,
+        "maxAngle": 52,
+        "gravity": 0.4
+      }
+    },
+    {
+      "name": "coatStripFar",
+      "parent": "hip",
+      "_why": "coat strips \u2014 cut, never flowing (forbidden verbs: Ease/Glide/Flow)",
+      "follow": {
+        "stiffness": 0.184,
+        "damping": 0.652,
+        "lagBeats": 1.4,
+        "maxAngle": 38,
+        "gravity": 0.55
+      }
+    },
+    {
+      "name": "coatStripNear",
+      "parent": "hip",
+      "_why": "coat strips",
+      "follow": {
+        "stiffness": 0.184,
+        "damping": 0.652,
+        "lagBeats": 1.4,
+        "maxAngle": 38,
+        "gravity": 0.55
+      }
+    },
+    {
+      "name": "handFar",
+      "parent": "armFarL",
+      "_why": "glove",
+      "follow": {
+        "stiffness": 0.184,
+        "damping": 0.652,
+        "lagBeats": 0.5,
+        "maxAngle": 24,
+        "gravity": 0.0
+      }
+    },
+    {
+      "name": "handNear",
+      "parent": "armNearL",
+      "_why": "glove",
+      "follow": {
+        "stiffness": 0.184,
+        "damping": 0.652,
+        "lagBeats": 0.5,
+        "maxAngle": 24,
+        "gravity": 0.0
+      }
+    }
+  ],
+  "drawOrder": [
+    "coatStripFar",
+    "wireFar",
+    "armFarU",
+    "armFarL",
+    "handFar",
+    "legFarU",
+    "legFarL",
+    "footFar",
+    "torso",
+    "head",
+    "antenna",
+    "legNearU",
+    "legNearL",
+    "footNear",
+    "armNearU",
+    "armNearL",
+    "handNear",
+    "wireNear",
+    "coatStripNear"
+  ],
+  "handBone": "handNear",
+  "handPoint": [
+    0.5,
+    0.55
+  ]
+}

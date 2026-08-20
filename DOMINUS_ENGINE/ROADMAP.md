@@ -6042,7 +6042,7 @@ registration and `PhysicsSystem::AsWorldSystem()` — are fixed and
 verified under AddressSanitizer + UndefinedBehaviorSanitizer, not merely
 documented. No known lifetime hazard is carried forward into Module 5B.
 
-### Module 5B+ — sprite/texture assets, GPU rendering, audio, input, stage (planned)
+### Module 5B+ — sprite/texture assets, GPU rendering, audio, input, stage
 
 Classified by what this sandbox can actually verify — the real reason
 this track splits here rather than continuing as one undifferentiated
@@ -6051,8 +6051,8 @@ this track splits here rather than continuing as one undifferentiated
 | Track | What it proves | Sandbox verification |
 |---|---|---|
 | 5A | CPU game simulation | **Fully provable — done, above** |
-| 5B | Sprite/texture asset ingestion (beyond Module 3's atlas-space data) | Mostly provable |
-| 5C | GPU renderer integration | Code-level only — no real GPU device in this environment |
+| 5B (Phase 1) | Sprite/texture asset ingestion + animation/frame selection + deterministic draw data (beyond Module 3's atlas-space data) | **Fully provable — done, below** |
+| 5C | GPU renderer integration (consumes 5B's draw data, actually samples/displays pixels) | Code-level only — no real GPU device in this environment |
 | 5D | Audio pipeline | Code-level only — no real audio device in this environment |
 | 5E | Input/device integration | Boundary only |
 | 6 | Actual playable HITM vertical slice | Requires a real runtime/device outside this sandbox |
@@ -6084,3 +6084,52 @@ environment to verify the final display result — never quietly implied
 by a passing test suite. This is the same "tests passing" vs. "HITM
 Rivals actually works" boundary this track has enforced since Module 0,
 now applied at the rendering seam specifically.
+
+### Module 5B Phase 1 — complete
+
+The pipeline this section proposed now runs end to end with real data:
+`REAL HITM ASSETS -> HitmAssetImporter -> DOMINUS asset representation ->
+Brooklyn runtime (Module 5A, untouched) -> ANIMATION/FRAME SELECTION ->
+SPRITE DRAW DATA`. Given Brooklyn's real, already-proven runtime state at
+any frame, the module deterministically computes which real hitm-engine
+animation clip is showing, which real frame of it, and every one of his
+22 real parts' real atlas-pixel source rect, real normalized placement,
+and real per-clip local pose — all CPU-only, all traced to real HITM
+data or a verified, faithful port of hitm-engine's own real
+`AnimationSystem.js`/`SkeletonSystem.js` algorithms. See
+`HITM_SPRITE_ASSET_REPORT.md` for the full accounting, including two
+real architectural findings this module's own audit surfaced: (1)
+hitm-engine's own `SkeletonSystem.js` bone-hierarchy forward-kinematics
+code cannot actually run against the real checked-in `parts.json` data
+(a real, evidenced upstream gap, not a DOMINUS omission — this module
+instead follows hitm-engine's own real, working
+`tools/rig_render.py` placement convention via the real `rig.json`), and
+(2) a real bug in this module's own first validation pass — an assumed
+"strictly increasing keyframe frames" invariant that immediately failed
+to import Brooklyn's own real `anim.json` — found via a clean
+AddressSanitizer+UndefinedBehaviorSanitizer build and fixed by removing
+the incorrect assumption entirely (real "anticipation snap" authoring in
+the real data genuinely is not monotonic), not worked around.
+
+52 new tests (33 deliberate-break), **817/817 total** (was 656 before
+Track H). Full clean rebuild, full suite green, a clean Debug+
+AddressSanitizer+UndefinedBehaviorSanitizer build with the full suite
+green and zero sanitizer findings, live `dominus-cli
+hitm-sprite-draw-data` runs against real Brooklyn data (exact real
+elapsed-frame values reproduced at every attack sub-state boundary) and
+against Rocket (fails at Module 5A's own real move-extraction gap, not
+asset import — proving the asset layer's independence from combat-data
+completeness) and a deliberate-break fixture (fails clean), and a
+fresh-clone verification before push.
+
+**Explicitly NOT done, per this phase's own scope**: full bone-hierarchy
+forward kinematics (blocked on the real upstream data gap above);
+secondary motion (render-layer-only in hitm-engine's own design);
+`land`/`walkBack` clips (Module 5A has no landing-recovery timer or
+facing/opponent concept); per-state elapsed-frame tracking for
+idle/walk/jump (Module 5A's public snapshot only exposes a match-wide
+frame counter for these states — the smallest correct extension, a
+`state_entry_frame` field, is identified but deliberately not
+implemented, per the explicit instruction not to reopen Module 5A
+without a genuine defect forcing it); and, unchanged, everything Module
+5A itself does not implement.

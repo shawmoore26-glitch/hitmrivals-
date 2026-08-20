@@ -1,0 +1,494 @@
+{
+ "atlas": "static_atlas",
+ "sourceSize": [
+  332,
+  480
+ ],
+ "parts": {
+  "torso": {
+   "pivot": [
+    0.5,
+    0.08
+   ],
+   "normW": 0.4440963855421687,
+   "normH": 0.38666666666666666,
+   "frame": [
+    161,
+    0,
+    148,
+    185
+   ]
+  },
+  "head": {
+   "pivot": [
+    0.5,
+    0.95
+   ],
+   "normW": 0.48409638554216866,
+   "normH": 0.44666666666666666,
+   "frame": [
+    0,
+    0,
+    161,
+    214
+   ]
+  },
+  "armFarU": {
+   "pivot": [
+    0.78,
+    0.2
+   ],
+   "normW": 0.2640963855421687,
+   "normH": 0.1766666666666667,
+   "frame": [
+    269,
+    214,
+    88,
+    84
+   ]
+  },
+  "armFarL": {
+   "pivot": [
+    0.82,
+    0.72
+   ],
+   "normW": 0.3240963855421687,
+   "normH": 0.3266666666666666,
+   "frame": [
+    694,
+    0,
+    107,
+    156
+   ]
+  },
+  "armNearU": {
+   "pivot": [
+    0.22,
+    0.14
+   ],
+   "normW": 0.24409638554216864,
+   "normH": 0.20666666666666667,
+   "frame": [
+    0,
+    214,
+    81,
+    99
+   ]
+  },
+  "armNearL": {
+   "pivot": [
+    0.2,
+    0.1
+   ],
+   "normW": 0.3040963855421687,
+   "normH": 0.3266666666666667,
+   "frame": [
+    593,
+    0,
+    101,
+    157
+   ]
+  },
+  "legFarU": {
+   "pivot": [
+    0.5,
+    0.08
+   ],
+   "normW": 0.2440963855421687,
+   "normH": 0.25166666666666676,
+   "frame": [
+    801,
+    0,
+    81,
+    121
+   ]
+  },
+  "legFarL": {
+   "pivot": [
+    0.5,
+    0.06
+   ],
+   "normW": 0.2840963855421687,
+   "normH": 0.20166666666666672,
+   "frame": [
+    81,
+    214,
+    94,
+    97
+   ]
+  },
+  "footFar": {
+   "pivot": [
+    0.414,
+    0.114
+   ],
+   "normW": 0.32409638554216874,
+   "normH": 0.10666666666666674,
+   "frame": [
+    600,
+    214,
+    107,
+    52
+   ]
+  },
+  "legNearU": {
+   "pivot": [
+    0.5,
+    0.08
+   ],
+   "normW": 0.24409638554216864,
+   "normH": 0.25166666666666676,
+   "frame": [
+    882,
+    0,
+    81,
+    121
+   ]
+  },
+  "legNearL": {
+   "pivot": [
+    0.5,
+    0.06
+   ],
+   "normW": 0.2840963855421687,
+   "normH": 0.20166666666666672,
+   "frame": [
+    175,
+    214,
+    94,
+    97
+   ]
+  },
+  "footNear": {
+   "pivot": [
+    0.55,
+    0.3
+   ],
+   "normW": 0.32409638554216874,
+   "normH": 0.10666666666666674,
+   "frame": [
+    707,
+    214,
+    107,
+    52
+   ]
+  },
+  "antenna": {
+   "pivot": [
+    0.67,
+    0.737
+   ],
+   "normW": 0.3240963855421687,
+   "normH": 0.13666666666666666,
+   "frame": [
+    492,
+    214,
+    108,
+    65
+   ]
+  },
+  "wireFar": {
+   "pivot": [
+    0.62,
+    0.06
+   ],
+   "normW": 0.2040963855421687,
+   "normH": 0.35666666666666663,
+   "frame": [
+    309,
+    0,
+    67,
+    171
+   ]
+  },
+  "wireNear": {
+   "pivot": [
+    0.38,
+    0.06
+   ],
+   "normW": 0.2040963855421686,
+   "normH": 0.35666666666666663,
+   "frame": [
+    376,
+    0,
+    68,
+    171
+   ]
+  },
+  "coatStripFar": {
+   "pivot": [
+    0.62,
+    0.04
+   ],
+   "normW": 0.22409638554216868,
+   "normH": 0.3366666666666667,
+   "frame": [
+    444,
+    0,
+    74,
+    161
+   ]
+  },
+  "coatStripNear": {
+   "pivot": [
+    0.38,
+    0.04
+   ],
+   "normW": 0.22409638554216862,
+   "normH": 0.3366666666666667,
+   "frame": [
+    518,
+    0,
+    75,
+    161
+   ]
+  },
+  "handFar": {
+   "pivot": [
+    0.7,
+    0.14
+   ],
+   "normW": 0.20409638554216866,
+   "normH": 0.15666666666666668,
+   "frame": [
+    357,
+    214,
+    67,
+    75
+   ]
+  },
+  "handNear": {
+   "pivot": [
+    0.3,
+    0.14
+   ],
+   "normW": 0.20409638554216872,
+   "normH": 0.15666666666666668,
+   "frame": [
+    424,
+    214,
+    68,
+    75
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "_why": "origin"
+  },
+  {
+   "name": "hip",
+   "parent": "root",
+   "_why": "kinetic chain: where ground force enters the body"
+  },
+  {
+   "name": "torso",
+   "parent": "hip",
+   "_why": "kinetic chain: spine compression and counter-rotation",
+   "len": 0.1
+  },
+  {
+   "name": "neck",
+   "parent": "torso",
+   "_why": "lets the head lag behind the chest"
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "_why": "kinetic chain terminus, and the readable one",
+   "len": 0.1
+  },
+  {
+   "name": "shoulderFar",
+   "parent": "torso",
+   "_why": "shoulder compression before the arm moves"
+  },
+  {
+   "name": "shoulderNear",
+   "parent": "torso",
+   "_why": "shoulder compression before the arm moves"
+  },
+  {
+   "name": "armFarU",
+   "parent": "shoulderFar",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "armFarL",
+   "parent": "armFarU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "handFar",
+   "parent": "armFarL",
+   "_why": "wrist \u2014 a punch may not originate here, but it must finish here"
+  },
+  {
+   "name": "armNearU",
+   "parent": "shoulderNear",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "armNearL",
+   "parent": "armNearU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "handNear",
+   "parent": "armNearL",
+   "_why": "wrist"
+  },
+  {
+   "name": "legFarU",
+   "parent": "hip",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "legFarL",
+   "parent": "legFarU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "footFar",
+   "parent": "legFarL",
+   "_why": "foot roll \u2014 power begins at the ground",
+   "len": 0.1
+  },
+  {
+   "name": "legNearU",
+   "parent": "hip",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "legNearL",
+   "parent": "legNearU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "footNear",
+   "parent": "legNearL",
+   "_why": "foot roll \u2014 power begins at the ground",
+   "len": 0.1
+  },
+  {
+   "name": "antenna",
+   "parent": "head",
+   "_why": "antenna whip \u2014 the first thing to move and the last to stop",
+   "follow": {
+    "stiffness": 0.184,
+    "damping": 0.652,
+    "lagBeats": 1.8,
+    "maxAngle": 40,
+    "gravity": 0.0
+   }
+  },
+  {
+   "name": "wireFar",
+   "parent": "torso",
+   "_why": "Volume 5: wires whip two beats behind",
+   "follow": {
+    "stiffness": 0.184,
+    "damping": 0.652,
+    "lagBeats": 2.0,
+    "maxAngle": 52,
+    "gravity": 0.4
+   }
+  },
+  {
+   "name": "wireNear",
+   "parent": "torso",
+   "_why": "Volume 5: wires whip two beats behind",
+   "follow": {
+    "stiffness": 0.184,
+    "damping": 0.652,
+    "lagBeats": 1.9,
+    "maxAngle": 52,
+    "gravity": 0.4
+   }
+  },
+  {
+   "name": "coatStripFar",
+   "parent": "hip",
+   "_why": "coat strips \u2014 cut, never flowing (forbidden verbs: Ease/Glide/Flow)",
+   "follow": {
+    "stiffness": 0.184,
+    "damping": 0.652,
+    "lagBeats": 1.4,
+    "maxAngle": 38,
+    "gravity": 0.55
+   }
+  },
+  {
+   "name": "coatStripNear",
+   "parent": "hip",
+   "_why": "coat strips",
+   "follow": {
+    "stiffness": 0.184,
+    "damping": 0.652,
+    "lagBeats": 1.4,
+    "maxAngle": 38,
+    "gravity": 0.55
+   }
+  },
+  {
+   "name": "handFar",
+   "parent": "armFarL",
+   "_why": "glove",
+   "follow": {
+    "stiffness": 0.184,
+    "damping": 0.652,
+    "lagBeats": 0.5,
+    "maxAngle": 24,
+    "gravity": 0.0
+   }
+  },
+  {
+   "name": "handNear",
+   "parent": "armNearL",
+   "_why": "glove",
+   "follow": {
+    "stiffness": 0.184,
+    "damping": 0.652,
+    "lagBeats": 0.5,
+    "maxAngle": 24,
+    "gravity": 0.0
+   }
+  }
+ ],
+ "drawOrder": [
+  "coatStripFar",
+  "wireFar",
+  "armFarU",
+  "armFarL",
+  "handFar",
+  "legFarU",
+  "legFarL",
+  "footFar",
+  "torso",
+  "head",
+  "antenna",
+  "legNearU",
+  "legNearL",
+  "footNear",
+  "armNearU",
+  "armNearL",
+  "handNear",
+  "wireNear",
+  "coatStripNear"
+ ],
+ "handBone": "handNear",
+ "handPoint": [
+  0.5,
+  0.55
+ ]
+}

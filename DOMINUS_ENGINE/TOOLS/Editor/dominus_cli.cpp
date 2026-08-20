@@ -16,12 +16,16 @@
 #include "ANIMATION/SkeletonSystem/AnimationClipLoader.h"
 #include "ANIMATION/SkeletonSystem/SkeletonLoader.h"
 #include "CHARACTER/Genome/GenomeDecoder.h"
+#include "CHARACTER/HitmBridge/HitmAnimationSet.h"
+#include "CHARACTER/HitmBridge/HitmAssetImporter.h"
 #include "CHARACTER/HitmBridge/HitmCombatGenome.h"
 #include "CHARACTER/HitmBridge/HitmIdentityImporter.h"
 #include "CHARACTER/HitmBridge/HitmFighterRuntime.h"
 #include "CHARACTER/HitmBridge/HitmGameRules.h"
 #include "CHARACTER/HitmBridge/HitmMoveInstance.h"
 #include "CHARACTER/HitmBridge/HitmPartsRig.h"
+#include "CHARACTER/HitmBridge/HitmRigPlacement.h"
+#include "CHARACTER/HitmBridge/HitmSpriteDrawData.h"
 #include "CHARACTER/Rig/RigBinder.h"
 #include "COMBAT/CombatController.h"
 #include "COMBAT/HitSystem/AssetValidation.h"
@@ -865,6 +869,111 @@ int HitmFighterRuntimeDemo(const std::string& identityDirStr, const std::string&
 
     std::cout << "[result] real HITM data drove a live DOMINUS simulation for " << fighter.Snapshot().frame
                << " frames -- NOT rendered, NOT audible, NOT a claim this is playable yet\n";
+    return 0;
+}
+
+// ROADMAP.md Track H Module 5B. Real HITM sprite/texture integration:
+// builds the same real Brooklyn runtime Module 5A proved, plus a real
+// asset bundle (atlas/parts/anim/rig), and drives him through a scripted
+// sequence printing the ACTUAL deterministic sprite draw data each real
+// runtime state selects -- clip name, sampled frame, and one real part's
+// resolved pose -- CPU-only, no pixel is ever decoded or drawn. See
+// HitmSpriteDrawData.h's top comment for exactly what this proves and
+// what it deliberately does not.
+int HitmSpriteDrawDataDemo(const std::string& identityDirStr, const std::string& gameJsonPathStr,
+                            const std::string& hitmEngineRootStr) {
+    using dominus::character::hitm::BuildSpriteDrawData;
+    using dominus::character::hitm::HitmAssetImporter;
+    using dominus::character::hitm::HitmCombatGenome;
+    using dominus::character::hitm::HitmFighterRuntime;
+    using dominus::character::hitm::HitmFighterState;
+    using dominus::character::hitm::HitmGameRules;
+    using dominus::character::hitm::HitmIdentityImporter;
+    using dominus::character::hitm::HitmInputCommand;
+    using dominus::character::hitm::HitmMoveInstance;
+
+    auto identityResult = HitmIdentityImporter::Import(identityDirStr);
+    if (!identityResult.ok) {
+        std::cerr << "[hitm-sprite-draw-data] identity import FAILED: " << identityResult.error << "\n";
+        return 1;
+    }
+    auto genomeResult = HitmCombatGenome::FromRecord(*identityResult.value);
+    if (!genomeResult.ok) {
+        std::cerr << "[hitm-sprite-draw-data] genome mapping FAILED: " << genomeResult.error << "\n";
+        return 1;
+    }
+    auto rulesResult = HitmGameRules::Import(gameJsonPathStr);
+    if (!rulesResult.ok) {
+        std::cerr << "[hitm-sprite-draw-data] game rules import FAILED: " << rulesResult.error << "\n";
+        return 1;
+    }
+    auto moveResult = HitmMoveInstance::Extract(*identityResult.value, "special");
+    if (!moveResult.ok) {
+        std::cerr << "[hitm-sprite-draw-data] move extraction FAILED: " << moveResult.error << "\n";
+        return 1;
+    }
+    auto runtimeResult = HitmFighterRuntime::Create(*identityResult.value, *genomeResult.value, *rulesResult.value);
+    if (!runtimeResult.ok) {
+        std::cerr << "[hitm-sprite-draw-data] runtime creation FAILED: " << runtimeResult.error << "\n";
+        return 1;
+    }
+    auto bundleResult = HitmAssetImporter::Import(*identityResult.value, hitmEngineRootStr);
+    if (!bundleResult.ok) {
+        std::cerr << "[hitm-sprite-draw-data] asset import FAILED: " << bundleResult.error << "\n";
+        return 1;
+    }
+    auto& fighter = *runtimeResult.value;
+    auto& move = *moveResult.value;
+    auto& bundle = *bundleResult.value;
+
+    std::cout << "[hitm-sprite-draw-data] fighter_id=" << bundle.fighter_id << " atlas=" << bundle.atlas_png_path.string()
+               << " (" << bundle.atlas_pixel_width << "x" << bundle.atlas_pixel_height << " real px) parts="
+               << bundle.parts.Parts().size() << " clips=" << bundle.animations.ClipNames().size() << "\n";
+
+    auto printDraw = [&](const char* label, const HitmMoveInstance* currentMove) {
+        auto result = BuildSpriteDrawData(fighter.Snapshot(), currentMove, bundle);
+        if (!result.ok) {
+            std::cout << "[hitm-sprite-draw-data] (" << label << ") FAILED: " << result.error << "\n";
+            return;
+        }
+        const auto& draw = *result.value;
+        const dominus::character::hitm::HitmPartDraw* torso = nullptr;
+        for (const auto& p : draw.parts) {
+            if (p.part_name == "torso") { torso = &p; break; }
+        }
+        std::cout << "[hitm-sprite-draw-data] frame=" << fighter.Snapshot().frame << " (" << label
+                   << ") clip=\"" << draw.clip_name << "\" raw_frame=" << draw.raw_frame
+                   << " sampled_frame=" << draw.sampled_frame << " parts=" << draw.parts.size();
+        if (torso) {
+            std::cout << " torso[frame=(" << torso->frame_x << "," << torso->frame_y << "," << torso->frame_w << ","
+                       << torso->frame_h << ") pose_rot=" << torso->pose_rotation_deg << "deg]";
+        }
+        std::cout << "\n";
+    };
+
+    printDraw("init", nullptr);
+    for (int i = 0; i < 3; ++i) fighter.AdvanceFrame(HitmInputCommand::kRight);
+    printDraw("walking", nullptr);
+
+    fighter.AdvanceFrame(HitmInputCommand::kJump);
+    printDraw("jumping (rising)", nullptr);
+    while (!fighter.Snapshot().grounded) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
+    printDraw("landed", nullptr);
+
+    fighter.AdvanceFrame(HitmInputCommand::kSpecial);
+    printDraw("attack_startup (real special clip begins)", &move);
+    while (fighter.State() == HitmFighterState::kAttackStartup) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
+    printDraw("attack_active", &move);
+    while (fighter.State() == HitmFighterState::kAttackActive) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
+    printDraw("attack_recovery", &move);
+    while (fighter.State() == HitmFighterState::kAttackRecovery) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
+    printDraw("idle again", nullptr);
+
+    fighter.TakeHit(move, /*blocking=*/false);
+    printDraw("hitstun (real hurt clip)", nullptr);
+
+    std::cout << "[result] real HITM sprite/atlas/animation data produced deterministic draw data for "
+               << fighter.Snapshot().frame << " real frames -- NOT rendered, NOT a claim any pixel exists on screen\n";
     return 0;
 }
 
@@ -2445,7 +2554,8 @@ int main(int argc, char** argv) {
                    << "  dominus-cli hitm-combat-genome <identity_dir>\n"
                    << "  dominus-cli hitm-parts-rig <character_dir>\n"
                    << "  dominus-cli hitm-game-rules <game.json>\n"
-                   << "  dominus-cli hitm-fighter-runtime <identity_dir> <game.json>\n";
+                   << "  dominus-cli hitm-fighter-runtime <identity_dir> <game.json>\n"
+                   << "  dominus-cli hitm-sprite-draw-data <identity_dir> <game.json> <hitm_engine_root>\n";
         return 2;
     }
     std::string command = argv[1];
@@ -2643,6 +2753,13 @@ int main(int argc, char** argv) {
             return 2;
         }
         return HitmFighterRuntimeDemo(path, argv[3]);
+    }
+    if (command == "hitm-sprite-draw-data") {
+        if (argc < 5) {
+            std::cerr << "usage: dominus-cli hitm-sprite-draw-data <identity_dir> <game.json> <hitm_engine_root>\n";
+            return 2;
+        }
+        return HitmSpriteDrawDataDemo(path, argv[3], argv[4]);
     }
 
     std::cerr << "unknown command: " << command << "\n";

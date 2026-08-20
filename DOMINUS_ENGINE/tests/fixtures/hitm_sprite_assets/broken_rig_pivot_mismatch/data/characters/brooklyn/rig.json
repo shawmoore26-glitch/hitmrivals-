@@ -1,0 +1,532 @@
+{
+ "_generated": "rig_compiler.py \u2014 derived from character_dna + design + combat_genome",
+ "_bone_count": 29,
+ "_derivation": [
+  "core: 19 bones (kinetic chain)",
+  "design: 10 granted ['hat', 'jaw', 'dreadFar', 'dreadNear', 'tie', 'chain', 'coatFar', 'coatNear', 'handFar', 'handNear']"
+ ],
+ "parts": {
+  "torso": {
+   "rect": [
+    0.26,
+    0.275,
+    0.74,
+    0.605
+   ],
+   "pivot": [
+    0.1,
+    0.9
+   ]
+  },
+  "head": {
+   "rect": [
+    0.3,
+    0.02,
+    0.72,
+    0.3
+   ],
+   "pivot": [
+    0.5,
+    0.93
+   ]
+  },
+  "armFarU": {
+   "rect": [
+    0.1,
+    0.295,
+    0.35,
+    0.47
+   ],
+   "pivot": [
+    0.654,
+    0.214
+   ]
+  },
+  "armFarL": {
+   "rect": [
+    0.06,
+    0.41,
+    0.3,
+    0.6
+   ],
+   "pivot": [
+    0.72,
+    0.08
+   ]
+  },
+  "armNearU": {
+   "rect": [
+    0.65,
+    0.295,
+    0.9,
+    0.47
+   ],
+   "pivot": [
+    0.38,
+    0.12
+   ]
+  },
+  "armNearL": {
+   "rect": [
+    0.7,
+    0.41,
+    0.94,
+    0.6
+   ],
+   "pivot": [
+    0.28,
+    0.08
+   ]
+  },
+  "legFarU": {
+   "rect": [
+    0.31,
+    0.525,
+    0.52,
+    0.785
+   ],
+   "pivot": [
+    0.5,
+    0.08
+   ]
+  },
+  "legFarL": {
+   "rect": [
+    0.28,
+    0.7,
+    0.54,
+    0.925
+   ],
+   "pivot": [
+    0.5,
+    0.06
+   ]
+  },
+  "footFar": {
+   "rect": [
+    0.19,
+    0.835,
+    0.58,
+    1
+   ],
+   "pivot": [
+    0.42,
+    0.28
+   ]
+  },
+  "legNearU": {
+   "rect": [
+    0.49,
+    0.525,
+    0.7,
+    0.785
+   ],
+   "pivot": [
+    0.5,
+    0.08
+   ]
+  },
+  "legNearL": {
+   "rect": [
+    0.47,
+    0.7,
+    0.73,
+    0.925
+   ],
+   "pivot": [
+    0.5,
+    0.06
+   ]
+  },
+  "footNear": {
+   "rect": [
+    0.43,
+    0.835,
+    0.82,
+    1
+   ],
+   "pivot": [
+    0.58,
+    0.28
+   ]
+  },
+  "hat": {
+   "rect": [
+    0.28,
+    0.0,
+    0.74,
+    0.09
+   ],
+   "pivot": [
+    0.5,
+    0.85
+   ]
+  },
+  "jaw": {
+   "rect": [
+    0.34,
+    0.18,
+    0.68,
+    0.31
+   ],
+   "pivot": [
+    0.5,
+    0.1
+   ]
+  },
+  "dreadFar": {
+   "rect": [
+    0.14,
+    0.06,
+    0.34,
+    0.42
+   ],
+   "pivot": [
+    0.762,
+    0.116
+   ]
+  },
+  "dreadNear": {
+   "rect": [
+    0.66,
+    0.06,
+    0.88,
+    0.42
+   ],
+   "pivot": [
+    0.217,
+    0.121
+   ]
+  },
+  "tie": {
+   "rect": [
+    0.43,
+    0.29,
+    0.58,
+    0.5
+   ],
+   "pivot": [
+    0.5,
+    0.06
+   ]
+  },
+  "chain": {
+   "rect": [
+    0.38,
+    0.33,
+    0.64,
+    0.52
+   ],
+   "pivot": [
+    0.5,
+    0.05
+   ]
+  },
+  "coatFar": {
+   "rect": [
+    0.04,
+    0.44,
+    0.3,
+    0.76
+   ],
+   "pivot": [
+    0.68,
+    0.04
+   ]
+  },
+  "coatNear": {
+   "rect": [
+    0.7,
+    0.44,
+    0.96,
+    0.76
+   ],
+   "pivot": [
+    0.32,
+    0.04
+   ]
+  },
+  "handFar": {
+   "rect": [
+    0.02,
+    0.55,
+    0.24,
+    0.7
+   ],
+   "pivot": [
+    0.62,
+    0.14
+   ]
+  },
+  "handNear": {
+   "rect": [
+    0.76,
+    0.55,
+    0.98,
+    0.7
+   ],
+   "pivot": [
+    0.38,
+    0.14
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "_why": "origin"
+  },
+  {
+   "name": "hip",
+   "parent": "root",
+   "_why": "kinetic chain: where ground force enters the body"
+  },
+  {
+   "name": "torso",
+   "parent": "hip",
+   "_why": "kinetic chain: spine compression and counter-rotation",
+   "len": 0.1
+  },
+  {
+   "name": "neck",
+   "parent": "torso",
+   "_why": "lets the head lag behind the chest"
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "_why": "kinetic chain terminus, and the readable one",
+   "len": 0.1
+  },
+  {
+   "name": "shoulderFar",
+   "parent": "torso",
+   "_why": "shoulder compression before the arm moves"
+  },
+  {
+   "name": "shoulderNear",
+   "parent": "torso",
+   "_why": "shoulder compression before the arm moves"
+  },
+  {
+   "name": "armFarU",
+   "parent": "shoulderFar",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "armFarL",
+   "parent": "armFarU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "handFar",
+   "parent": "armFarL",
+   "_why": "wrist \u2014 a punch may not originate here, but it must finish here"
+  },
+  {
+   "name": "armNearU",
+   "parent": "shoulderNear",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "armNearL",
+   "parent": "armNearU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "handNear",
+   "parent": "armNearL",
+   "_why": "wrist"
+  },
+  {
+   "name": "legFarU",
+   "parent": "hip",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "legFarL",
+   "parent": "legFarU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "footFar",
+   "parent": "legFarL",
+   "_why": "foot roll \u2014 power begins at the ground",
+   "len": 0.1
+  },
+  {
+   "name": "legNearU",
+   "parent": "hip",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "legNearL",
+   "parent": "legNearU",
+   "_why": "kinetic chain",
+   "len": 0.1
+  },
+  {
+   "name": "footNear",
+   "parent": "legNearL",
+   "_why": "foot roll \u2014 power begins at the ground",
+   "len": 0.1
+  },
+  {
+   "name": "hat",
+   "parent": "head",
+   "_why": "hat recoil \u2014 it must lag when the head snaps",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 0.6,
+    "maxAngle": 16,
+    "gravity": 0.0
+   }
+  },
+  {
+   "name": "jaw",
+   "parent": "head",
+   "_why": "the grin is the character; it must be able to open",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 0.4,
+    "maxAngle": 14,
+    "gravity": 0.0
+   }
+  },
+  {
+   "name": "dreadFar",
+   "parent": "head",
+   "_why": "Volume 5: dreads travel a full beat after he stops",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.4,
+    "maxAngle": 46,
+    "gravity": 0.5
+   }
+  },
+  {
+   "name": "dreadNear",
+   "parent": "head",
+   "_why": "Volume 5: dreads travel a full beat after he stops",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.3,
+    "maxAngle": 46,
+    "gravity": 0.5
+   }
+  },
+  {
+   "name": "tie",
+   "parent": "torso",
+   "_why": "tie swing \u2014 reads the chest's counter-rotation",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.1,
+    "maxAngle": 38,
+    "gravity": 0.7
+   }
+  },
+  {
+   "name": "chain",
+   "parent": "torso",
+   "_why": "Volume 5: chain arrives a full beat late",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.6,
+    "maxAngle": 30,
+    "gravity": 0.9
+   }
+  },
+  {
+   "name": "coatFar",
+   "parent": "hip",
+   "_why": "coat lag \u2014 the largest silhouette element he owns",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.5,
+    "maxAngle": 42,
+    "gravity": 0.6
+   }
+  },
+  {
+   "name": "coatNear",
+   "parent": "hip",
+   "_why": "coat lag",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 1.5,
+    "maxAngle": 42,
+    "gravity": 0.6
+   }
+  },
+  {
+   "name": "handFar",
+   "parent": "armFarL",
+   "_why": "glove bounce; a punch finishes here",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 0.5,
+    "maxAngle": 22,
+    "gravity": 0.0
+   }
+  },
+  {
+   "name": "handNear",
+   "parent": "armNearL",
+   "_why": "glove bounce",
+   "follow": {
+    "stiffness": 0.118,
+    "damping": 0.634,
+    "lagBeats": 0.5,
+    "maxAngle": 22,
+    "gravity": 0.0
+   }
+  }
+ ],
+ "drawOrder": [
+  "coatFar",
+  "dreadFar",
+  "armFarU",
+  "armFarL",
+  "handFar",
+  "legFarU",
+  "legFarL",
+  "footFar",
+  "torso",
+  "chain",
+  "tie",
+  "head",
+  "jaw",
+  "hat",
+  "dreadNear",
+  "legNearU",
+  "legNearL",
+  "footNear",
+  "armNearU",
+  "armNearL",
+  "handNear",
+  "coatNear"
+ ],
+ "handBone": "handNear",
+ "handPoint": [
+  0.5,
+  0.55
+ ]
+}
