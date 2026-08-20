@@ -817,6 +817,7 @@ int HitmFighterRuntimeDemo(const std::string& identityDirStr, const std::string&
             case HitmFighterState::kAttackRecovery: return "attack_recovery";
             case HitmFighterState::kHitstun: return "hitstun";
             case HitmFighterState::kBlockstun: return "blockstun";
+            case HitmFighterState::kKO: return "ko";
         }
         return "?";
     };

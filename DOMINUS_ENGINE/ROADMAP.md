@@ -6293,9 +6293,34 @@ under Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs), and
 both live CLI demos (including under ASan). Fresh-clone verified before
 push.
 
-Phases 2 (real `_melee` hit-check, HP/damage/hitstun/hitstop wiring,
-KO/round/timer via already-imported `HitmGameRules`), 3 (the actual
-two-fighter match driver), and 4 (Rocket's own real "Ghost Dash", a
-structurally different move type requiring its own `_zoneHit`+travel
-port) remain explicitly unimplemented, per the audit's own proposed
-ordering and the user's phase-by-phase authorization discipline.
+**Phase 2 closed**: real position-based hit detection
+(`HitmMeleeHitCheck.h`'s `MeleeHitConnects()`, a standalone pure port of
+the real engine's own `_melee()` — confirms, from the real source rather
+than inference, that `COMBAT::CollisionEvaluator` was never the right
+tool). `TakeHit()` now reduces real `hp` (move power, real chip
+multiplier when blocking) and transitions to a new `kKO` state on
+`hp<=0` — a direct port of the real engine's own `_ko()`, including its
+real, faithfully-preserved quirk that blocked chip damage CAN KO. Three
+real pieces of the full damage formula (attacker's read-engine
+multiplier, combo scaling, and — a genuinely new finding this phase
+surfaced — the real engine's `atk.power`, which turns out to live only
+in `character.json`, a file self-labeled `"_generated": "genome_compiler.py"`
+in the real source tree, the same "generated, not authored" category
+this track has refused to import since its first module) were found and
+deliberately excluded, not silently defaulted. Rounds/timer were found
+to be genuinely match-level state in the real engine (never on an
+individual `Fighter`) — adding a per-fighter rounds counter to
+`HitmFighterRuntime` would manufacture an incoherent concept the real
+architecture doesn't have, so nothing was added for it; that state
+belongs in Phase 3's match driver. Full details in
+`HITM_FIGHTER_RUNTIME_REPORT.md`'s "A third scoped reopening (seventh
+continuation)" section. 15 new tests, **857/857** total, clean under
+Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs), and both
+live CLI demos (including under ASan). Fresh-clone verified before push.
+
+Phase 3 (the actual two-fighter match driver, now able to lean on
+`MeleeHitConnects()` + real HP/KO) and Phase 4 (Rocket's own real "Ghost
+Dash", a structurally different move type requiring its own
+`_zoneHit`+travel port) remain explicitly unimplemented, per the audit's
+own proposed ordering and the user's phase-by-phase authorization
+discipline.

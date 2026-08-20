@@ -341,6 +341,26 @@ DOMINUS_TEST(HitmSpriteDrawData_Blockstun_SelectsRealBlockClip) {
     DOMINUS_EXPECT(result.value->clip_name == "block");  // same real clip as kBlockingStance, see header
 }
 
+DOMINUS_TEST(HitmSpriteDrawData_KO_SelectsRealKoClip) {
+    // PHASE 2 (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md): kKO is new
+    // to HitmFighterRuntime's own state machine; this proves the real
+    // 'ko' clip (confirmed present in all three real fighters' own
+    // anim.json) is what this module selects for it.
+    auto runtime = MakeBrooklynRuntime();
+    auto bundle = MakeBrooklynBundle();
+    auto special = RealBrooklynSpecial();
+    DOMINUS_EXPECT(bundle.animations.Clip("ko") != nullptr);  // real authored clip
+
+    // Real: 940 hp, real special damage=62 unblocked -- 16 real hits
+    // cross zero.
+    for (int i = 0; i < 16; ++i) runtime.TakeHit(special, /*blocking=*/false);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kKO);
+
+    auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle);
+    DOMINUS_EXPECT(result.ok);
+    DOMINUS_EXPECT(result.value->clip_name == "ko");
+}
+
 // --- 6. Determinism: same snapshot => byte-identical draw data ------------
 
 DOMINUS_TEST(HitmSpriteDrawData_Determinism_SameSnapshotProducesIdenticalDrawData) {

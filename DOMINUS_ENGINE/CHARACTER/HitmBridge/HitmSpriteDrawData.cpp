@@ -25,6 +25,14 @@ core::Result<std::string> SelectClipName(HitmFighterState state) {
             return Result<std::string>::Ok("block");  // real STATE enum has no separate blockstun clip, see header
         case HitmFighterState::kHitstun:
             return Result<std::string>::Ok("hurt");
+        case HitmFighterState::kKO:
+            // PHASE 2 (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md):
+            // real, evidenced, and universal -- confirmed present in all
+            // three real fighters' own anim.json (Brooklyn/Rocket/Static
+            // all author a real 'ko' clip), matching the real engine's
+            // own AnimationSystem.js `clipFor()` (`case STATE.KO: return
+            // 'ko';`) exactly.
+            return Result<std::string>::Ok("ko");
         case HitmFighterState::kAttackStartup:
         case HitmFighterState::kAttackActive:
         case HitmFighterState::kAttackRecovery:

@@ -154,6 +154,71 @@
 //      kAttackStartup/Active/Recovery. A future two-fighter match driver,
 //      which will know both fighters' real positions, is the real caller
 //      for every other frame.
+//
+// PHASE 2 -- REAL COMBAT (HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md,
+// steps 5/6 of that audit's proposed sequence; step 7, rounds/timer, is
+// addressed separately below, not in this class -- see that paragraph).
+//   - Step 5 (position-based hit detection) is deliberately NOT a member
+//     of this class -- `CHARACTER/HitmBridge/HitmMeleeHitCheck.h`'s
+//     `MeleeHitConnects()` is a pure, standalone port of the real
+//     engine's own `_melee()`, taking two `HitmFighterSnapshot`s (this
+//     class's own already-public, already-comparable state) plus a
+//     `HitmMoveInstance`. Same "lives outside the runtime as a pure
+//     consumer" shape as `HitmSpriteDrawData`'s `BuildSpriteDrawData()`.
+//   - Step 6: `TakeHit()` now reduces real `hp`, using ONLY data this
+//     class already has honest access to: the incoming move's own real,
+//     authored `power`, times the real block-chip multiplier
+//     (`HitmGameRules::Combat().chip_mult`) when blocking. Three real
+//     pieces of the full formula are DELIBERATELY EXCLUDED, not silently
+//     defaulted to 1.0 -- each is a real, found, and documented
+//     architectural gap, not an oversight:
+//       * The attacker's own read-engine damage multiplier (the law
+//         "the read engine multiplies OUTPUT, never the table" already
+//         lives in `ResolveOutgoingDamage()`, an ATTACKER-side method
+//         this defender-focused `TakeHit()` has no access to -- combining
+//         them needs a caller that knows both fighters, i.e. a future
+//         match driver, which already calls `ResolveOutgoingDamage()` on
+//         the attacker and could pass that real number in).
+//       * Real combo damage scaling (`game.json`'s real
+//         `combat.scaleMin`/`scaleStep`, already imported by
+//         `HitmGameRules` -- but applying it needs a real combo-hit
+//         counter this class does not track, the same gap Module 5B's
+//         own report already named).
+//       * The real engine's own `atk.power` stat
+//         (`CombatSystem.js:424`, `final=damage*scale*atk.power*...`).
+//         Found, this phase, to come from `character.json`'s
+//         `stats.power` -- and `character.json` is itself
+//         self-labeled `"_generated": "genome_compiler.py"` in the real
+//         source tree, the SAME "generated, not authored" category this
+//         track has refused to import since its very first module (the
+//         basic-normals gap). `character_dna.json`'s own real, already-
+//         imported `frames.damageMult` is a DIFFERENT, genuinely
+//         authored per-fighter multiplier in the same spirit -- but it
+//         is not the same value the real engine actually multiplies by
+//         (Brooklyn: `damageMult=1.03` vs. `character.json`'s compiled
+//         `power=1.01`), so substituting one for the other would be
+//         real data used dishonestly, not the real formula. Left out
+//         entirely rather than guessed.
+//     Real quirk faithfully preserved: the real engine applies chip
+//     damage to `hp` and THEN unconditionally checks `hp<=0` for KO --
+//     no special-case preventing a blocked hit from KO'ing
+//     (`CombatSystem.js:436,455`). This class does the same: a
+//     `blocking=true` `TakeHit()` call CAN result in `kKO` if chip
+//     damage is the killing blow. Not a bug -- the real engine's own
+//     behavior, ported exactly, not softened.
+//   - Step 7 (rounds won / match timer) is deliberately NOT added to
+//     this class at all, even though `HitmGameRules::Rounds()` already
+//     has the real `to_win`/`timer_seconds` data imported and ready.
+//     In the real engine these live on the SHARED match state
+//     (`CombatSystem.js`'s own `state.round`/`state.timer`/
+//     `state.phase`), never on an individual `Fighter` -- a single
+//     fighter genuinely has no "rounds it has won" without a second
+//     fighter's outcome to compare against. Inventing a per-fighter
+//     rounds counter here would manufacture an incoherent concept the
+//     real architecture itself does not have, the same category of
+//     mistake as fabricating missing authored data. This is real,
+//     match-level state that belongs in the audit's own Phase 3 (the
+//     two-fighter match driver), not here.
 #pragma once
 
 #include <cstdint>
@@ -183,6 +248,20 @@ enum class HitmFighterState {
     kAttackRecovery,
     kHitstun,
     kBlockstun,
+    // Real hp<=0 (PHASE 2 -- see this header's top comment). A direct
+    // port of the real engine's own `_ko()` (CombatSystem.js:458): once
+    // entered, terminal -- input is dropped (same "locked" treatment as
+    // kAttackStartup/Active/Recovery/kHitstun/kBlockstun), and TakeHit()
+    // real no-ops for a fighter already here (a KO'd fighter cannot be
+    // hit again). Deliberately NOT implemented here: the real
+    // `vy=-9.5, vx=6.5*winner.facing` knockback the real engine applies
+    // on KO -- it needs the ATTACKER's own facing, which this
+    // defender-focused TakeHit() does not receive (the same "needs an
+    // opponent this single-fighter runtime doesn't model" boundary
+    // documented throughout this class) -- deferred to whatever
+    // eventually calls TakeHit with real two-fighter knowledge, not
+    // guessed at here.
+    kKO,
 };
 
 // Real, evidenced input vocabulary -- see HitmMoveInstance.h's top comment
@@ -269,10 +348,16 @@ public:
     void AdvanceFrame(HitmInputCommand input);
 
     // Resolves `incoming` landing on this fighter as the DEFENDER. Real
-    // damage/hitstun/blockstun/meter numbers, COMBAT::ReactionSystem
+    // damage/hitstun/blockstun/meter/hp numbers, COMBAT::ReactionSystem
     // decides the reaction type from this fighter's own real
     // defense_profile.blockPreference as defense_bias. See this header's
-    // top comment for why this does not use COMBAT::CollisionEvaluator.
+    // top comment for why this does not use COMBAT::CollisionEvaluator,
+    // and "PHASE 2" for exactly what real damage this applies to hp (and
+    // what it deliberately still does not: the attacker's own read-engine
+    // multiplier, combo scaling, and the real per-fighter `power` stat --
+    // see that comment). Real no-op if this fighter is already kKO (a
+    // KO'd fighter cannot be hit again, matching the real engine's own
+    // guard).
     void TakeHit(const HitmMoveInstance& incoming, bool blocking);
 
     // Passthrough to this fighter's own HitmReadEngineState -- the real

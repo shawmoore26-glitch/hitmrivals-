@@ -205,12 +205,20 @@ void HitmFighterRuntime::RunOneFrame(FrameState& state, HitmInputCommand input) 
         case HitmFighterState::kAttackRecovery:
         case HitmFighterState::kHitstun:
         case HitmFighterState::kBlockstun:
+        case HitmFighterState::kKO:
             // Locked: cannot walk, jump, or re-attack while committed to
-            // an action or stunned. Input is dropped, not buffered --
-            // real signature.json data describes no input-buffer system
-            // (game.json's own combat.inputBufferFrames exists but this
-            // vertical slice does not implement input buffering; a real,
-            // documented gap, not a silent omission).
+            // an action, stunned, or KO'd. Input is dropped, not
+            // buffered -- real signature.json data describes no
+            // input-buffer system (game.json's own
+            // combat.inputBufferFrames exists but this vertical slice
+            // does not implement input buffering; a real, documented
+            // gap, not a silent omission). A KO'd fighter still falls
+            // via the real, unmodified gravity integration below (step
+            // 2) and settles on the real ground exactly like any other
+            // airborne fighter -- real behavior, not fabricated; only
+            // the real engine's own extra `vy=-9.5` knockback pop is
+            // deliberately not applied (see this class's header comment
+            // "PHASE 2" / the kKO enumerator's own comment for why).
             body->velocity_x = 0.0f;
             break;
     }
@@ -278,6 +286,10 @@ void HitmFighterRuntime::RunOneFrame(FrameState& state, HitmInputCommand input) 
 }
 
 void HitmFighterRuntime::TakeHit(const HitmMoveInstance& incoming, bool blocking) {
+    // Real no-op: a KO'd fighter cannot be hit again
+    // (CombatSystem.js:385, `if(d.state===STATE.KO ...) return false;`).
+    if (state_->state == HitmFighterState::kKO) return;
+
     combat::ReactionInput input;
     input.hit_power = static_cast<float>(incoming.move_def.power);
     input.defender_blocking = blocking;
@@ -305,6 +317,27 @@ void HitmFighterRuntime::TakeHit(const HitmMoveInstance& incoming, bool blocking
         state_->state = HitmFighterState::kHitstun;
         state_->stateFramesRemaining = incoming.hitstun_frames;
     }
+
+    // Real damage -> real hp. See this header's top comment ("PHASE 2")
+    // for exactly which real pieces of the full formula this includes
+    // (the move's own real power, real block-chip multiplier) and which
+    // are deliberately excluded (attacker's read-engine multiplier, real
+    // combo scaling, the real `atk.power` stat -- each a found,
+    // documented gap, not a silent 1.0x). A direct port of
+    // `CombatSystem.js:424,436`: `final=Math.round(damage*(blocking?
+    // chipMult:1))`, `hp=Math.max(0,hp-final)`.
+    double damage = incoming.move_def.power * (blocking ? state_->rules.Combat().chip_mult : 1.0);
+    int finalDamage = static_cast<int>(std::lround(damage));
+    state_->hp = state_->hp > finalDamage ? state_->hp - finalDamage : 0;
+
+    // Real, unconditional -- CombatSystem.js:455 checks `hp<=0` right
+    // after the hp reduction with no exemption for a blocked hit (see
+    // this header's top comment for why that's the real engine's own
+    // behavior, ported exactly).
+    if (state_->hp <= 0) {
+        state_->state = HitmFighterState::kKO;
+    }
+
     // TakeHit mutates `state` synchronously, outside RunOneFrame's own
     // before/after transition tracking -- reset unconditionally (not
     // "only if the enum value actually changed"), because a fresh hit is

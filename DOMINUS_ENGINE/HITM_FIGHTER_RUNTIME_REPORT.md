@@ -502,8 +502,9 @@ module was scoped against:
 module, 656 before Track H); 837/837 as of the fifth continuation's
 `state_frame` closure (see that section, and `HITM_SPRITE_ASSET_REPORT.md`,
 for everything added by Module 5B and the Track A gap closures in
-between); **842/842** as of the sixth continuation's Phase 1 runtime
-foundation closure above. 43 new tests at this module's own closure: 5 in
+between); 842/842 as of the sixth continuation's Phase 1 runtime
+foundation closure; **857/857** as of the seventh continuation's Phase 2
+real-combat closure above. 43 new tests at this module's own closure: 5 in
 `test_hitm_move_instance.cpp`, 7 in `test_hitm_read_engine_state.cpp`, 28
 in `test_hitm_fighter_runtime.cpp` (17 covering the vertical slice's
 gameplay behavior, 11 `LifetimeSafety_*` tests added across two
@@ -512,12 +513,15 @@ continuations covering every relocation path requested), and 3 in
 fourth continuation to close the dormant lifetime hazard); plus 6 more in
 `test_hitm_fighter_runtime.cpp` in the fifth continuation (`state_frame`,
 see above); plus 5 net new in the sixth continuation (Phase 1 — one
-existing test rewritten in place, five added, see above) — 39 in that
-file total. Full clean rebuilds + repeat runs across all six
-continuations (Release: 15+ repeats; ASan+UBSan: 4 repeats of the full
-suite plus the live CLI demo for the first four continuations, run once
-more for the fifth and again for the sixth), all green — no flakes
-observed anywhere. (The one segfault encountered in the first lifetime
+existing test rewritten in place, five added, see above); plus 6 more in
+`test_hitm_fighter_runtime.cpp`, 8 in the new `test_hitm_melee_hit_check.cpp`,
+and 1 in `test_hitm_sprite_draw_data.cpp` in the seventh continuation
+(Phase 2, see above) — 45 in `test_hitm_fighter_runtime.cpp` total. Full
+clean rebuilds + repeat runs across all seven continuations (Release: 15+
+repeats; ASan+UBSan: 4 repeats of the full suite plus the live CLI demo
+for the first four continuations, run once more for the fifth, sixth,
+and seventh), all green — no flakes observed anywhere. (The one segfault
+encountered in the first lifetime
 continuation was deterministic — it reproduced on every run before the
 fix, and has not recurred once, under any build configuration, since —
 so it is reported as a found-and-fixed bug, not logged as flakiness. The
@@ -741,3 +745,118 @@ Phase 3 (the actual two-fighter match driver) remain explicitly
 unimplemented, per the user's own "stop and verify" instruction — see
 `HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md` for the full proposed
 sequence this checkpoint is one step into.
+
+## A third scoped reopening (seventh continuation): Phase 2 real combat
+
+Phase 1's checkpoint verified, the user authorized Phase 2 ("real
+combat") in full: steps 5-7 of `HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md`'s
+proposed sequence — a real position-based hit-check, real HP/damage/
+hitstun/hitstop wiring, and KO/rounds/timer via the already-imported
+`HitmGameRules`. Two real findings surfaced along the way that changed
+how "rounds/timer" and part of the damage formula were actually
+implemented — both documented here rather than worked around silently.
+
+**Step 5 — real hit detection.** `CHARACTER/HitmBridge/HitmMeleeHitCheck.{h,cpp}`
+is a new, standalone, pure function (`MeleeHitConnects`), NOT a method on
+`HitmFighterRuntime` — mirrors `HitmSpriteDrawData`'s own "lives outside
+the runtime as a pure consumer" shape. A direct, line-by-line port of the
+real engine's own `CombatSystem.js:370-374` (`_melee`): flat x/y
+proximity using the attacker's real `range`/`height` and two real,
+hardcoded, uniform engine constants (`Fighter.js:28`: `w=52`, and the
+real `def.height || 105` fallback, including its JS falsy-zero quirk,
+faithfully preserved the same way this track's secondary-motion work
+already preserved an identical quirk). No `Skeleton`, no `Pose`, no bind
+pose — confirms, from the real engine's own source rather than inference,
+that `COMBAT::CollisionEvaluator` was never the right tool (see the
+audit's own "what's missing and why" finding). 8 new tests: boundary-
+exact arithmetic on every edge (just-inside/just-outside the real reach
+window, both facings, the vertical gate, the real zero-height fallback),
+plus two realistic-position scenarios using the real stage bounds
+(`wallL`/`wallR`).
+
+**Step 6 — real HP/damage/hitstun/hitstop.** `TakeHit()` now reduces real
+`hp`: the incoming move's own real `power`, times the real block-chip
+multiplier (`HitmGameRules::Combat().chip_mult`) when blocking — a direct
+port of `CombatSystem.js:424,436`. `hp<=0` transitions the fighter to a
+new `kKO` state (a direct port of the real engine's own `_ko()`,
+`CombatSystem.js:458`): terminal, input-locked (added to the same
+"locked" `RunOneFrame` case as the attack/stun states), and `TakeHit()`
+now real-no-ops on an already-KO'd fighter (`CombatSystem.js:385`'s own
+guard). A real, faithfully-preserved quirk, not softened: the real
+engine checks `hp<=0` unconditionally right after the reduction, with no
+exemption for a blocked hit — so a `blocking=true` `TakeHit()` call CAN
+still KO via chip damage, proven by its own dedicated test.
+
+**Three real pieces of the full real damage formula were found and
+deliberately excluded, not silently defaulted to 1.0**, each documented
+in `HitmFighterRuntime.h`'s own "PHASE 2" comment:
+- The attacker's own read-engine multiplier — `ResolveOutgoingDamage()`
+  already owns that law, and is an ATTACKER-side method this
+  DEFENDER-focused `TakeHit()` has no access to; combining them needs a
+  caller (a future match driver) that knows both fighters.
+- Real combo damage scaling (`game.json`'s already-imported
+  `combat.scaleMin`/`scaleStep`) — applying it needs a combo-hit counter
+  this class does not track, the same gap Module 5B's own report already
+  named.
+- **A genuinely new finding this phase surfaced**: the real engine's
+  `atk.power` multiplier (`CombatSystem.js:424`) comes from
+  `character.json`'s `stats.power` — and `character.json` is itself
+  self-labeled `"_generated": "genome_compiler.py"` in the real source
+  tree, the SAME "generated, not authored" category this track has
+  refused to import since its very first module (the basic-normals gap).
+  `character_dna.json`'s own already-imported `frames.damageMult` is a
+  different, genuinely authored per-fighter multiplier in the same
+  spirit, but not the same value the real engine actually multiplies by
+  (Brooklyn: `damageMult=1.03` vs. `character.json`'s compiled
+  `power=1.01`) — substituting one for the other would be real data used
+  dishonestly, not the real formula, so it was left out entirely.
+
+A small, necessary side effect: adding `kKO` to `HitmFighterState` (a
+type shared with Module 5B) required two of `HitmSpriteDrawData.cpp`'s
+own exhaustive `switch` statements to handle it or fail to compile.
+Resolved honestly, not by adding a placeholder case: a real `'ko'` clip
+was confirmed present in all three real fighters' own `anim.json`
+(matching the real engine's own `AnimationSystem.js` `clipFor()`
+exactly), so `SelectClipName(kKO)` now returns it for real, with its own
+test. This is the one place this phase touched Module 5B, and only to
+keep it correct against the new enum value — not a reopening of its own
+scope.
+
+**Step 7 — rounds/timer: a real architectural finding, not implemented
+on this class.** `HitmGameRules::Rounds()` already has the real
+`to_win`/`timer_seconds` data imported and ready — but in the real
+engine, rounds-won and match-timer live on the SHARED match state
+(`CombatSystem.js`'s own `state.round`/`state.timer`/`state.phase`),
+never on an individual `Fighter`. A single fighter genuinely has no
+"rounds it has won" without a second fighter's outcome to compare
+against — adding a per-fighter rounds counter here would manufacture an
+incoherent concept the real architecture itself does not have, the same
+category of mistake as fabricating missing authored data. This is real,
+match-level state that belongs in the audit's own Phase 3 (the
+two-fighter match driver, still unauthorized), not `HitmFighterRuntime`.
+Nothing was added to this class for it; `HitmFighterRuntime.h`'s own
+"PHASE 2" comment documents this explicitly so it reads as a deliberate
+scoping decision, not a missed item.
+
+**Tests**: 15 new — 8 in the new `test_hitm_melee_hit_check.cpp`, 6 in
+`test_hitm_fighter_runtime.cpp` (real damage, real chip damage, repeated-
+hits-to-KO, chip-damage-can-KO, no-op-after-KO, input-locked-during-KO),
+1 in `test_hitm_sprite_draw_data.cpp` (the real `'ko'` clip selection).
+
+**Verification**: full suite **857/857** (was 842/842); clean Release
+rebuild (`rm -rf build`), zero errors, zero warnings (including the two
+`HitmSpriteDrawData.cpp` switch statements the new `kKO` enumerator
+required — both now exhaustive, no `-Wswitch` diagnostics); clean
+Debug+AddressSanitizer+UndefinedBehaviorSanitizer build, 2 full-suite
+runs, zero sanitizer findings; both live `dominus-cli` demos run under
+ASan too — `hitm-fighter-runtime` now shows real `hp=878/940` after
+Brooklyn's real special (940-62) with everything else byte-identical;
+`hitm-sprite-draw-data`'s entire output is unchanged. Fresh-clone
+verification performed before push.
+
+This is a third, separate, additive exception to Module 5A's formal
+closure. Phase 3 (the actual two-fighter match driver) remains
+explicitly unimplemented, per this session's phase-by-phase
+authorization discipline — see
+`HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md` for the full proposed
+sequence.

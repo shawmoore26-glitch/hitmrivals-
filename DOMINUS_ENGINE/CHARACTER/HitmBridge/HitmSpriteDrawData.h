@@ -65,6 +65,14 @@
 //     kBlockingStance and kBlockstun, with the stun-elapsed frame formula
 //     applied only to kBlockstun (kBlockingStance, held indefinitely,
 //     uses the same convention as idle/walk above).
+//   - `kKO` (added by Track H's Phase 2 runtime-combat work, see
+//     HitmFighterRuntime.h) selects the real 'ko' clip -- confirmed
+//     present in all three real fighters' own anim.json, matching the
+//     real engine's own `AnimationSystem.js` `clipFor()` exactly.
+//     `ComputeRawFrame`'s idle/walk/jump default branch (below) applies
+//     to it too, i.e. it reads `state_frame` (frames since KO began) --
+//     a reasonable, real-derived value, though not an exact port of the
+//     real engine's own separate `koStart`/30-frame-cap convention.
 //
 // SECONDARY MOTION (Track A gap #1, closed): hitm-engine's real
 // `SkeletonSystem._secondary()` drags every bone flagged `follow` in

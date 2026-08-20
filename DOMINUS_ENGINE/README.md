@@ -1309,13 +1309,21 @@ Track A gap — full bone-hierarchy forward kinematics — stays blocked on
 missing upstream `parts.json` bind-pose data, not attempted without it.
 A dependency-map audit (`HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md`,
 zero implementation) then mapped the smallest real path to an actual
-Brooklyn-vs-Rocket CPU match; its explicitly-authorized Phase 1 is done —
-`HitmFighterRuntime`'s read engine is now optional (Rocket/Static
-genuinely have none; this alone does not unblock their own `Create()`,
-which still fails, now provably only on their real move-schema
-mismatch), real per-fighter HP (`round(1000*healthMult)`) and real
-facing (an explicit `SetFacing()` seam) were added — nothing wired into
-damage/hit-detection/a match yet, that is Phases 2–3, deliberately not
-started. See each module's own "explicitly not done" note in
-`ROADMAP.md` for the honest boundary.
-**842/842 tests passing (was 656 before this track).**
+Brooklyn-vs-Rocket CPU match. Phase 1 ("runtime foundation") made the
+read engine optional (Rocket/Static genuinely have none; this alone does
+not unblock their own `Create()`, which still fails, now provably only
+on their real move-schema mismatch) and added real per-fighter HP and
+facing. Phase 2 ("real combat") then added real position-based hit
+detection (a direct port of the real engine's own `_melee()` — proving,
+from the real source, that `COMBAT::CollisionEvaluator` was never the
+right tool), wired real damage/chip-damage into `hp`, and added a real
+`kKO` state on `hp<=0`. Three real pieces of the full damage formula
+(the read-engine multiplier, combo scaling, and a genuinely new find —
+the real engine's `atk.power` lives only in a *generated* file this
+track has refused to import since its first module) were found and
+deliberately excluded, documented rather than guessed. Rounds/timer
+turned out to be genuinely match-level state in the real engine, not a
+per-fighter concept — nothing was added for it here, that belongs to
+Phase 3's still-unauthorized match driver. See each module's own
+"explicitly not done" note in `ROADMAP.md` for the honest boundary.
+**857/857 tests passing (was 656 before this track).**

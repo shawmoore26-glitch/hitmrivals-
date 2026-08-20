@@ -13,6 +13,7 @@
 #include "CHARACTER/HitmBridge/HitmMoveInstance.h"
 #include "tests/TestFramework.h"
 
+#include <cmath>
 #include <filesystem>
 #include <utility>
 #include <vector>
@@ -419,6 +420,108 @@ DOMINUS_TEST(HitmFighterRuntime_MeterClampedAtRealMax) {
     auto runtime = MakeBrooklynRuntime();
     for (int i = 0; i < 20; ++i) runtime.ResolveOutgoingHitLanded(move);
     DOMINUS_EXPECT(runtime.Snapshot().meter == rules.Meter().max);  // real: 100, clamped not overflowed
+}
+
+// --- 5b. Real HP/damage/KO (PHASE 2, HITM_BROOKLYN_VS_ROCKET_PLAYABILITY_AUDIT.md) ---
+
+DOMINUS_TEST(HitmFighterRuntime_TakeHit_ReducesRealHpByRealDamage) {
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;  // real power=62
+    auto runtime = MakeBrooklynRuntime();
+    int hpBefore = runtime.Snapshot().hp;
+    DOMINUS_EXPECT(hpBefore == 940);  // real: round(1000*0.94)
+
+    runtime.TakeHit(incoming, /*blocking=*/false);
+    // Same floating-point operation sequence as production
+    // (HitmFighterRuntime.cpp's TakeHit): power * 1.0, rounded.
+    int expectedDamage = static_cast<int>(std::lround(incoming.move_def.power));
+    DOMINUS_EXPECT(runtime.Snapshot().hp == hpBefore - expectedDamage);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kHitstun);  // not yet KO'd
+}
+
+DOMINUS_TEST(HitmFighterRuntime_TakeHit_Blocking_ReducesHpByRealChipDamage) {
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;
+    auto rules = RealRules();
+    auto runtime = MakeBrooklynRuntime();
+    int hpBefore = runtime.Snapshot().hp;
+
+    runtime.TakeHit(incoming, /*blocking=*/true);
+    // Same floating-point operation sequence as production: power *
+    // real chip_mult, rounded -- not a hand-rounded literal.
+    int expectedDamage = static_cast<int>(std::lround(incoming.move_def.power * rules.Combat().chip_mult));
+    DOMINUS_EXPECT(runtime.Snapshot().hp == hpBefore - expectedDamage);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kBlockstun);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_TakeHit_RepeatedHitsKO_WhenHpReachesZero) {
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;  // real power=62
+    auto runtime = MakeBrooklynRuntime();
+    DOMINUS_EXPECT(runtime.Snapshot().hp == 940);
+
+    // Real: 940 hp, real special damage=62 unblocked -- 15 real hits
+    // leave exactly 10 hp (940 - 15*62 = 10), still alive; the 16th
+    // crosses zero and KOs, clamped rather than negative.
+    for (int i = 0; i < 15; ++i) runtime.TakeHit(incoming, /*blocking=*/false);
+    DOMINUS_EXPECT(runtime.Snapshot().hp == 10);
+    DOMINUS_EXPECT(runtime.State() != HitmFighterState::kKO);
+
+    runtime.TakeHit(incoming, /*blocking=*/false);
+    DOMINUS_EXPECT(runtime.Snapshot().hp == 0);  // clamped, never negative
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kKO);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_TakeHit_ChipDamageCanKO_RealEngineQuirkPreserved) {
+    // Real engine behavior, faithfully ported (not softened):
+    // CombatSystem.js checks hp<=0 unconditionally right after the hp
+    // reduction, with no exemption for a blocked hit
+    // (CombatSystem.js:436,455) -- repeated real chip damage alone, with
+    // no unblocked hit ever landing, must still reach kKO.
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;
+    auto rules = RealRules();
+    auto runtime = MakeBrooklynRuntime();
+    int chipDamage = static_cast<int>(std::lround(incoming.move_def.power * rules.Combat().chip_mult));
+    DOMINUS_EXPECT(chipDamage > 0);  // real chipMult actually deals real damage
+
+    int maxHits = runtime.Snapshot().max_hp / chipDamage + 2;
+    for (int i = 0; i < maxHits && runtime.State() != HitmFighterState::kKO; ++i) {
+        runtime.TakeHit(incoming, /*blocking=*/true);
+    }
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kKO);
+    DOMINUS_EXPECT(runtime.Snapshot().hp == 0);
+}
+
+DOMINUS_TEST(HitmFighterRuntime_TakeHit_NoOpAfterKO) {
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;
+    auto runtime = MakeBrooklynRuntime();
+    for (int i = 0; i < 16; ++i) runtime.TakeHit(incoming, /*blocking=*/false);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kKO);
+    DOMINUS_EXPECT(runtime.Snapshot().hp == 0);
+
+    double meterBefore = runtime.Snapshot().meter;
+    int stateFrameBefore = runtime.Snapshot().state_frame;
+    runtime.TakeHit(incoming, /*blocking=*/false);  // real no-op: already KO'd
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kKO);
+    DOMINUS_EXPECT(runtime.Snapshot().hp == 0);
+    DOMINUS_EXPECT(runtime.Snapshot().meter == meterBefore);          // untouched -- real no-op, not just clamped
+    DOMINUS_EXPECT(runtime.Snapshot().state_frame == stateFrameBefore);  // not reset again
+}
+
+DOMINUS_TEST(HitmFighterRuntime_KO_LocksMovementInput) {
+    auto identity = RealIdentity("brooklyn");
+    auto incoming = *HitmMoveInstance::Extract(identity, "special").value;
+    auto runtime = MakeBrooklynRuntime();
+    for (int i = 0; i < 16; ++i) runtime.TakeHit(incoming, /*blocking=*/false);
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kKO);
+    float xBefore = runtime.Snapshot().x;
+
+    runtime.AdvanceFrame(HitmInputCommand::kRight);  // real: input dropped while KO'd
+    DOMINUS_EXPECT(runtime.State() == HitmFighterState::kKO);
+    DOMINUS_EXPECT(runtime.Snapshot().velocity_x == 0.0f);
+    DOMINUS_EXPECT(runtime.Snapshot().x == xBefore);  // already grounded, no horizontal drift
 }
 
 // --- 8/10. Read engine transitions through the runtime ---------------------
