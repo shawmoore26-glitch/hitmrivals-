@@ -6111,10 +6111,11 @@ AddressSanitizer+UndefinedBehaviorSanitizer build and fixed by removing
 the incorrect assumption entirely (real "anticipation snap" authoring in
 the real data genuinely is not monotonic), not worked around.
 
-52 new tests (33 deliberate-break), **817/817 total** (was 656 before
-Track H). Full clean rebuild, full suite green, a clean Debug+
-AddressSanitizer+UndefinedBehaviorSanitizer build with the full suite
-green and zero sanitizer findings, live `dominus-cli
+52 new tests (33 deliberate-break), 817/817 at Phase 1's initial close
+(was 656 before Track H) — since raised to **824/824** by the secondary-
+motion closure below. Full clean rebuild, full suite green, a clean
+Debug+AddressSanitizer+UndefinedBehaviorSanitizer build with the full
+suite green and zero sanitizer findings, live `dominus-cli
 hitm-sprite-draw-data` runs against real Brooklyn data (exact real
 elapsed-frame values reproduced at every attack sub-state boundary) and
 against Rocket (fails at Module 5A's own real move-extraction gap, not
@@ -6124,7 +6125,6 @@ fresh-clone verification before push.
 
 **Explicitly NOT done, per this phase's own scope**: full bone-hierarchy
 forward kinematics (blocked on the real upstream data gap above);
-secondary motion (render-layer-only in hitm-engine's own design);
 `land`/`walkBack` clips (Module 5A has no landing-recovery timer or
 facing/opponent concept); per-state elapsed-frame tracking for
 idle/walk/jump (Module 5A's public snapshot only exposes a match-wide
@@ -6132,7 +6132,8 @@ frame counter for these states — the smallest correct extension, a
 `state_entry_frame` field, is identified but deliberately not
 implemented, per the explicit instruction not to reopen Module 5A
 without a genuine defect forcing it); and, unchanged, everything Module
-5A itself does not implement.
+5A itself does not implement. (Secondary motion, originally listed here
+too, is now closed — see below.)
 
 ### A real asset-coverage audit, and an explicit track split going forward
 
@@ -6169,3 +6170,48 @@ point:
 These are deliberately never mixed. DOMINUS's job is to faithfully
 consume and execute authored HITM content, not to become responsible for
 producing HITM content that doesn't exist yet.
+
+### Track A gap #1 closed: secondary motion (spring/follow system)
+
+Per the coverage audit's own direction — real Track A gaps, worked
+through one at a time, no asset data touched — the largest closeable one
+is now closed: hitm-engine's own real `SkeletonSystem._secondary()`
+(the per-bone spring/damper that drags coat/dreads/chain/hat/jaw/glove-
+bounce toward their parent's rotation, "coat, dreads, chain travel a
+full beat after he stops") is now a direct, line-by-line port,
+`CHARACTER/HitmBridge/HitmSpriteDrawData.h`'s new
+`ApplySecondaryMotion()`, driven entirely by the real per-bone
+`stiffness`/`damping`/`lagBeats`/`maxAngle`/`gravity` params Module 3
+already imported and nothing used until now. `BuildSpriteDrawData` gains
+one new, optional, default-`nullptr`, fully-backward-compatible
+parameter (`HitmSecondaryMotionState*`) — every existing caller is
+unaffected. Live proof: `dreadFar`, which authors no track in ANY real
+clip, now shows continuous, real, spring-driven rotation every frame
+instead of sitting frozen at zero, exactly matching what real gameplay
+would show. Full accounting, including the real duplicate-bone-name
+quirk this closure had to replicate faithfully (`handFar`/`handNear`
+each appear twice in the real data; the real engine's own name-keyed
+lookup makes the LATER, follow-flagged entry always win — verified by a
+dedicated regression test, not assumed), in
+`HITM_SPRITE_ASSET_REPORT.md`'s "Track A gap #1 closed" section.
+
+7 new tests (an exact frame-0 proof, a 30-frame independent shadow-
+simulation differential test, a max-angle safety invariant across a long
+varied replay, a two-independent-replays determinism proof matching
+Module 5A's own methodology, a `Reset()` proof, the duplicate-bone-name
+regression, and the disabled-by-default backward-compatibility proof),
+all green under a clean Debug+AddressSanitizer+UndefinedBehaviorSanitizer
+build, zero findings. **824/824 total** (was 656 before Track H).
+
+Remaining real Track A gaps, in the order they'd next be worth closing:
+full bone-hierarchy forward kinematics (blocked on real, missing
+upstream `parts.json` bind-pose data — cannot be closed without
+inventing data, so stays documented, not attempted); proving
+`BuildSpriteDrawData` end to end against Rocket's and Static's own real
+idle/walk snapshots (their asset layer already imports cleanly — this
+would just be test coverage confirming the pipeline executes their real
+asset set too, not blocked on anything); `land`/`walkBack` clip selection
+and per-state elapsed-frame tracking (both require a small, real
+extension to `HitmFighterRuntime::FrameState` — genuinely Module 5A's
+territory, not Track A's, and still deliberately not attempted without
+explicit direction to reopen it).

@@ -112,10 +112,94 @@ double SampledFrame(const HitmAnimationClip& clip, double rawFrame) {
     return std::min(rawFrame, static_cast<double>(clip.len));
 }
 
+constexpr double kDegToRad = 3.14159265358979323846 / 180.0;
+
+// Real bone lookup semantics: the real engine keys bones by a plain
+// object (`bones[b.name] = b`), so a repeated name's LAST source-order
+// entry silently wins. Module 3's `HitmPartsRig::Bones()` is
+// deliberately an order-preserving sequence with duplicates kept (see
+// its own header comment on why a map would be lossy there); this
+// function builds the map ONLY where this file needs real-engine-
+// equivalent last-wins semantics, without touching that class or its
+// losslessness guarantee.
+std::map<std::string, const HitmBoneEntry*> BoneByNameLastWins(const HitmPartsRig& parts) {
+    std::map<std::string, const HitmBoneEntry*> byName;
+    for (const auto& b : parts.Bones()) byName[b.name] = &b;  // later entries overwrite, matching real semantics
+    return byName;
+}
+
+// Every real bone's local pose at the sampled frame -- not just drawn
+// parts. Needed because secondary motion's parent-rotation lookups must
+// reach control bones (hip/torso/neck/head/shoulderFar/shoulderNear)
+// that carry no visual part of their own but do carry real anim.json
+// tracks, exactly matching hitm-engine's own `pose()`, which samples
+// `for (const name of r.order)` -- every bone, not a drawn-parts subset.
+std::map<std::string, HitmLocalPose> SampleAllBones(const HitmAnimationClip& clip,
+                                                      const std::map<std::string, const HitmBoneEntry*>& boneByName,
+                                                      double sampledFrame) {
+    std::map<std::string, HitmLocalPose> localPose;
+    for (const auto& [name, bonePtr] : boneByName) {
+        (void)bonePtr;
+        localPose[name] = clip.Sample(name, sampledFrame);
+    }
+    return localPose;
+}
+
+// Direct, line-by-line port of hitm-engine's real
+// `SkeletonSystem._secondary()` -- see this file's header comment for
+// the exact real quirks (the `||`-as-fallback fields, last-name-wins
+// bone lookup, persistent per-bone spring state) this replicates
+// deliberately rather than diverging from.
+void ApplySecondaryMotion(const std::map<std::string, const HitmBoneEntry*>& boneByName,
+                           std::map<std::string, HitmLocalPose>& localPose, HitmSecondaryMotionState& state) {
+    for (const auto& [name, bonePtr] : boneByName) {
+        const HitmBoneEntry& b = *bonePtr;
+        if (!b.follow.has_value()) continue;
+        const HitmBoneFollow& f = *b.follow;
+
+        double parentRot = 0.0;
+        if (b.parent.has_value()) {
+            auto it = localPose.find(*b.parent);
+            if (it != localPose.end()) parentRot = it->second.rotation_deg;
+        }
+
+        double lagBeats = f.lag_beats != 0.0 ? f.lag_beats : 1.0;  // real `f.lagBeats || 1`
+        double target = parentRot * lagBeats;
+
+        HitmSpringState& s0 = state.BoneState(name);
+        if (!s0.initialized) {
+            s0.angle_deg = target;
+            s0.velocity = 0.0;
+            s0.initialized = true;
+        }
+
+        double stiffness = f.stiffness != 0.0 ? f.stiffness : 0.2;  // real `f.stiffness || 0.2`
+        s0.velocity += (target - s0.angle_deg) * stiffness;
+        if (f.gravity != 0.0) {
+            s0.velocity += f.gravity * 0.6 * std::sin(s0.angle_deg * kDegToRad);
+        }
+        double damping = f.damping != 0.0 ? f.damping : 0.7;  // real `f.damping || 0.7`
+        s0.velocity *= damping;
+        s0.angle_deg += s0.velocity * 1.0;  // real `dt || 1` -- one real frame per BuildSpriteDrawData call, see header
+
+        double maxAngle = f.max_angle != 0.0 ? f.max_angle : 30.0;  // real `f.maxAngle || 30`
+        if (s0.angle_deg > maxAngle) {
+            s0.angle_deg = maxAngle;
+            s0.velocity *= -0.35;
+        }
+        if (s0.angle_deg < -maxAngle) {
+            s0.angle_deg = -maxAngle;
+            s0.velocity *= -0.35;
+        }
+
+        localPose[name] = HitmLocalPose{s0.angle_deg - parentRot, 0.0, 0.0};
+    }
+}
+
 }  // namespace
 
 Result<HitmSpriteDrawData> BuildSpriteDrawData(const HitmFighterSnapshot& snapshot, const HitmMoveInstance* currentMove,
-                                                 const HitmAssetBundle& bundle) {
+                                                 const HitmAssetBundle& bundle, HitmSecondaryMotionState* secondaryMotion) {
     auto clipNameResult = ResolveClipName(snapshot, currentMove);
     if (!clipNameResult.ok) {
         return Result<HitmSpriteDrawData>::Fail("BuildSpriteDrawData: " + clipNameResult.error);
@@ -131,6 +215,15 @@ Result<HitmSpriteDrawData> BuildSpriteDrawData(const HitmFighterSnapshot& snapsh
     draw.clip_name = *clipNameResult.value;
     draw.raw_frame = ComputeRawFrame(snapshot, currentMove, *clip);
     draw.sampled_frame = SampledFrame(*clip, draw.raw_frame);
+
+    // Full-bone local pose, not just drawn parts -- secondary motion's
+    // parent-rotation lookups need control bones too (hip/torso/neck/
+    // head/shoulderFar/shoulderNear), exactly matching real `pose()`.
+    auto boneByName = BoneByNameLastWins(bundle.parts);
+    auto localPose = SampleAllBones(*clip, boneByName, draw.sampled_frame);
+    if (secondaryMotion) {
+        ApplySecondaryMotion(boneByName, localPose, *secondaryMotion);
+    }
 
     draw.parts.reserve(bundle.parts.DrawOrder().size());
     for (const auto& partName : bundle.parts.DrawOrder()) {
@@ -152,7 +245,14 @@ Result<HitmSpriteDrawData> BuildSpriteDrawData(const HitmFighterSnapshot& snapsh
             return Result<HitmSpriteDrawData>::Fail("BuildSpriteDrawData: part '" + partName + "' has no rig.json placement");
         }
 
-        HitmLocalPose pose = clip->Sample(partName, draw.sampled_frame);
+        // localPose always has an entry for partName: boneByName (which
+        // seeded it) is built from bundle.parts.Bones(), and drawOrder
+        // (HitmPartsRig::Import's own invariant) only ever names parts
+        // that also have a real bone entry -- but a bundle assembled by
+        // hand without going through HitmAssetImporter could violate
+        // that, so this is still checked rather than assumed.
+        auto poseIt = localPose.find(partName);
+        HitmLocalPose pose = poseIt != localPose.end() ? poseIt->second : clip->Sample(partName, draw.sampled_frame);
 
         HitmPartDraw pd;
         pd.part_name = partName;

@@ -69,8 +69,49 @@
 //     kBlockingStance and kBlockstun, with the stun-elapsed frame formula
 //     applied only to kBlockstun (kBlockingStance, held indefinitely,
 //     uses the same convention as idle/walk above).
+//
+// SECONDARY MOTION (Track A gap #1, closed): hitm-engine's real
+// `SkeletonSystem._secondary()` drags every bone flagged `follow` in
+// `parts.json`'s real `bones[]` array toward its parent's rotation
+// through a spring/damper, so coats/dreads/chains/the jaw/glove-bounce
+// arrive late and keep moving after the parent stops (real, authored
+// per-bone `stiffness`/`damping`/`lagBeats`/`maxAngle`/`gravity` --
+// already imported losslessly by Module 3's `HitmPartsRig`, unused by
+// anything until now). `ApplySecondaryMotion()` below is a direct,
+// line-by-line port of the real function, including its real quirks:
+//   - `f.stiffness || 0.2` / `f.damping || 0.7` / `f.maxAngle || 30`:
+//     JavaScript's `||` treats 0 as falsy, silently substituting the
+//     default even for an explicit authored 0. Real data never actually
+//     authors 0 for these fields (evidenced identical 0.118/0.634 across
+//     all three real fighters' every real follow bone), so this never
+//     fires in practice, but the port keeps the same fallback rule
+//     faithfully rather than silently diverging from it.
+//   - The real engine's bone lookup is a plain object keyed by name
+//     (`bones[b.name] = b`), so when a name appears twice in the real
+//     source array (Module 3's own documented finding: `handFar`/
+//     `handNear` each appear twice, once rigid, once as a later
+//     "glove bounce" follow overlay), the LATER entry silently wins.
+//     `ApplySecondaryMotion()` replicates this exactly (last-occurrence-
+//     wins per name) rather than Module 3's own lossless, order-
+//     preserving `Bones()` sequence -- meaning handFar/handNear are
+//     ALWAYS spring-driven here, matching real behavior, not a DOMINUS
+//     choice.
+//   - Per-fighter spring state (`{angle, velocity}` per follow bone)
+//     genuinely persists across calls -- unlike everything else in this
+//     file, secondary motion is NOT a pure function of one snapshot. A
+//     caller owns a `HitmSecondaryMotionState` per fighter (mirroring
+//     the real engine's own per-`fighterKey` `Map`) and must call
+//     `BuildSpriteDrawData` exactly once per real simulation frame when
+//     supplying one -- calling it more than once for the same frame
+//     double-integrates the spring, the same discipline
+//     `HitmFighterRuntime::AdvanceFrame()` already requires of its own
+//     frame counter. Passing `nullptr` (the default) skips secondary
+//     motion entirely -- every follow bone with no real track in the
+//     selected clip then gets the zero pose exactly as before this
+//     capability existed, unchanged, backward-compatible.
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -80,6 +121,32 @@
 #include "CORE/Serialization/DominusSerializer.h"  // for core::Result<T>
 
 namespace dominus::character::hitm {
+
+// Per-bone spring state -- `{angle, velocity}` in the real engine.
+struct HitmSpringState {
+    double angle_deg = 0.0;
+    double velocity = 0.0;
+    bool initialized = false;
+};
+
+// Owns one fighter's real secondary-motion spring state across frames.
+// Mirrors the real engine's own per-`fighterKey` `Map` -- explicit,
+// caller-owned state, the same discipline `HitmFighterRuntime` itself
+// already uses, rather than a hidden global/static map.
+class HitmSecondaryMotionState {
+public:
+    // Get-or-default-construct this bone's spring state -- matches the
+    // real `st[name]` access pattern.
+    HitmSpringState& BoneState(const std::string& boneName) { return bones_[boneName]; }
+
+    // Matches the real engine's own `resetFollow()` -- call on round
+    // reset so replays/re-runs stay deterministic from a known zero
+    // state, exactly as the real engine's own comment specifies.
+    void Reset() { bones_.clear(); }
+
+private:
+    std::map<std::string, HitmSpringState> bones_;
+};
 
 // One real part's fully-resolved draw instruction for this frame, in
 // real drawOrder (back-to-front).
@@ -137,8 +204,17 @@ struct HitmSpriteDrawData {
 // fallback is a rendering-robustness choice appropriate to a live game;
 // this module's job is to prove what the real data supports, so a
 // missing clip is a real, reportable gap, not something to paper over).
+//
+// `secondaryMotion`, if non-null, is both read and mutated -- see this
+// file's header comment above for the exactly-once-per-real-frame
+// calling discipline this requires. `nullptr` (the default) means no
+// secondary motion: every follow bone falls back to whatever its own
+// clip track provides (usually the zero pose -- real clips generally do
+// not author follow-bone tracks directly, see the header comment),
+// identical to this function's behavior before secondary motion existed.
 core::Result<HitmSpriteDrawData> BuildSpriteDrawData(const HitmFighterSnapshot& snapshot, const HitmMoveInstance* currentMove,
-                                                       const HitmAssetBundle& bundle);
+                                                       const HitmAssetBundle& bundle,
+                                                       HitmSecondaryMotionState* secondaryMotion = nullptr);
 
 // Exposed separately for direct unit coverage of the clip-selection rule
 // table described in this file's header comment.

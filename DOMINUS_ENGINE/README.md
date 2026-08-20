@@ -1273,8 +1273,23 @@ instead), and a real bug in this module's own first validation pass — an
 assumed "strictly increasing keyframes" invariant that immediately
 failed to import Brooklyn's own real `anim.json` — found under
 AddressSanitizer and fixed by removing the incorrect assumption, not
-working around it. Full accounting in `HITM_SPRITE_ASSET_REPORT.md`.
+working around it. A real Rocket/Static character-reference-sheet audit
+(`HITM_ASSET_COVERAGE_REPORT.md`) found all three fighters have exactly
+one fixed head texture and two fixed hand textures each in the real
+data — no expression/hand-pose variant exists anywhere, not even in
+`design.json` — explicitly marked design intent, not runtime-authored,
+and never used to touch any asset or code. That audit produced a
+permanent split: Track A (DOMINUS consumes/executes real HITM assets,
+zero invention) vs. Track B (new HITM content authoring, explicitly out
+of scope here). Working Track A gaps one at a time then closed the
+largest: real per-bone secondary motion (the spring/damper system that
+drags coat/dreads/chain/hat/jaw toward their parent's rotation, "a full
+beat after he stops") is now a direct port of hitm-engine's own real
+`SkeletonSystem._secondary()`, driven by real, already-imported per-bone
+spring params nothing had used until now — `dreadFar`, which authors no
+track in any real clip, now shows continuous real spring motion instead
+of sitting frozen at zero. Full accounting in `HITM_SPRITE_ASSET_REPORT.md`.
 Still nothing is rendered — no pixel is ever decoded or drawn, no sound
 plays, and no second real player exists yet. See each module's own
 "explicitly not done" note in `ROADMAP.md` for the honest boundary.
-**817/817 tests passing (was 656 before this track).**
+**824/824 tests passing (was 656 before this track).**

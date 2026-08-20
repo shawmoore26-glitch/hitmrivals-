@@ -201,14 +201,52 @@ doesn't have to.
   for any such claim. `ReadPngDimensions` reads a file header; it never
   opens a decoder, a texture, or a device.
 
+## Track A gap #1 closed: secondary motion (spring/follow system)
+
+hitm-engine's own real `SkeletonSystem._secondary()` drags every bone
+flagged `follow` in `parts.json`'s real `bones[]` array (dreads, coat,
+chain, tie, hat, jaw, the glove-bounce hand overlays) toward its
+parent's rotation through a spring/damper, so they arrive late and keep
+moving after the parent stops -- Volume 5's sentence law, "coat, dreads,
+chain travel a full beat after he stops." The real, authored per-bone
+`stiffness`/`damping`/`lagBeats`/`maxAngle`/`gravity` params were already
+imported losslessly by Module 3, unused by anything until now:
+`ApplySecondaryMotion()` is a direct, line-by-line port of the real
+function (including its real quirks -- JavaScript's `||`-as-fallback for
+a zero-valued field, and the real name-keyed bone lookup silently
+resolving `handFar`/`handNear`'s LATER, follow-flagged duplicate entry
+over the earlier rigid one, verified by a dedicated regression test).
+
+Per-fighter spring state genuinely persists across frames (unlike
+everything else in this pipeline) -- `HitmSecondaryMotionState` is an
+explicit, caller-owned object (mirroring the real engine's own per-
+fighter `Map`, not a hidden global), threaded through
+`BuildSpriteDrawData`'s new optional `secondaryMotion` parameter
+(`nullptr` by default -- fully backward compatible, unchanged behavior
+for every existing caller). Live proof, real Brooklyn data,
+`dominus-cli hitm-sprite-draw-data`: `dreadFar` (authors no track in
+ANY real clip -- idle, walk, jump, or special) now shows continuous,
+varying, real spring-driven rotation every frame instead of sitting
+frozen at zero.
+
+7 new tests, including: an exact frame-0 initialization proof (computed
+via the identical floating-point operation sequence as production, per
+this session's established float-precision discipline, not a rounded
+literal); a 30-frame independent "shadow simulation" differential test,
+retyped fresh against the real algorithm rather than calling into
+production's own private helper, matching bit-for-bit; a real-safety
+invariant (`|angle| <= maxAngle`, checked every frame across a long,
+varied replay -- walk, jump, land, attack, get hit); a two-independent-
+replays determinism proof, the same methodology Module 5A's own
+determinism proof used; and the `handFar`/`handNear` duplicate-bone-name
+regression test described above. All pass under a clean AddressSanitizer
++UndefinedBehaviorSanitizer run, zero findings.
+
 ## NOT IMPLEMENTED (explicitly out of this module's Phase 1 scope)
 
 - Full bone-hierarchy forward kinematics / world-space part transforms
   (see finding #1 above -- blocked on real, missing upstream bind-pose
   data, not a DOMINUS choice to skip it).
-- Secondary motion (the real spring/follow system for coat/dreads/chain/
-  hat/jaw) -- explicitly render-layer-only in hitm-engine's own design,
-  and out of this module's CPU-draw-data scope.
 - `landT`-driven `'land'` clip and `WALK`-direction-driven `'walkBack'`
   clip -- Module 5A's runtime has no landing-recovery timer and no
   facing/opponent concept (see HitmSpriteDrawData.h's header comment);
@@ -226,19 +264,20 @@ doesn't have to.
 
 ## Test count
 
-52 new tests: 15 in `test_hitm_animation_set.cpp`, 11 in
-`test_hitm_rig_placement.cpp`, 18 in `test_hitm_asset_importer.cpp`, 15
+59 new tests: 15 in `test_hitm_animation_set.cpp`, 11 in
+`test_hitm_rig_placement.cpp`, 18 in `test_hitm_asset_importer.cpp`, 22
 in `test_hitm_sprite_draw_data.cpp` (exact frame-arithmetic proofs for
-every attack sub-state and both stun states, plus a determinism proof
-and 3 deliberate-break tests). **817/817 total** (was 765 before this
-module, 656 before Track H).
+every attack sub-state and both stun states, the secondary-motion
+suite described above, a determinism proof, and 3 deliberate-break
+tests). **824/824 total** (was 765 before this module, 656 before Track
+H).
 
 ## Verification
 
 1. Clean Release build (`rm -rf build`): zero errors, zero warnings.
-2. Full suite: **817/817 passed**, exit 0.
+2. Full suite: **824/824 passed**, exit 0.
 3. Clean Debug+AddressSanitizer+UndefinedBehaviorSanitizer build: zero
-   errors, zero warnings. Full suite under it: **817/817 passed**, zero
+   errors, zero warnings. Full suite under it: **824/824 passed**, zero
    sanitizer findings (checked via precise diagnostic-marker greps, not
    a naive substring match).
 4. Live `dominus-cli hitm-sprite-draw-data` run against real Brooklyn
@@ -262,15 +301,16 @@ exact real data that caught it, not patched around.
 - **PROVEN CPU**: asset discovery, identity validation, fighter/asset
   association, atlas metadata representation, frame/cutout
   representation, runtime-driven animation/frame selection, deterministic
-  draw-data generation, source-metadata preservation, deliberate-break
-  coverage -- see "PROVEN CPU" above.
+  draw-data generation, source-metadata preservation, real per-bone
+  secondary motion (spring/follow system), deliberate-break coverage --
+  see "PROVEN CPU" and "Track A gap #1 closed" above.
 - **IMPLEMENTED BUT GPU-UNVERIFIABLE**: nothing attempted -- deliberately.
   This module wrote zero GPU/rendering/display code.
 - **NOT IMPLEMENTED**: full bone-hierarchy FK (blocked on a real upstream
-  data gap, documented), secondary motion, `land`/`walkBack` clips,
-  per-state elapsed-frame tracking for continuous states, and everything
-  beyond this module's own scope (audio, input, stage, a second fighter)
-  -- see "NOT IMPLEMENTED" above.
+  data gap, documented), `land`/`walkBack` clips, per-state elapsed-frame
+  tracking for continuous states, and everything beyond this module's own
+  scope (audio, input, stage, a second fighter) -- see "NOT IMPLEMENTED"
+  above.
 
 Module 5B Phase 1 is complete on its own terms: the simulation Module 5A
 proved can now select the actual real HITM visual content that should be

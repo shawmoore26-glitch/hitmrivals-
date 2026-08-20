@@ -22,6 +22,7 @@
 #include "CHARACTER/HitmBridge/HitmSpriteDrawData.h"
 #include "tests/TestFramework.h"
 
+#include <cmath>
 #include <filesystem>
 #include <utility>
 
@@ -35,7 +36,9 @@ using dominus::character::hitm::HitmGameRules;
 using dominus::character::hitm::HitmIdentityImporter;
 using dominus::character::hitm::HitmIdentityRecord;
 using dominus::character::hitm::HitmInputCommand;
+using dominus::character::hitm::HitmLocalPose;
 using dominus::character::hitm::HitmMoveInstance;
+using dominus::character::hitm::HitmSecondaryMotionState;
 
 namespace {
 
@@ -89,6 +92,14 @@ HitmMoveInstance RealBrooklynSpecial() {
     auto result = HitmMoveInstance::Extract(identity, "special");
     if (!result.ok) throw std::runtime_error("test setup: " + result.error);
     return std::move(*result.value);
+}
+
+const dominus::character::hitm::HitmPartDraw* FindDraw(const dominus::character::hitm::HitmSpriteDrawData& draw,
+                                                          const std::string& partName) {
+    for (const auto& p : draw.parts) {
+        if (p.part_name == partName) return &p;
+    }
+    return nullptr;
 }
 
 }  // namespace
@@ -375,4 +386,233 @@ DOMINUS_TEST(HitmSpriteDrawData_Break_FailedBuildDoesNotThrow) {
     }
     DOMINUS_EXPECT(!threw);
     DOMINUS_EXPECT(!ok);
+}
+
+// --- 8. Secondary motion (Track A gap #1): real per-bone spring/damper ---
+// --- follow system, a direct port of hitm-engine's own real ---------------
+// --- SkeletonSystem._secondary() -- see HitmSpriteDrawData.h's header ----
+// --- comment for the exact real quirks these tests hold it to. -----------
+
+DOMINUS_TEST(HitmSpriteDrawData_SecondaryMotion_DisabledByDefault_FollowBoneGetsZeroPose) {
+    // Real data: Brooklyn's "idle" clip authors no "dreadFar" track at
+    // all (verified: 15 real tracks, none of the follow bones among
+    // them) -- without secondary motion, the real _sample(null, f)
+    // fallback (zero pose) is exactly what should come through.
+    auto runtime = MakeBrooklynRuntime();
+    auto bundle = MakeBrooklynBundle();
+    auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle, /*secondaryMotion=*/nullptr);
+    DOMINUS_EXPECT(result.ok);
+    const auto* dread = FindDraw(*result.value, "dreadFar");
+    DOMINUS_EXPECT(dread != nullptr);
+    DOMINUS_EXPECT(dread->pose_rotation_deg == 0.0);
+    DOMINUS_EXPECT(dread->pose_offset_x == 0.0);
+    DOMINUS_EXPECT(dread->pose_offset_y == 0.0);
+}
+
+DOMINUS_TEST(HitmSpriteDrawData_SecondaryMotion_FirstFrame_HatInitializesExactlyAtLagTarget) {
+    // Real "hat" follow params: stiffness=0.118, damping=0.634,
+    // lagBeats=0.6, maxAngle=16, gravity=0.0 -- parent "head". Real
+    // idle-clip head rotation at frame 0 is an exact keyframe (no
+    // interpolation): 3.0deg. On first touch the spring initializes
+    // AT the lag target (angle=target, velocity=0) before this frame's
+    // own integration step runs -- expected value computed via the
+    // identical operation sequence as production (not a rounded
+    // literal), per this session's established float-precision
+    // discipline.
+    auto runtime = MakeBrooklynRuntime();
+    auto bundle = MakeBrooklynBundle();
+    HitmSecondaryMotionState state;
+    auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle, &state);
+    DOMINUS_EXPECT(result.ok);
+
+    const auto* head = FindDraw(*result.value, "head");
+    DOMINUS_EXPECT(head != nullptr);
+    DOMINUS_EXPECT(head->pose_rotation_deg == 3.0);  // exact keyframe, no interpolation at frame 0
+
+    double headRot = head->pose_rotation_deg;
+    double target = headRot * 0.6;
+    double angle = target;  // real first-touch initialization
+    double velocity = 0.0;
+    velocity += (target - angle) * 0.118;  // == 0.0 exactly
+    // gravity == 0.0 for "hat" -- real code's `if(f.gravity)` skips
+    velocity *= 0.634;
+    angle += velocity * 1.0;
+    double expectedHatRot = angle - headRot;
+
+    const auto* hat = FindDraw(*result.value, "hat");
+    DOMINUS_EXPECT(hat != nullptr);
+    DOMINUS_EXPECT(hat->pose_rotation_deg == expectedHatRot);
+
+    // Real state, publicly observable: initialized at the lag target.
+    DOMINUS_EXPECT(state.BoneState("hat").angle_deg == target);
+    DOMINUS_EXPECT(state.BoneState("hat").initialized);
+}
+
+DOMINUS_TEST(HitmSpriteDrawData_SecondaryMotion_ShadowSimulationMatchesProductionAcrossManyFrames) {
+    // Independent re-derivation of the real spring recurrence (quoted
+    // verbatim in HitmSpriteDrawData.h's header comment), computed here
+    // directly against real anim.json data via the same public
+    // `HitmAnimationClip::Sample()` every other test in this file uses --
+    // not by calling into (or copying) the production
+    // `ApplySecondaryMotion()` helper, which is a private implementation
+    // detail this file cannot reach. A transcription bug, a swapped
+    // parameter, or a wrong parent lookup in production would very
+    // likely disagree with this independently-retyped sequence.
+    auto runtime = MakeBrooklynRuntime();
+    auto bundle = MakeBrooklynBundle();
+    HitmSecondaryMotionState state;
+    const auto* idleClip = bundle.animations.Clip("idle");
+    DOMINUS_EXPECT(idleClip != nullptr);
+
+    // "chain" -- parent "torso", real params include nonzero gravity,
+    // exercising the sin() branch "hat" (gravity=0) never reaches.
+    const double kLagBeats = 1.6, kStiffness = 0.118, kGravity = 0.9, kDamping = 0.634, kMaxAngle = 30.0;
+    double shadowAngle = 0.0, shadowVelocity = 0.0;
+    bool shadowInitialized = false;
+    const double kDegToRad = 3.14159265358979323846 / 180.0;
+
+    for (int frame = 0; frame < 30; ++frame) {
+        auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle, &state);
+        DOMINUS_EXPECT(result.ok);
+
+        double sampledFrame = static_cast<double>(runtime.Snapshot().frame % 84);  // real idle clip: loop=true, len=84
+        double torsoRot = idleClip->Sample("torso", sampledFrame).rotation_deg;
+
+        double target = torsoRot * kLagBeats;
+        if (!shadowInitialized) {
+            shadowAngle = target;
+            shadowVelocity = 0.0;
+            shadowInitialized = true;
+        }
+        shadowVelocity += (target - shadowAngle) * kStiffness;
+        shadowVelocity += kGravity * 0.6 * std::sin(shadowAngle * kDegToRad);
+        shadowVelocity *= kDamping;
+        shadowAngle += shadowVelocity * 1.0;
+        if (shadowAngle > kMaxAngle) { shadowAngle = kMaxAngle; shadowVelocity *= -0.35; }
+        if (shadowAngle < -kMaxAngle) { shadowAngle = -kMaxAngle; shadowVelocity *= -0.35; }
+        double expectedChainRot = shadowAngle - torsoRot;
+
+        const auto* chain = FindDraw(*result.value, "chain");
+        DOMINUS_EXPECT(chain != nullptr);
+        DOMINUS_EXPECT(chain->pose_rotation_deg == expectedChainRot);
+
+        runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    }
+}
+
+DOMINUS_TEST(HitmSpriteDrawData_SecondaryMotion_MaxAngleNeverExceededAcrossLongRealReplay) {
+    // Real safety invariant, independent of exact trajectory: whatever
+    // the spring does, its internal angle must never exceed the real
+    // authored maxAngle for that bone, across a long, varied real
+    // gameplay sequence (walk, jump, land, attack, get hit).
+    auto runtime = MakeBrooklynRuntime();
+    auto bundle = MakeBrooklynBundle();
+    auto special = RealBrooklynSpecial();
+    HitmSecondaryMotionState state;
+
+    const std::vector<std::pair<std::string, double>> kFollowBoneMaxAngles = {
+        {"hat", 16.0}, {"jaw", 14.0}, {"dreadFar", 46.0}, {"dreadNear", 46.0},
+        {"tie", 38.0}, {"chain", 30.0}, {"coatFar", 42.0}, {"coatNear", 42.0},
+        {"handFar", 22.0}, {"handNear", 22.0},
+    };
+
+    auto checkInvariant = [&] {
+        for (const auto& [name, maxAngle] : kFollowBoneMaxAngles) {
+            DOMINUS_EXPECT(std::fabs(state.BoneState(name).angle_deg) <= maxAngle);
+        }
+    };
+
+    for (int i = 0; i < 3; ++i) { runtime.AdvanceFrame(HitmInputCommand::kRight); checkInvariant(); }
+    runtime.AdvanceFrame(HitmInputCommand::kJump);
+    checkInvariant();
+    while (!runtime.Snapshot().grounded) { runtime.AdvanceFrame(HitmInputCommand::kNeutral); checkInvariant(); }
+    runtime.AdvanceFrame(HitmInputCommand::kSpecial);
+    checkInvariant();
+    while (runtime.State() != HitmFighterState::kIdle) { runtime.AdvanceFrame(HitmInputCommand::kNeutral); checkInvariant(); }
+    runtime.TakeHit(special, /*blocking=*/false);
+    checkInvariant();
+    for (int i = 0; i < 40; ++i) {
+        auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle, &state);
+        DOMINUS_EXPECT(result.ok);
+        checkInvariant();
+        if (runtime.Snapshot().hitstop_frames_remaining == 0) runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    }
+}
+
+DOMINUS_TEST(HitmSpriteDrawData_SecondaryMotion_Determinism_TwoIndependentReplaysProduceIdenticalResults) {
+    // Same methodology Module 5A's own determinism proof used: two
+    // fully independent (runtime, bundle, spring-state) triples driven
+    // by an identical real input script must produce byte-identical
+    // secondary-motion output every frame.
+    auto runtimeA = MakeBrooklynRuntime();
+    auto bundleA = MakeBrooklynBundle();
+    HitmSecondaryMotionState stateA;
+
+    auto runtimeB = MakeBrooklynRuntime();
+    auto bundleB = MakeBrooklynBundle();
+    HitmSecondaryMotionState stateB;
+
+    std::vector<HitmInputCommand> script = {HitmInputCommand::kRight, HitmInputCommand::kRight, HitmInputCommand::kJump,
+                                             HitmInputCommand::kNeutral, HitmInputCommand::kNeutral, HitmInputCommand::kLeft,
+                                             HitmInputCommand::kNeutral};
+
+    for (auto input : script) {
+        runtimeA.AdvanceFrame(input);
+        runtimeB.AdvanceFrame(input);
+        auto resultA = dominus::character::hitm::BuildSpriteDrawData(runtimeA.Snapshot(), nullptr, bundleA, &stateA);
+        auto resultB = dominus::character::hitm::BuildSpriteDrawData(runtimeB.Snapshot(), nullptr, bundleB, &stateB);
+        DOMINUS_EXPECT(resultA.ok && resultB.ok);
+        for (const auto& name : {"hat", "chain", "dreadFar", "dreadNear", "coatFar", "handNear"}) {
+            const auto* a = FindDraw(*resultA.value, name);
+            const auto* b = FindDraw(*resultB.value, name);
+            DOMINUS_EXPECT(a != nullptr && b != nullptr);
+            DOMINUS_EXPECT(a->pose_rotation_deg == b->pose_rotation_deg);
+        }
+    }
+}
+
+DOMINUS_TEST(HitmSpriteDrawData_SecondaryMotion_Reset_ReinitializesFromFreshTarget) {
+    auto runtime = MakeBrooklynRuntime();
+    auto bundle = MakeBrooklynBundle();
+    HitmSecondaryMotionState state;
+
+    for (int i = 0; i < 10; ++i) {
+        dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle, &state);
+        runtime.AdvanceFrame(HitmInputCommand::kNeutral);
+    }
+    DOMINUS_EXPECT(state.BoneState("hat").initialized);
+
+    state.Reset();
+    DOMINUS_EXPECT(!state.BoneState("hat").initialized);  // BoneState() default-constructs a fresh entry after Reset()
+
+    auto result = dominus::character::hitm::BuildSpriteDrawData(runtime.Snapshot(), nullptr, bundle, &state);
+    DOMINUS_EXPECT(result.ok);
+    DOMINUS_EXPECT(state.BoneState("hat").initialized);  // re-initialized by this call, not left stale
+}
+
+DOMINUS_TEST(HitmSpriteDrawData_SecondaryMotion_HandNear_AlwaysSpringDrivenDespiteDuplicateRigidBoneEntry) {
+    // Real, evidenced finding (Module 3): "handNear" appears TWICE in
+    // Brooklyn's real bones[] array -- once rigid (no follow), once
+    // later as a glove-bounce follow overlay. The real engine's own
+    // name-keyed bone lookup means the LATER (follow) entry always wins.
+    // If this module's last-occurrence-wins resolution instead picked
+    // the earlier, rigid duplicate (which has no `follow`), secondary
+    // motion would silently skip handNear entirely and this A/B
+    // comparison -- the same snapshot, with vs. without secondary
+    // motion -- would show no difference. It must show one.
+    auto runtime = MakeBrooklynRuntime();
+    auto bundle = MakeBrooklynBundle();
+    for (int i = 0; i < 5; ++i) runtime.AdvanceFrame(HitmInputCommand::kRight);  // walking -- armNearL is genuinely rotating
+    HitmFighterSnapshot snap = runtime.Snapshot();
+
+    auto withoutMotion = dominus::character::hitm::BuildSpriteDrawData(snap, nullptr, bundle, /*secondaryMotion=*/nullptr);
+    HitmSecondaryMotionState state;
+    auto withMotion = dominus::character::hitm::BuildSpriteDrawData(snap, nullptr, bundle, &state);
+    DOMINUS_EXPECT(withoutMotion.ok && withMotion.ok);
+
+    const auto* plain = FindDraw(*withoutMotion.value, "handNear");
+    const auto* spring = FindDraw(*withMotion.value, "handNear");
+    DOMINUS_EXPECT(plain != nullptr && spring != nullptr);
+    DOMINUS_EXPECT(state.BoneState("handNear").initialized);
+    DOMINUS_EXPECT(spring->pose_rotation_deg != plain->pose_rotation_deg);
 }

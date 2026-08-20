@@ -891,6 +891,7 @@ int HitmSpriteDrawDataDemo(const std::string& identityDirStr, const std::string&
     using dominus::character::hitm::HitmIdentityImporter;
     using dominus::character::hitm::HitmInputCommand;
     using dominus::character::hitm::HitmMoveInstance;
+    using dominus::character::hitm::HitmSecondaryMotionState;
 
     auto identityResult = HitmIdentityImporter::Import(identityDirStr);
     if (!identityResult.ok) {
@@ -930,16 +931,49 @@ int HitmSpriteDrawDataDemo(const std::string& identityDirStr, const std::string&
                << " (" << bundle.atlas_pixel_width << "x" << bundle.atlas_pixel_height << " real px) parts="
                << bundle.parts.Parts().size() << " clips=" << bundle.animations.ClipNames().size() << "\n";
 
-    auto printDraw = [&](const char* label, const HitmMoveInstance* currentMove) {
-        auto result = BuildSpriteDrawData(fighter.Snapshot(), currentMove, bundle);
-        if (!result.ok) {
-            std::cout << "[hitm-sprite-draw-data] (" << label << ") FAILED: " << result.error << "\n";
+    // Owned once, threaded through every real frame -- the same
+    // exactly-once-per-real-frame discipline HitmSecondaryMotionState's
+    // header comment requires. Real, evidenced follow-bone example:
+    // "dreadFar" (parent "head", real lagBeats=1.4/maxAngle=46/
+    // gravity=0.5) authors no track in any of idle/walk/jump/special --
+    // without secondary motion it would sit frozen at zero every frame.
+    HitmSecondaryMotionState secondaryMotion;
+
+    // BuildSpriteDrawData must run exactly once per real frame to keep
+    // `secondaryMotion` correct (see HitmSpriteDrawData.h's header
+    // comment) -- `compute()` is therefore the ONLY place this demo
+    // calls it, called once for frame 0 and then exactly once per
+    // `tick()`. `printLast()` only prints the most recently computed
+    // result; it never calls BuildSpriteDrawData itself, so labeling a
+    // frame for output never double-integrates the spring for it.
+    dominus::core::Result<dominus::character::hitm::HitmSpriteDrawData> lastResult =
+        dominus::core::Result<dominus::character::hitm::HitmSpriteDrawData>::Fail("not computed yet");
+    auto currentMoveForState = [&]() -> const HitmMoveInstance* {
+        switch (fighter.State()) {
+            case HitmFighterState::kAttackStartup:
+            case HitmFighterState::kAttackActive:
+            case HitmFighterState::kAttackRecovery:
+                return &move;
+            default:
+                return nullptr;
+        }
+    };
+    auto compute = [&]() { lastResult = BuildSpriteDrawData(fighter.Snapshot(), currentMoveForState(), bundle, &secondaryMotion); };
+    auto tick = [&](HitmInputCommand input) {
+        fighter.AdvanceFrame(input);
+        compute();
+    };
+    auto printLast = [&](const char* label) {
+        if (!lastResult.ok) {
+            std::cout << "[hitm-sprite-draw-data] (" << label << ") FAILED: " << lastResult.error << "\n";
             return;
         }
-        const auto& draw = *result.value;
+        const auto& draw = *lastResult.value;
         const dominus::character::hitm::HitmPartDraw* torso = nullptr;
+        const dominus::character::hitm::HitmPartDraw* dreadFar = nullptr;
         for (const auto& p : draw.parts) {
-            if (p.part_name == "torso") { torso = &p; break; }
+            if (p.part_name == "torso") torso = &p;
+            if (p.part_name == "dreadFar") dreadFar = &p;
         }
         std::cout << "[hitm-sprite-draw-data] frame=" << fighter.Snapshot().frame << " (" << label
                    << ") clip=\"" << draw.clip_name << "\" raw_frame=" << draw.raw_frame
@@ -948,29 +982,38 @@ int HitmSpriteDrawDataDemo(const std::string& identityDirStr, const std::string&
             std::cout << " torso[frame=(" << torso->frame_x << "," << torso->frame_y << "," << torso->frame_w << ","
                        << torso->frame_h << ") pose_rot=" << torso->pose_rotation_deg << "deg]";
         }
+        if (dreadFar) {
+            std::cout << " dreadFar[pose_rot=" << dreadFar->pose_rotation_deg << "deg, real spring-driven secondary motion]";
+        }
         std::cout << "\n";
     };
 
-    printDraw("init", nullptr);
-    for (int i = 0; i < 3; ++i) fighter.AdvanceFrame(HitmInputCommand::kRight);
-    printDraw("walking", nullptr);
+    compute();
+    printLast("init");
+    for (int i = 0; i < 3; ++i) tick(HitmInputCommand::kRight);
+    printLast("walking");
 
-    fighter.AdvanceFrame(HitmInputCommand::kJump);
-    printDraw("jumping (rising)", nullptr);
-    while (!fighter.Snapshot().grounded) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
-    printDraw("landed", nullptr);
+    tick(HitmInputCommand::kJump);
+    printLast("jumping (rising)");
+    while (!fighter.Snapshot().grounded) tick(HitmInputCommand::kNeutral);
+    printLast("landed");
 
-    fighter.AdvanceFrame(HitmInputCommand::kSpecial);
-    printDraw("attack_startup (real special clip begins)", &move);
-    while (fighter.State() == HitmFighterState::kAttackStartup) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
-    printDraw("attack_active", &move);
-    while (fighter.State() == HitmFighterState::kAttackActive) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
-    printDraw("attack_recovery", &move);
-    while (fighter.State() == HitmFighterState::kAttackRecovery) fighter.AdvanceFrame(HitmInputCommand::kNeutral);
-    printDraw("idle again", nullptr);
+    tick(HitmInputCommand::kSpecial);
+    printLast("attack_startup (real special clip begins)");
+    while (fighter.State() == HitmFighterState::kAttackStartup) tick(HitmInputCommand::kNeutral);
+    printLast("attack_active");
+    while (fighter.State() == HitmFighterState::kAttackActive) tick(HitmInputCommand::kNeutral);
+    printLast("attack_recovery");
+    while (fighter.State() == HitmFighterState::kAttackRecovery) tick(HitmInputCommand::kNeutral);
+    printLast("idle again");
 
+    // TakeHit() mutates state synchronously without advancing `frame` --
+    // a genuine, real, one-time out-of-band state change (not a repeated
+    // pattern), so recomputing once here to reflect it is correct, not a
+    // double-integration of the same frame's physics.
     fighter.TakeHit(move, /*blocking=*/false);
-    printDraw("hitstun (real hurt clip)", nullptr);
+    compute();
+    printLast("hitstun (real hurt clip)");
 
     std::cout << "[result] real HITM sprite/atlas/animation data produced deterministic draw data for "
                << fighter.Snapshot().frame << " real frames -- NOT rendered, NOT a claim any pixel exists on screen\n";
