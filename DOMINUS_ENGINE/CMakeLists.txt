@@ -141,6 +141,7 @@ add_library(dominus_hitm_runtime STATIC
   CHARACTER/HitmBridge/HitmApplicationLoop.cpp
   CHARACTER/HitmBridge/HitmRigForgeAnchor.cpp
   CHARACTER/HitmBridge/HitmSkeletonFk.cpp
+  CHARACTER/HitmBridge/HitmRigForgeControlAnchor.cpp
 )
 target_link_libraries(dominus_hitm_runtime PUBLIC dominus_combat dominus_world dominus_physics dominus_graphics)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

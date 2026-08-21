@@ -1453,4 +1453,29 @@ entire recursive FK walk immediately without an authored/derived anchor —
 rather than defaulting anything to zero. `HitmSceneBridge` itself was
 never modified and remains the shipping placement convention. Full
 account, real numbers, in `HITM_RIG_FORGE_R1A_REPORT.md`.
-**949/949 tests passing (was 656 before this track).**
+
+**DOMINUS Rig Forge Phase R1b-1** investigated whether the 5 real
+control-bone anchors (`root`/`hip`/`neck`/`shoulderFar`/`shoulderNear`)
+Phase R1a deliberately left un-derived can be deterministically derived
+from real children data. A mixed, real result: `root` and `hip` need no
+anchor at all — proven, not derived, by showing the real FK offset
+formula telescopes exactly across a pure control-bone chain, verified by
+running the real, unmodified `HitmSkeletonFk` with wildly different
+placeholder values and observing zero effect on any real descendant, for
+all three fighters. `neck`/`shoulderFar`/`shoulderNear` cannot be
+deterministically derived from their one real child this way: the real
+algorithm reads a control bone's own `.at` in two incompatible coordinate
+spaces whenever its own real parent owns a part (exactly this case), and
+a real, physically-motivated candidate anchor — solved, run through the
+real FK, and checked against each bone's known real child — mis-places
+that child by 15–80 real pixels on a 225px character (15–36% error) for
+all 9 real (bone, fighter) cases checked, not a marginal miss. A
+corrected, self-consistent solve was also attempted and rejected: it
+degenerates into an equation with zero dependency on the child's real
+geometry (identical output for all three bones' three different real
+children — a red flag caught, not shipped). 4 new tests, all real data,
+all three fighters. **953/953** total, clean under Release,
+AddressSanitizer+UndefinedBehaviorSanitizer (2 runs). Fresh-clone
+verified before push. Full account, all real per-bone numbers, in
+`HITM_RIG_FORGE_R1B1_REPORT.md`.
+**953/953 tests passing (was 656 before this track).**

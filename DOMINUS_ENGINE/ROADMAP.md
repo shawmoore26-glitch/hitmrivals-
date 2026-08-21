@@ -6636,3 +6636,75 @@ Phase R1b (the control-bone anchor decision) and Phase R1c (a standalone
 skeleton generator) remain open, explicitly not started here -- Phase
 R1a's own real numbers, not assumptions, are what the next checkpoint now
 has to decide with.
+
+## Phase R1b-1 (implemented) -- the control-bone anchor investigation
+
+Tightly scoped, per the checkpoint that authorized it: investigate
+whether the 5 real control-bone anchors Phase R1a left un-derived
+(`root`/`hip`/`neck`/`shoulderFar`/`shoulderNear`) can be
+deterministically derived from real children data, with Phase R1a's own
+discipline -- hypothesis, derivation, all three fighters, real FK,
+quantitative validation. No hand-authored numbers. No change to
+`HitmSceneBridge`. No FK replacement.
+
+**A real, mixed result, not a clean win.** New
+`CHARACTER::hitm::HitmRigForgeControlAnchor` found two genuinely
+different real answers:
+
+- `root` and `hip` need **no anchor at all** -- not "derivable," PROVEN
+  unnecessary. The real FK offset formula telescopes exactly across a
+  pure control-bone chain (`root`->`hip`, both control): `hip.at`'s own
+  contribution to `world[hip]` cancels root.at's exactly, and every real
+  descendant of `hip` (`torso`, `legFarU`, `legNearU`, plus each
+  fighter's own extra real hip children) is then, by the same
+  cancellation, independent of BOTH `root.at` and `hip.at`. Proven
+  executable: the real, unmodified `HitmSkeletonFk::ComputeLocalOffset`
+  (Phase R1a's own code, untouched), run with three wildly different
+  placeholder `root.at`/`hip.at` pairs, produces bit-identical (1e-9)
+  absolute positions for every real hip-descendant, for all three
+  fighters.
+- `neck`, `shoulderFar`, and `shoulderNear` are genuinely different, and
+  option 1 FAILS for them, for a real, structural, now-documented
+  reason: the real algorithm reads a control bone's own `.at` in TWO
+  INCOMPATIBLE coordinate spaces whenever that control bone's own real
+  parent owns a part (exactly this case, since all three real parents
+  are `torso`) -- normalized within the parent part's own rect when
+  resolving the control bone's OWN position, but whole-sprite normalized
+  when resolving ITS CHILDREN's offsets, a real consequence of the real
+  algorithm's own branch-selection rule. A real, physically-motivated
+  candidate anchor (each of these 3 bones has exactly one real child in
+  all 3 fighters -- `neck`->`head`, `shoulderFar`->`armFarU`,
+  `shoulderNear`->`armNearU`, verified not assumed), solved so the
+  control bone's own position coincides with its child's real pivot,
+  mis-places that child by **15-80 real pixels on a 225px character**
+  (15-36% error) when actually run through the real, unmodified FK
+  composition, for all 9 real (bone, fighter) combinations checked -- a
+  decisive, not marginal, failure. A corrected, self-consistent
+  two-branch solve was also attempted and rejected: it degenerates into
+  an equation with zero dependency on the child's real geometry
+  (identical output for `neck`/`shoulderFar`/`shoulderNear` despite
+  three different real children -- a red flag caught and reported, not
+  shipped as a false positive). A real, secondary, non-redemptive signal
+  was still checked and disclosed: the failed candidate's independently-
+  derived `shoulderFar`/`shoulderNear` anchors land within ~2% of exact
+  bilateral mirror symmetry for all three fighters, despite no symmetry
+  assumption anywhere in the formula -- evidence the construction isn't
+  nonsensical, not evidence it's usable.
+
+4 new tests, all real fixture data, all three fighters, zero fabricated
+values. **953/953** total, clean under Release,
+AddressSanitizer+UndefinedBehaviorSanitizer (2 runs). Fresh-clone
+verified before push. `HitmSceneBridge` and Phase R1a's own code remain
+untouched. Full account, real per-bone numbers for all 9 cases, in
+`HITM_RIG_FORGE_R1B1_REPORT.md`.
+
+**Where this leaves the roster**: 6 of 15 real control-bone anchors
+(root+hip x 3 fighters) are permanently settled -- no value ever needed.
+9 remain genuinely open, narrowed from Phase R1a's original "5 anchors x
+3 fighters, unknown status" down to a specific, well-understood,
+well-quantified gap with three honest paths forward (hand-author 9 real
+numbers; try a different derivation strategy against data this phase
+didn't examine; or conclude real recursive FK isn't the right target
+representation for these 3 joints and design Rig Forge's own output
+format around that). None of these is chosen here -- the next
+checkpoint's call.
