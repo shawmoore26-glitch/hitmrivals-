@@ -31,6 +31,7 @@ add_executable(dominus_core_tests
   integration/test_hitm_match.cpp
   integration/test_hitm_scene_bridge.cpp
   integration/test_hitm_input_adapter.cpp
+  integration/test_hitm_application_loop.cpp
   motion/test_motion_graph.cpp
   motion/test_animation_layers.cpp
   motion/test_ik.cpp

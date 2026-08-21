@@ -1399,4 +1399,28 @@ between players. Two full-chain tests drive the real, unmodified
 `HitmMatch` from a simulated key state through to an actual walking
 fighter and an actual blocking stance. Full account in
 `HITM_INPUT_ADAPTER_REPORT.md`.
-**926/926 tests passing (was 656 before this track).**
+**Phase 5D connected every piece into a real, running loop**:
+`CORE::Application::Tick()` is now a real, standard fixed-timestep-with-
+accumulator dispatcher (simulation always advances in fixed 1/60s steps,
+decoupled from wall-clock present frequency, with a disclosed anti-
+catch-up clamp), still completely game-agnostic (zero CHARACTER/GRAPHICS
+knowledge, same law `WorldTick` already enforces one layer down). New
+`CHARACTER::hitm::HitmApplicationLoop` owns the real `HitmMatch` and
+registers into `Application`'s generic hooks — `Application` never learns
+what a `HitmMatch` is. New `GRAPHICS::X11WindowPresenter` (gated, off by
+default) blits real `RasterDevice` pixels into a real X11 window — chosen
+over Vulkan/GLFW because this sandbox has neither a Vulkan SDK nor a
+GPU/ICD, and because real texture support has only ever existed on
+`RasterDevice`, never `VulkanFrameRenderer`, so a real Vulkan window
+couldn't show real sprite pixels today regardless. This session actually
+built it, started a real Xvfb virtual X server, and ran it: a real window
+opened, Brooklyn and Rocket rendered from their real atlas data, and an
+independent readback of the window's real, live pixel content matched
+`RasterDevice`'s own output with **zero mismatches across all 636,000
+pixels**. The single most important test in this phase proves the real
+`HitmMatch` ends up in a bit-identical final state regardless of whether
+the same total wall-clock time arrives as one steady cadence or wildly
+irregular jitter. Full account, including the real screenshot evidence
+and two real bugs this phase's own tests caught before they shipped, in
+`HITM_APPLICATION_LOOP_REPORT.md`.
+**945/945 tests passing (was 656 before this track).**

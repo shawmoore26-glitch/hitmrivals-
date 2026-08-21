@@ -1830,3 +1830,34 @@ pixels should sample from, decodes `brooklyn_atlas.png` directly
 against what `RasterDevice` actually drew. A separate test proves real
 secondary motion survives the bridge unchanged. Full account in
 `HITM_SPRITE_BRIDGE_REPORT.md`.
+
+## A real windowed CPU presenter (Track H Phase 5D)
+
+`GRAPHICS::X11WindowPresenter` (`GRAPHICS/Raster/
+X11WindowPresenter.h/.cpp`, gated behind `DOMINUS_ENABLE_X11_PRESENTER`,
+default OFF) blits a real `RasterDevice::PixelBuffer` into a real X11
+window via `XPutImage` -- the minimal, standard way to show CPU-rasterized
+pixels in a real window with no GPU API involved. Deliberately X11, not
+Vulkan/GLFW: this sandbox has no Vulkan SDK/ICD (unchanged since this
+phase's own "Deliberately not built this phase" note above), and
+separately, real texture/sampler support has only ever existed on
+`RasterDevice`, never `VulkanFrameRenderer` -- a windowed Vulkan path
+could not show real HITM sprite pixels today regardless of GPU
+availability. Vulkan itself is completely untouched by this file.
+
+Real, disclosed scope limit, same discipline as `PngDecoder.h`: supports
+exactly the one real X11 TrueColor visual this engine has actually
+verified pixel-for-pixel against a real Xvfb server (24-bit depth,
+32bpp, red/green/blue masks `0xFF0000`/`0xFF00`/`0xFF`, LSBFirst byte
+order) -- refuses, with a specific real error, anything else.
+
+**Actually built and run, not just written**: this session enabled
+`DOMINUS_ENABLE_X11_PRESENTER=ON`, started a real Xvfb virtual X server,
+and ran the new, gated `TOOLS/Editor/dominus_hitm_window.cpp` against it
+-- a real 1060x600 window opened, showing real Brooklyn and Rocket art. A
+separate verification program read the window's actual, live,
+server-side pixel content back via a real `XGetImage` call (an
+independent code path from `Present()`'s own RGBA-to-X11-format
+conversion) and found zero mismatches across all 636,000 pixels against
+what `RasterDevice` computed. Full account, including the resulting
+screenshot, in `HITM_APPLICATION_LOOP_REPORT.md`.

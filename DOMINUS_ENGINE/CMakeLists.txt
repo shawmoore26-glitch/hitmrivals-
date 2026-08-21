@@ -129,6 +129,7 @@ add_library(dominus_hitm_runtime STATIC
   CHARACTER/HitmBridge/HitmMatch.cpp
   CHARACTER/HitmBridge/HitmSceneBridge.cpp
   CHARACTER/HitmBridge/HitmInputAdapter.cpp
+  CHARACTER/HitmBridge/HitmApplicationLoop.cpp
 )
 target_link_libraries(dominus_hitm_runtime PUBLIC dominus_combat dominus_world dominus_physics dominus_graphics)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -240,6 +241,25 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(dominus_graphics PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+# --- GRAPHICS/Raster/X11WindowPresenter (real windowed CPU presenter, ------
+#     gated -- OFF by default) --------------------------------------------
+# See GRAPHICS/Raster/X11WindowPresenter.h for exactly why this exists
+# instead of a windowed Vulkan path: real texture/sampler support only
+# exists on RasterDevice (Phase 5A), and DOMINUS_ENABLE_VULKAN requires a
+# Vulkan SDK not guaranteed present everywhere. Defaults OFF so the
+# established CPU test suite stays buildable with zero new dependencies,
+# same discipline as DOMINUS_ENABLE_VULKAN above. Completely independent
+# of it -- this option, when off, leaves Vulkan entirely untouched, and
+# when on, links only libX11 (a real, common, non-GPU system library),
+# never Vulkan/GLFW.
+option(DOMINUS_ENABLE_X11_PRESENTER "Build the real X11 windowed CPU presenter" OFF)
+if(DOMINUS_ENABLE_X11_PRESENTER)
+  find_package(X11 REQUIRED)
+  target_sources(dominus_graphics PRIVATE GRAPHICS/Raster/X11WindowPresenter.cpp)
+  target_link_libraries(dominus_graphics PUBLIC ${X11_LIBRARIES})
+  target_include_directories(dominus_graphics PRIVATE ${X11_INCLUDE_DIR})
+endif()
+
 add_library(dominus_visualforge INTERFACE)
 target_link_libraries(dominus_visualforge INTERFACE dominus_character dominus_world dominus_registry dominus_graphics)
 
@@ -300,6 +320,12 @@ endif()
 # --- Tools -----------------------------------------------------------------
 add_executable(dominus-cli TOOLS/Editor/dominus_cli.cpp)
 target_link_libraries(dominus-cli PRIVATE dominus_combat dominus_world dominus_physics dominus_hitm_runtime dominus_registry dominus_visualforge dominus_rig dominus_validation dominus_reality)
+
+if(DOMINUS_ENABLE_X11_PRESENTER)
+  add_executable(dominus-hitm-window TOOLS/Editor/dominus_hitm_window.cpp)
+  target_link_libraries(dominus-hitm-window PRIVATE dominus_hitm_runtime dominus_graphics ${X11_LIBRARIES})
+  target_include_directories(dominus-hitm-window PRIVATE ${X11_INCLUDE_DIR})
+endif()
 
 if(DOMINUS_ENABLE_VULKAN)
   add_executable(dominus-gpu-demo TOOLS/Editor/dominus_gpu_demo.cpp)

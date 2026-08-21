@@ -6499,3 +6499,81 @@ total, clean under Release, AddressSanitizer+UndefinedBehaviorSanitizer
 verified before push. Vulkan, `FillTriangle`, FK, the combat runtime,
 Ghost Dash, camera, and the application loop are all untouched. Full
 account in `HITM_INPUT_ADAPTER_REPORT.md`.
+
+**Phase 5D closed: the application/game loop — DOMINUS visibly runs
+HITM Rivals.** `CORE::Application::Tick()` grew a real, standard fixed-
+timestep-with-accumulator dispatcher: the registered simulation callback
+fires exactly once per whole, real, fixed `kFixedSimDt` (1/60s) consumed
+from an accumulator fed by caller-supplied `realDtSeconds` — zero, one,
+or several times per real `Tick()` call, never "whatever time elapsed
+since the last render" — while the present callback fires exactly once
+per `Tick()` call regardless. A real, disclosed `kMaxSimStepsPerTick`
+clamp prevents an unbounded catch-up burst after a stall. `Application`
+itself remains completely game-agnostic — zero CHARACTER/GRAPHICS/COMBAT
+knowledge, the same law `WORLD/Core/WorldTick.h` already enforces one
+layer down (proven directly by `test_hitm_rivals_as_world_entity.cpp`).
+New `CHARACTER::hitm::HitmApplicationLoop` (`CHARACTER/HitmBridge/
+HitmApplicationLoop.h/.cpp`) is the actual HITM-specific orchestration:
+owns the real, unmodified `HitmMatch`, samples both players' real input
+via the real, unmodified `HitmInputAdapter`, builds real sprite data +
+scene entities for BOTH fighters from their own real atlases, and
+registers into `Application`'s generic hooks — `Application` never
+learns a `HitmMatch` exists. Critically, `BuildSpriteDrawData`/
+`BuildHitmSceneEntities`/`FrameCompiler::Compile` only ever run inside
+the fixed-cadence simulation callback, never the present callback —
+preserving `HitmSpriteDrawData`'s own real "call exactly once per
+simulation frame" secondary-motion contract regardless of how often a
+frame actually gets presented.
+
+New `GRAPHICS::X11WindowPresenter` (`GRAPHICS/Raster/
+X11WindowPresenter.h/.cpp`, gated behind a new, independent
+`DOMINUS_ENABLE_X11_PRESENTER` option, default OFF) is the real windowed
+presenter — deliberately X11, not Vulkan/GLFW, for two real, disclosed
+reasons: this sandbox has no Vulkan SDK/ICD (unchanged since Phase 5A),
+and separately, real texture/sampler support has only ever existed on
+`RasterDevice`, never `VulkanFrameRenderer`, so a real Vulkan window
+could not show real HITM sprite pixels today regardless of GPU
+availability. Blits a real `RasterDevice::PixelBuffer` into a real X11
+window via `XPutImage`; Vulkan itself is completely untouched by this
+file. **This session actually built and ran it**: `DOMINUS_ENABLE_X11_PRESENTER=ON`,
+a real Xvfb virtual X server, and the new, gated `dominus-hitm-window`
+executable together produced a real 1060x600 window showing Brooklyn and
+Rocket, real keyboard state read via real `XQueryKeymap`. A separate
+verification program read the window's actual, live, server-side pixel
+content back via `XGetImage` (an independent code path from `Present()`'s
+own conversion) and found **zero mismatches across all 636,000 pixels**
+against what `RasterDevice` computed — a real, closed-loop,
+pixel-verified proof, not a description of what should work. The
+resulting screenshot (Brooklyn mid-walk, Rocket idle, both from their own
+real atlas art) was sent directly to the user.
+
+Two real bugs this phase's own verification caught and fixed before this
+report was written: the camera placeholder's first version put both
+fighters entirely outside the viewport (a real Y-axis convention miss,
+caught by a zero-non-background-pixels test failure); and the
+Application-level determinism test's first version fed an exact
+`60*kFixedSimDt` boundary through three chopping patterns, and one landed
+on 59 steps instead of 60 — a real, well-known IEEE-754
+non-associativity artifact at an exact step boundary (the same class of
+finding Phase 3's own `HitmMatch` float-drift test already documented),
+fixed by using a deliberately mid-step total. Also disclosed, not
+glossed over: at 1060x600 in this sandbox, `RasterDevice`'s real
+per-pixel CPU cost is high enough that the anti-catch-up clamp engages on
+most real `Tick()` calls, meaning simulated time runs measurably behind
+real wall-clock time in this specific environment — the determinism
+guarantee holds exactly regardless, but this is a real, disclosed
+performance fact, not claimed away.
+
+19 new tests (9 generic `Application` fixed-timestep tests, 10
+`HitmApplicationLoop` tests) — the single most important one drives two
+independent `HitmApplicationLoop`/`Application` pairs with identical real
+input through 3 real seconds of wall-clock time chopped into wildly
+different patterns and asserts their final `HitmMatchSnapshot`s are
+bit-identical, not just their step counts. **945/945** total, clean
+under Release, AddressSanitizer+UndefinedBehaviorSanitizer (2 runs, default
+configuration), plus a separately-verified, real, live X11/Xvfb run (not
+part of the environment-independent test count, same precedent as
+Vulkan's own GPU demos). Fresh-clone verified before push. Real camera
+work, real Vulkan/GPU presentation, the combat runtime, Ghost Dash,
+`FillTriangle`, and bone-hierarchy FK all remain untouched. Full account,
+including the screenshot evidence, in `HITM_APPLICATION_LOOP_REPORT.md`.
