@@ -6577,3 +6577,62 @@ Vulkan's own GPU demos). Fresh-clone verified before push. Real camera
 work, real Vulkan/GPU presentation, the combat runtime, Ghost Dash,
 `FillTriangle`, and bone-hierarchy FK all remain untouched. Full account,
 including the screenshot evidence, in `HITM_APPLICATION_LOOP_REPORT.md`.
+
+## DOMINUS Rig Forge -- Phase R0 (audit) and Phase R1a (implemented)
+
+A new, explicitly-requested track, orthogonal to Track H's own game-loop
+work above: not "fix the old rig," but "can DOMINUS construct a real
+character rig from HITM's own real source data instead of preserving the
+old, independently-authored, pre-Track-H `brooklyn.dominus` skeleton."
+
+**Phase R0 (read-only audit, `HITM_RIG_FORGE_AUDIT.md`)** found the old
+rig (`brooklyn.dominus`, `brooklyn_canonical.skel.json`,
+`RIG::CanonicalSkeleton`) is not derived from real HITM data at all --
+fabricated provenance labels, bone names sharing no vocabulary with real
+HITM parts, hand-typed bind poses. Meanwhile real, tool-generated,
+cross-validated rig source data (`design.json`, `rig_validation.json`,
+`rig.json`'s full `bones[]` array, and the real, authoritative
+`engine/render/SkeletonSystem.js` FK algorithm) turned out to be richer
+than anything Track H had imported. The real algorithm needs exactly two
+fields absent from every checked-in fighter JSON: `b.part` (proven 100%
+mechanically derivable, zero fabrication risk) and `b.at` (a real,
+disclosed, testable-but-unproven derivation hypothesis for part-owning
+bones; a genuine 5-numbers-per-fighter human-authoring gap for the 5 real
+control bones with no drawn part of their own).
+
+**Phase R1a (implemented, `HITM_RIG_FORGE_R1A_REPORT.md`)**, tightly
+scoped by the checkpoint that authorized it: implement and test the
+`.at` hypothesis for part-owning bones ONLY, against the real, unmodified
+`HitmSceneBridge` oracle, for all three fighters -- do not yet choose the
+control-bone anchor values. New `CHARACTER::hitm::HitmRigForgeAnchor`
+derives `.part`/`.at` from real, already-imported `rect`+`pivot` data,
+never fabricating a control-bone anchor. New
+`CHARACTER::hitm::HitmSkeletonFk` is a faithful, line-for-line port of
+the real `SkeletonSystem.build()` algorithm. Across all 37 real
+(child, parent) part-owning bone pairs in the roster, the `.at`
+hypothesis converges on the real, independently-computed pivot-to-pivot
+delta within a small, explained bound (max 3.43px on a 225px-tall
+character) -- traced to a real, uniform-per-fighter `rect`-vs-`normW/
+normH` slack `rig_validation.json`'s own `fill_pct`/`slack_px` fields
+already document, not floating-point noise and not forced with a
+correction constant. A second, real, separate divergence was found and
+precisely decomposed (pivot-anchor vs `HitmSceneBridge`'s own rect-center
+anchor; the real algorithm's per-fighter `spriteW` X-scale vs
+`HitmSceneBridge`'s deliberate uniform-`displayHeight` scale) -- a
+genuine cost of ever adopting real FK, disclosed rather than hidden. And
+a hard, total, previously-unquantified blocker was proven, not assumed:
+23 of the roster's 60 real drawn parts (including every torso, head, and
+limb-root segment) sit directly on a control bone, and `root` itself
+blocks `HitmSkeletonFk::BuildWorldTransforms`'s entire recursive walk
+immediately -- the function fails naming `root` explicitly, never
+defaulting a missing anchor to zero. `HitmSceneBridge` itself was never
+modified and remains the shipping, already-proven placement convention;
+nothing in Track H's own game loop changed. 4 new tests, all real fixture
+data, all three fighters. **949/949** total, clean under Release,
+AddressSanitizer+UndefinedBehaviorSanitizer (2 runs). Fresh-clone
+verified before push.
+
+Phase R1b (the control-bone anchor decision) and Phase R1c (a standalone
+skeleton generator) remain open, explicitly not started here -- Phase
+R1a's own real numbers, not assumptions, are what the next checkpoint now
+has to decide with.

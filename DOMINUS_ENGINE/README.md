@@ -1423,4 +1423,34 @@ the same total wall-clock time arrives as one steady cadence or wildly
 irregular jitter. Full account, including the real screenshot evidence
 and two real bugs this phase's own tests caught before they shipped, in
 `HITM_APPLICATION_LOOP_REPORT.md`.
-**945/945 tests passing (was 656 before this track).**
+
+**DOMINUS Rig Forge Phase R0/R1a**: a read-only audit
+(`HITM_RIG_FORGE_AUDIT.md`) then a tightly-scoped implementation
+(`HITM_RIG_FORGE_R1A_REPORT.md`) asking whether DOMINUS can construct a
+real character rig from HITM's own real source data, rather than
+preserving the old, independently-authored, pre-Track-H `brooklyn.dominus`
+skeleton. New `CHARACTER::hitm::DeriveBoneAnchors`
+(`HitmRigForgeAnchor.h/.cpp`) mechanically derives `.part` and a candidate
+`.at` anchor for every real part-owning bone from already-imported real
+`rect`+`pivot` data, never fabricating a value for a control bone
+(`root`/`hip`/`neck`/`shoulderFar`/`shoulderNear`). New
+`CHARACTER::hitm::HitmSkeletonFk` (`HitmSkeletonFk.h/.cpp`) is a faithful
+port of the real, authoritative `engine/render/SkeletonSystem.js`
+`build()` algorithm. Tested against the real, unmodified `HitmSceneBridge`
+oracle for all 37 real (child, parent) part-owning bone pairs across all
+three fighters: the `.at` hypothesis converges within a small, real,
+explained bound (≤3.43px on a 225px-tall character, traced to a real,
+uniform-per-fighter `rect`-vs-`normW/normH` slack already documented by
+`rig_validation.json`'s own `fill_pct`/`slack_px` fields) — not disproven,
+not forced with a correction constant. A second, separate, real
+divergence was also found and quantified (pivot-anchor vs rect-center
+anchor; `spriteW` vs uniform-`displayHeight` axis scale) — a genuine
+consequence of ever adopting real FK, disclosed rather than hidden. And a
+real, total blocker was proven, not assumed: 23 of the roster's 60 real
+drawn parts sit directly on a control bone, and `root` itself blocks the
+entire recursive FK walk immediately without an authored/derived anchor —
+`HitmSkeletonFk::BuildWorldTransforms` fails naming `root` explicitly
+rather than defaulting anything to zero. `HitmSceneBridge` itself was
+never modified and remains the shipping placement convention. Full
+account, real numbers, in `HITM_RIG_FORGE_R1A_REPORT.md`.
+**949/949 tests passing (was 656 before this track).**

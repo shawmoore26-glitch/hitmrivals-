@@ -117,6 +117,15 @@ target_link_libraries(dominus_physics INTERFACE dominus_world)
 # library) plus HitmPartsRig/HitmIdentityRecord (dominus_character,
 # already reachable transitively through dominus_combat below) -- no new
 # cross-module dependency, no new library needed.
+#
+# DOMINUS Rig Forge Phase R1a (HITM_RIG_FORGE_AUDIT.md's own follow-on)
+# adds HitmRigForgeAnchor.cpp/HitmSkeletonFk.cpp the same way: both depend
+# only on HitmPartsRig/HitmRigPlacement (already reachable here), and
+# HitmSkeletonFk is a standalone port of the real
+# `engine/render/SkeletonSystem.js` FK algorithm with no dependency on
+# HitmSceneBridge or any other module in this library -- it is compared
+# against HitmSceneBridge only from tests/integration/
+# test_hitm_rig_forge_at.cpp, never from production code.
 add_library(dominus_hitm_runtime STATIC
   CHARACTER/HitmBridge/HitmMoveInstance.cpp
   CHARACTER/HitmBridge/HitmFighterRuntime.cpp
@@ -130,6 +139,8 @@ add_library(dominus_hitm_runtime STATIC
   CHARACTER/HitmBridge/HitmSceneBridge.cpp
   CHARACTER/HitmBridge/HitmInputAdapter.cpp
   CHARACTER/HitmBridge/HitmApplicationLoop.cpp
+  CHARACTER/HitmBridge/HitmRigForgeAnchor.cpp
+  CHARACTER/HitmBridge/HitmSkeletonFk.cpp
 )
 target_link_libraries(dominus_hitm_runtime PUBLIC dominus_combat dominus_world dominus_physics dominus_graphics)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
